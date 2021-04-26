@@ -1,6 +1,6 @@
 package naturalDeduction
 
-import naturalDeduction.Derivation.{ConjunctionIntroduction, ImplicationElimination, LeftConjunctionElimination, RightConjunctionElimination}
+import naturalDeduction.Derivation.{ConjunctionIntroduction, ImplicationElimination, ImplicationIntroduction, LeftConjunctionElimination, RightConjunctionElimination}
 import naturalDeduction.pretty.DerivationRenderer
 
 import java.util.regex.{MatchResult, Pattern}
@@ -21,8 +21,16 @@ case class Assumptions(anonymousAssumptions: Set[Formula] = Set.empty, labelledA
 
   def discharge(label: String): Assumptions = copy(labelledAssumptions = labelledAssumptions - label)
 
-  def ++(that: Assumptions): Assumptions =
+  def ++(that: Assumptions): Assumptions = {
+    val commonLabels = this.labelledAssumptions.keySet intersect that.labelledAssumptions.keySet
+    for (label <- commonLabels) {
+      val thisFormula = this.labelledAssumptions(label)
+      val thatFormula = that.labelledAssumptions(label)
+      assert(thisFormula == thatFormula, s"Error combining assumptions, mismatch for label $label: $thisFormula vs $thatFormula")
+    }
+
     Assumptions(this.anonymousAssumptions ++ that.anonymousAssumptions, this.labelledAssumptions ++ that.labelledAssumptions)
+  }
 
   def allFormulae: Set[Formula] = anonymousAssumptions ++ labelledAssumptions.values.toSet
 
@@ -37,7 +45,7 @@ sealed trait Derivation {
 
   override def toString: String = {
     val rendered = DerivationRenderer.renderDerivation(this).toStringNormal
-        return rendered
+    return rendered
     val withStrikethrough = "-(.+?)-".r.replaceAllIn(rendered, result => " " + unicodeStrikeThrough(result.group(1)) + " ")
     """(?m)(\s+)$""".r.replaceAllIn(withStrikethrough, "")
   }
@@ -49,11 +57,17 @@ sealed trait Derivation {
     Pattern.compile(pattern).matcher(s).replaceAll(asJavaFunction(getFirstGroup))
   }
 
-  private def unicodeStrikeThrough(s: String): String = s.flatMap(_ + "\u0336")
+  private def unicodeStrikeThrough(s: String): String = s.flatMap(c => s"$c\u0336")
 
   def conjunctionIntro(that: Derivation): ConjunctionIntroduction = ConjunctionIntroduction(this, that)
 
   def implicationElim(that: Derivation): ImplicationElimination = ImplicationElimination(this, that)
+
+  def implicationIntro(formula: Formula, label: Option[String] = None): ImplicationIntroduction =
+    ImplicationIntroduction(formula, label, this)
+
+  def implicationIntro(formula: Formula, label: String): ImplicationIntroduction =
+    ImplicationIntroduction(formula, label, this)
 
   def leftConjunctionElim: LeftConjunctionElimination = LeftConjunctionElimination(this)
 

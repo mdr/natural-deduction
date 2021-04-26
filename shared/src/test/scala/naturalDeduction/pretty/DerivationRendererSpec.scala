@@ -10,7 +10,7 @@ import org.scalatest.matchers.should.Matchers
 class DerivationRendererSpec extends AnyFlatSpec with Matchers {
 
   implicit class RichDerivation(derivation: Derivation) {
-    def shouldRenderAs(expected: String) {
+    def shouldRenderAs(expected: String): Unit = {
       s"Rendering $expected" should "work" in {
         val actual = derivation.toString
         val passed = actual == expected

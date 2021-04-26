@@ -21,7 +21,7 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
   }
 
   "Exercise 2.2.2(c)" should "be provable" in {
-    val derivation = ((φ.axiom conjunctionIntro φ.axiom) conjunctionIntro φ.axiom)
+    val derivation = (φ.axiom conjunctionIntro φ.axiom) conjunctionIntro φ.axiom
     derivation.sequent shouldEqual (Set(φ) ⊢ ((φ ∧ φ) ∧ φ))
   }
 
@@ -95,14 +95,23 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
 
   "Exercise 2.4.2(b)" should "be provable" in {
     val derivation =
-      ImplicationIntroduction(ψ → χ, "3",
-        ImplicationIntroduction(φ → ψ, "2",
-          ImplicationIntroduction(φ, "1",
+      ImplicationIntroduction(ψ → χ, "❸",
+        ImplicationIntroduction(φ → ψ, "❷",
+          ImplicationIntroduction(φ, "❶",
             ImplicationElimination(
-              ImplicationElimination(Axiom(φ, "1"), Axiom(φ → ψ, "2")),
-              Axiom(ψ → χ, "3")))))
+              ImplicationElimination(Axiom(φ, "❶"), Axiom(φ → ψ, "❷")),
+              Axiom(ψ → χ, "❸")))))
     derivation.sequent shouldEqual (Ø ⊢ ((ψ → χ) → ((φ → ψ) → (φ → χ))))
-    println(derivation)
+  }
+
+  "Exercise 2.4.3(a)" should "be provable" in {
+    val derivation = Axiom(φ, "❶").implicationIntro(ψ).implicationIntro(φ, "❶")
+    derivation.sequent shouldEqual (Ø ⊢ (φ → (ψ → φ)))
+  }
+
+  "Exercise 2.4.3(b)" should "be provable" in {
+    val derivation = Axiom(φ).implicationIntro(ψ).implicationIntro(φ)
+    derivation.sequent shouldEqual (Set(φ) ⊢ (φ → (ψ → φ)))
   }
 
 }
