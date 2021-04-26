@@ -37,8 +37,8 @@ sealed trait Derivation {
 
   override def toString: String = {
     val rendered = DerivationRenderer.renderDerivation(this).toStringNormal
-    return rendered
-    val withStrikethrough = "-(.)+?-".r.replaceAllIn(rendered, x => " " + unicodeStrikeThrough(x.group(1)) + " ")
+        return rendered
+    val withStrikethrough = "-(.+?)-".r.replaceAllIn(rendered, result => " " + unicodeStrikeThrough(result.group(1)) + " ")
     """(?m)(\s+)$""".r.replaceAllIn(withStrikethrough, "")
   }
 
@@ -66,7 +66,12 @@ object Derivation {
     def axiom: Axiom = Axiom(formula)
   }
 
+  object Axiom {
+    def apply(formula: Formula, label: String): Axiom = Axiom(formula, Some(label))
+  }
+
   case class Axiom(formula: Formula, label: Option[String] = None) extends Derivation {
+
     override val undischargedAssumptions: Assumptions = label match {
       case None => Assumptions(anonymousAssumptions = Set(formula))
       case Some(label) => Assumptions(labelledAssumptions = Map(label -> formula))
@@ -97,14 +102,26 @@ object Derivation {
     override def formula: Formula = conjunction.conjunct2
   }
 
-  case class ImplicationIntroduction(antecedent: Formula, label: String, consequentDerivation: Derivation) extends Derivation {
-    consequentDerivation.undischargedAssumptions.labelledAssumptions.get(label).foreach { assumption =>
-      assert(assumption == antecedent, s"Expected assumption $assumption to equal $antecedent for label $label")
-    }
+  object ImplicationIntroduction {
+    def apply(antecedent: Formula, consequentDerivation: Derivation): ImplicationIntroduction =
+      ImplicationIntroduction(antecedent, None, consequentDerivation)
+
+    def apply(antecedent: Formula, label: String, consequentDerivation: Derivation): ImplicationIntroduction =
+      ImplicationIntroduction(antecedent, Some(label), consequentDerivation)
+  }
+
+  case class ImplicationIntroduction(antecedent: Formula, label: Option[String], consequentDerivation: Derivation) extends Derivation {
+    for {
+      label <- label
+      assumption <- consequentDerivation.undischargedAssumptions.labelledAssumptions.get(label)
+    } assert(assumption == antecedent, s"Expected assumption $assumption to equal $antecedent for label $label")
 
     override def formula: Formula = antecedent → consequentDerivation.formula
 
-    override def undischargedAssumptions: Assumptions = consequentDerivation.undischargedAssumptions.discharge(label)
+    override def undischargedAssumptions: Assumptions = label match {
+      case Some(label) => consequentDerivation.undischargedAssumptions.discharge(label)
+      case None => consequentDerivation.undischargedAssumptions
+    }
   }
 
   case class ImplicationElimination(antecedentDerivation: Derivation, implicationDerivation: Derivation) extends Derivation {

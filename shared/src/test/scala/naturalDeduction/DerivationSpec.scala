@@ -8,7 +8,7 @@ import Sequent.RichSet
 
 class DerivationSpec extends AnyFlatSpec with Matchers {
 
-  val noAssumptions = Set.empty[Formula]
+  val Ø = Set.empty[Formula]
 
   "Exercise 2.2.2(a)" should "be provable" in {
     val derivation = φ.axiom conjunctionIntro (ψ.axiom conjunctionIntro χ.axiom)
@@ -57,7 +57,7 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
           ConjunctionIntroduction(
             Axiom(φ, label = Some("②")),
             Axiom(ψ, label = Some("①")))))
-    derivation.sequent shouldEqual (noAssumptions ⊢ (φ → (ψ → (φ ∧ ψ))))
+    derivation.sequent shouldEqual (Ø ⊢ (φ → (ψ → (φ ∧ ψ))))
   }
 
   "Example 2.4.4" should "be provable" in {
@@ -65,13 +65,13 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
       ImplicationIntroduction(φ, "②",
         ImplicationIntroduction(φ, "①",
           Axiom(φ, label = Some("②"))))
-    derivation.sequent shouldEqual (noAssumptions ⊢ (φ → (φ → φ)))
+    derivation.sequent shouldEqual (Ø ⊢ (φ → (φ → φ)))
 
     val alternativeDerivation =
       ImplicationIntroduction(φ, "②",
         ImplicationIntroduction(φ, "①",
           Axiom(φ, label = Some("①"))))
-    alternativeDerivation.sequent shouldEqual (noAssumptions ⊢ (φ → (φ → φ)))
+    alternativeDerivation.sequent shouldEqual (Ø ⊢ (φ → (φ → φ)))
   }
 
   "Example 2.4.5" should "be provable" in {
@@ -79,27 +79,30 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
       ImplicationIntroduction(φ, "①",
         ImplicationElimination(
           ImplicationElimination(
-            Axiom(φ, label = Some("①")),
+            Axiom(φ, "①"),
             Axiom(φ → ψ)),
           Axiom(ψ → χ))
       )
     derivation.sequent shouldEqual (Set(φ → ψ, ψ → χ) ⊢ (φ → χ))
-    println(
-      ImplicationIntroduction(φ, "1",
-        ImplicationElimination(
-          ImplicationElimination(
-            Axiom(φ, label = Some("1")),
-            Axiom(φ → ψ)),
-          Axiom(ψ → χ))
-      )
-    )
-    println(
-      ImplicationElimination(
-        ImplicationElimination(
-          Axiom(φ, label = Some("1")),
-          Axiom(φ → ψ)),
-        Axiom(ψ → χ))
-    )
+  }
+
+  "Exercise 2.4.2(a)" should "be provable" in {
+    val derivation = ImplicationIntroduction(φ ∧ ψ, "①",
+      Axiom(φ ∧ ψ, "①").rightConjunctionElim conjunctionIntro
+        Axiom(φ ∧ ψ, "①").leftConjunctionElim)
+    derivation.sequent shouldEqual (Ø ⊢ ((φ ∧ ψ) → (ψ ∧ φ)))
+  }
+
+  "Exercise 2.4.2(b)" should "be provable" in {
+    val derivation =
+      ImplicationIntroduction(ψ → χ, "3",
+        ImplicationIntroduction(φ → ψ, "2",
+          ImplicationIntroduction(φ, "1",
+            ImplicationElimination(
+              ImplicationElimination(Axiom(φ, "1"), Axiom(φ → ψ, "2")),
+              Axiom(ψ → χ, "3")))))
+    derivation.sequent shouldEqual (Ø ⊢ ((ψ → χ) → ((φ → ψ) → (φ → χ))))
+    println(derivation)
   }
 
 }
