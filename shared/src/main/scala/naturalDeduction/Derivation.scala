@@ -1,5 +1,7 @@
 package naturalDeduction
 
+import naturalDeduction.pretty.DerivationRenderer
+
 case class Sequent(assumptions: Set[Formula], conclusion: Formula) {
   override def toString: String = s"${assumptions.mkString(", ")} ⊢ $conclusion"
 }
@@ -10,6 +12,8 @@ sealed trait Derivation {
   def undischargedAssumptions: Set[Formula]
 
   def sequent: Sequent = Sequent(undischargedAssumptions, formula)
+
+  override def toString: String = DerivationRenderer.renderDerivation(this).toStringNormal
 }
 
 object Derivation {
@@ -38,6 +42,12 @@ object Derivation {
     override def undischargedAssumptions: Set[Formula] = conjunctionDerivation.undischargedAssumptions
 
     override def formula: Formula = conjunction.conjunct2
+  }
+
+  case class ImplicationIntroduction(antecedent: Formula, consequentDerivation: Derivation) extends Derivation {
+    override def formula: Formula = antecedent → consequentDerivation.formula
+
+    override def undischargedAssumptions: Set[Formula] = consequentDerivation.undischargedAssumptions
   }
 
 }

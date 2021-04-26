@@ -4,7 +4,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import Derivation._
 import TestConstants._
-import naturalDeduction.pretty.DerivationRenderer
 
 class DerivationSpec extends AnyFlatSpec with Matchers {
 
@@ -32,5 +31,15 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
     derivation.undischargedAssumptions shouldEqual Set(φ ∧ (ψ ∧ χ))
   }
 
+  "Example 2.4.3" should "be provable" in {
+    val derivation =
+      ImplicationIntroduction(φ,
+        ImplicationIntroduction(ψ,
+          ConjunctionIntroduction(
+            Axiom(φ, isDischarged = true),
+            Axiom(ψ, isDischarged = true))))
+    derivation.formula shouldEqual (φ → (ψ → (φ ∧ ψ)))
+    derivation.undischargedAssumptions shouldEqual Set.empty
+  }
 
 }

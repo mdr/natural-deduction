@@ -24,7 +24,14 @@ object FormulaPrettyPrinter {
       }
       s"${prettyPrintWithParen(conjunct1, needsParen1)} ∧ ${prettyPrintWithParen(conjunct2, needsParen2)}"
     case Disjunction(disjunct1, disjunct2) => s"($disjunct1 ∨ $disjunct2)"
-    case Implication(antecedent, consequent) => s"($antecedent → $consequent)"
+    case Implication(antecedent, consequent) =>
+      val needsParen1 = cond(antecedent) {
+        case _: Implication | _: Equivalence => true
+      }
+      val needsParen2 = cond(consequent) {
+        case _: Equivalence => true
+      }
+      s"${prettyPrintWithParen(antecedent, needsParen1)} → ${prettyPrintWithParen(consequent, needsParen2)}"
     case Equivalence(antecedent, consequent) => s"($antecedent ↔ $consequent)"
 
   }

@@ -1,7 +1,7 @@
 package naturalDeduction.pretty
 
 import naturalDeduction.Derivation
-import naturalDeduction.Derivation.{Axiom, ConjunctionIntroduction, LeftConjunctionElimination, RightConjunctionElimination}
+import naturalDeduction.Derivation.{Axiom, ConjunctionIntroduction, ImplicationIntroduction, LeftConjunctionElimination, RightConjunctionElimination}
 import naturalDeduction.TestConstants.{φ, χ, ψ}
 import naturalDeduction.pretty.DerivationRenderer._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -49,6 +49,26 @@ class DerivationRendererSpec extends AnyFlatSpec with Matchers {
         |         φ ∧ ψ               χ
         |         ───────────────────── ∧I
         |              (φ ∧ ψ) ∧ χ""".stripMargin
+
+    println(ImplicationIntroduction(φ,
+      ImplicationIntroduction(ψ,
+        ConjunctionIntroduction(
+          Axiom(φ, isDischarged = true),
+          Axiom(ψ, isDischarged = true))))
+    )
+    render(ImplicationIntroduction(φ,
+      ImplicationIntroduction(ψ,
+        ConjunctionIntroduction(
+          Axiom(φ, isDischarged = true),
+          Axiom(ψ, isDischarged = true))))
+    ) shouldEqual
+      """    -φ- -ψ-
+        |    ─────── ∧I
+        |     φ ∧ ψ
+        |   ───────── →I
+        |   ψ → φ ∧ ψ
+        | ───────────── →I
+        | φ → ψ → φ ∧ ψ""".stripMargin
 
   }
 

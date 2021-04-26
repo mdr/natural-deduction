@@ -1,19 +1,22 @@
 package naturalDeduction.pretty
 
 import naturalDeduction.Derivation
+import naturalDeduction.Derivation.ImplicationIntroduction
 
 object DerivationRenderer {
 
   def renderDerivation(derivation: Derivation): RaggedTextRegion = derivation match {
     case Derivation.Axiom(formula, isDischarged) =>
-      RaggedTextRegion(Seq(LineAndOffset(formula.toString)))
+      val renderedFormula = if (isDischarged) "-" + formula.toString + "-" else formula.toString
+      RaggedTextRegion(Seq(LineAndOffset(renderedFormula)))
     case Derivation.ConjunctionIntroduction(leftDerivation, rightDerivation) =>
       renderTwoChildren(derivation, leftDerivation, rightDerivation, "∧I")
     case Derivation.LeftConjunctionElimination(conjunctionDerivation) =>
       renderSingleChild(derivation, conjunctionDerivation, "∧E")
     case Derivation.RightConjunctionElimination(conjunctionDerivation) =>
       renderSingleChild(derivation, conjunctionDerivation, "∧E")
-
+    case ImplicationIntroduction(_, consequentDerivation) =>
+      renderSingleChild(derivation, consequentDerivation, "→I")
   }
 
   private def renderTwoChildren(parent: Derivation, child1: Derivation, child2: Derivation, ruleLabel: String): RaggedTextRegion = {
@@ -49,15 +52,11 @@ object DerivationRenderer {
         LineAndOffset(formulaString, parentFormulaOffset),
         LineAndOffset("─" * ruleLineWidth + " " + ruleLabel),
       ))
-    // TODO: if firstChildLine.text.length is less than lineLength, we'll need a different shift for parentRegion to
-    //       centre the child formula above the rule line.
-    childRegion pasteVertical parentRegion.shiftHorizontal(firstChildLine.offset)
+    val (childFormulaOffset, _) = calculateLeftRightPaddingForCentering(firstChildLine.text, ruleLineWidth)
+    childRegion.shiftHorizontal(childFormulaOffset) pasteVertical parentRegion.shiftHorizontal(firstChildLine.offset)
   }
 
-  private def center(s: String, width: Int): String = {
-    val (left, right) = calculateLeftRightPaddingForCentering(s, width)
-    " " * left + s + " " * right
-  }
+  private def unicodeStrikeThrough(s: String): String = s.flatMap(_ + "\u0336")
 
   private def calculateLeftRightPaddingForCentering(s: String, width: Int): (Int, Int) = {
     assert(s.length <= width, s"String '$s' is longer (${s.length}) than given width $width")

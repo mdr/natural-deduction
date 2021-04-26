@@ -8,6 +8,8 @@ sealed trait Formula {
 
   def ∧(that: Formula): Conjunction = Conjunction(this, that)
 
+  def →(that: Formula): Implication = Implication(this, that)
+
   override def toString: String = FormulaPrettyPrinter.prettyPrint(this)
 
 }
@@ -32,7 +34,7 @@ object Formula {
   case class Implication(antecedent: Formula, consequent: Formula) extends Formula {
   }
 
-  case class Equivalence(antecedent: Formula, consequent: Formula) extends Formula {
+  case class Equivalence(formula1: Formula, formula2: Formula) extends Formula {
   }
 
 
