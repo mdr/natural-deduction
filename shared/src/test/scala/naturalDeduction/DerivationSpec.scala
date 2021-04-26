@@ -151,4 +151,24 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
     derivation.sequent shouldEqual (Set(φ, φ.not) ⊢ φ)
   }
 
+  "Example 2.7.1 (2nd derivation)" should "be provable" in {
+    val derivation =
+      ReductioAdAbsurdum(φ ∨ φ.not, "❸",
+        NegationElimination(
+          ReductioAdAbsurdum(φ, "❶",
+            NegationElimination(
+              RightDisjunctionIntroduction(φ,
+                Axiom(φ.not, "❶")
+              ),
+              Axiom((φ ∨ φ.not).not, "❸")
+            )),
+          NegationIntroduction(φ, "❷",
+            NegationElimination(
+              LeftDisjunctionIntroduction(
+                Axiom(φ, "❷"),
+                φ.not),
+              Axiom((φ ∨ φ.not).not, "❸")))))
+    derivation.sequent shouldEqual (Ø ⊢ (φ ∨ φ.not))
+  }
+
 }

@@ -8,6 +8,8 @@ sealed trait Formula {
 
   def ∧(that: Formula): Conjunction = Conjunction(this, that)
 
+  def ∨(that: Formula): Disjunction = Disjunction(this, that)
+
   def →(that: Formula): Implication = Implication(this, that)
 
   def ↔(that: Formula): Equivalence = Equivalence(this, that)

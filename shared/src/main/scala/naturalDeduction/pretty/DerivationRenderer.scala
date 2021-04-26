@@ -33,6 +33,10 @@ object DerivationRenderer {
       renderTwoChildren(derivation, renderDerivation(positiveDerivation, availableLabels), renderDerivation(negativeDerivation, availableLabels), "¬E")
     case ReductioAdAbsurdum(_, label, bottomDerivation) =>
       renderSingleChild(derivation, renderDerivation(bottomDerivation, availableLabels ++ label), "RAA", label)
+    case LeftDisjunctionIntroduction(leftDerivation, _) =>
+      renderSingleChild(derivation, renderDerivation(leftDerivation, availableLabels ), "∨I")
+    case RightDisjunctionIntroduction(_, rightDerivation) =>
+      renderSingleChild(derivation, renderDerivation(rightDerivation, availableLabels ), "∨I")
   }
 
   private def renderTwoChildren(parent: Derivation, child1Region: RaggedTextRegion, child2Region: RaggedTextRegion, ruleName: String): RaggedTextRegion = {

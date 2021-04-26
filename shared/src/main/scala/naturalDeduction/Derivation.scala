@@ -247,4 +247,16 @@ object Derivation {
     }
   }
 
+  case class LeftDisjunctionIntroduction(leftDerivation: Derivation, right: Formula) extends Derivation {
+    override def formula: Formula = leftDerivation.formula ∨ right
+
+    override def undischargedAssumptions: Assumptions = leftDerivation.undischargedAssumptions
+  }
+
+  case class RightDisjunctionIntroduction(left: Formula, rightDerivation: Derivation) extends Derivation {
+    override def formula: Formula = left ∨ rightDerivation.formula
+
+    override def undischargedAssumptions: Assumptions = rightDerivation.undischargedAssumptions
+  }
+
 }
