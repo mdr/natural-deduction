@@ -51,13 +51,6 @@ sealed trait Derivation {
     """(?m)(\s+)$""".r.replaceAllIn(withStrikethrough, "")
   }
 
-  private def asJavaFunction[T, U](f: T => U): java.util.function.Function[T, U] = t => f(t)
-
-  private def replaceRegex(s: String, pattern: String, f: String => String): String = {
-    val getFirstGroup = (matchResult: MatchResult) => f(matchResult.group(1))
-    Pattern.compile(pattern).matcher(s).replaceAll(asJavaFunction(getFirstGroup))
-  }
-
   private def unicodeStrikeThrough(s: String): String = s.flatMap(c => s"$c\u0336")
 
   def implicationIntro(formula: Formula, label: Option[String] = None): ImplicationIntroduction =
