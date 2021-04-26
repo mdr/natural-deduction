@@ -12,11 +12,15 @@ sealed trait Formula {
 
   def ↔(that: Formula): Equivalence = Equivalence(this, that)
 
+  def not : Negation = Negation(this)
+
   override def toString: String = FormulaPrettyPrinter.prettyPrint(this)
 
 }
 
 object Formula {
+
+  val ⊥ = Bottom
 
   case object Bottom extends Formula {
   }
@@ -38,6 +42,7 @@ object Formula {
 
   case class Equivalence(formula1: Formula, formula2: Formula) extends Formula {
     def forwardsImplication: Formula = formula1 → formula2
+
     def backwardsImplication: Formula = formula2 → formula1
   }
 

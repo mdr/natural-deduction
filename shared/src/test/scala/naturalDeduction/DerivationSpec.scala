@@ -127,6 +127,12 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
   "Example 2.5.1" should "be provable" in {
     val derivation = Axiom(φ ↔ ψ).backwardsEquivalenceElim equivalenceIntro Axiom(φ ↔ ψ).forwardsEquivalenceElim
     derivation.sequent shouldEqual (Set(φ ↔ ψ) ⊢ (ψ ↔ φ))
+  }
+
+  "Example 2.6.1" should "be provable" in {
+    val derivation =
+      (Axiom(φ, "❷") negationElim Axiom(φ.not, "❶")).negationIntro(φ.not, "❶").implicationIntro(φ, "❷")
+    derivation.sequent shouldEqual (Ø ⊢ (φ → φ.not.not))
     println(derivation)
   }
 }

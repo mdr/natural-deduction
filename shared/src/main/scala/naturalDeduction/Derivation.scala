@@ -4,6 +4,7 @@ import naturalDeduction.Derivation._
 import naturalDeduction.pretty.DerivationRenderer
 
 import java.util.regex.{MatchResult, Pattern}
+import Formula._
 
 object Sequent {
 
@@ -78,6 +79,15 @@ sealed trait Derivation {
   def forwardsEquivalenceElim: ForwardsEquivalenceElimination = ForwardsEquivalenceElimination(this)
 
   def backwardsEquivalenceElim: BackwardsEquivalenceElimination = BackwardsEquivalenceElimination(this)
+
+  def negationIntro(formula: Formula, label: Option[String] = None): NegationIntroduction =
+    NegationIntroduction(formula, label, this)
+
+  def negationIntro(formula: Formula, label: String): NegationIntroduction =
+    NegationIntroduction(formula, label, this)
+
+  def negationElim(that: Derivation): NegationElimination = NegationElimination(this, that)
+
 }
 
 object Derivation {
@@ -105,8 +115,8 @@ object Derivation {
   }
 
   case class LeftConjunctionElimination(conjunctionDerivation: Derivation) extends Derivation {
-    assert(conjunctionDerivation.formula.isInstanceOf[Formula.Conjunction])
-    val conjunction: Formula.Conjunction = conjunctionDerivation.formula.asInstanceOf[Formula.Conjunction]
+    assert(conjunctionDerivation.formula.isInstanceOf[Conjunction])
+    val conjunction: Conjunction = conjunctionDerivation.formula.asInstanceOf[Conjunction]
 
     override def undischargedAssumptions: Assumptions = conjunctionDerivation.undischargedAssumptions
 
@@ -114,8 +124,8 @@ object Derivation {
   }
 
   case class RightConjunctionElimination(conjunctionDerivation: Derivation) extends Derivation {
-    assert(conjunctionDerivation.formula.isInstanceOf[Formula.Conjunction])
-    val conjunction: Formula.Conjunction = conjunctionDerivation.formula.asInstanceOf[Formula.Conjunction]
+    assert(conjunctionDerivation.formula.isInstanceOf[Conjunction])
+    val conjunction: Conjunction = conjunctionDerivation.formula.asInstanceOf[Conjunction]
 
     override def undischargedAssumptions: Assumptions = conjunctionDerivation.undischargedAssumptions
 
@@ -145,8 +155,8 @@ object Derivation {
   }
 
   case class ImplicationElimination(antecedentDerivation: Derivation, implicationDerivation: Derivation) extends Derivation {
-    assert(implicationDerivation.formula.isInstanceOf[Formula.Implication])
-    val implication: Formula.Implication = implicationDerivation.formula.asInstanceOf[Formula.Implication]
+    assert(implicationDerivation.formula.isInstanceOf[Implication])
+    val implication: Implication = implicationDerivation.formula.asInstanceOf[Implication]
     assert(antecedentDerivation.formula == implication.antecedent)
 
     override def formula: Formula = implication.consequent
@@ -155,10 +165,10 @@ object Derivation {
   }
 
   case class EquivalenceIntroduction(forwardsDerivation: Derivation, backwardsDerivation: Derivation) extends Derivation {
-    assert(forwardsDerivation.formula.isInstanceOf[Formula.Implication])
-    assert(backwardsDerivation.formula.isInstanceOf[Formula.Implication])
-    val formula1: Formula = forwardsDerivation.formula.asInstanceOf[Formula.Implication].antecedent
-    val formula2: Formula = forwardsDerivation.formula.asInstanceOf[Formula.Implication].consequent
+    assert(forwardsDerivation.formula.isInstanceOf[Implication])
+    assert(backwardsDerivation.formula.isInstanceOf[Implication])
+    val formula1: Formula = forwardsDerivation.formula.asInstanceOf[Implication].antecedent
+    val formula2: Formula = forwardsDerivation.formula.asInstanceOf[Implication].consequent
     assert(backwardsDerivation.formula == (formula2 → formula1))
 
     override def formula: Formula = formula1 ↔ formula2
@@ -167,8 +177,8 @@ object Derivation {
   }
 
   case class ForwardsEquivalenceElimination(equivalenceDerivation: Derivation) extends Derivation {
-    assert(equivalenceDerivation.formula.isInstanceOf[Formula.Equivalence])
-    val equivalance: Formula.Equivalence = equivalenceDerivation.formula.asInstanceOf[Formula.Equivalence]
+    assert(equivalenceDerivation.formula.isInstanceOf[Equivalence])
+    val equivalance: Equivalence = equivalenceDerivation.formula.asInstanceOf[Equivalence]
 
     override def undischargedAssumptions: Assumptions = equivalenceDerivation.undischargedAssumptions
 
@@ -176,12 +186,44 @@ object Derivation {
   }
 
   case class BackwardsEquivalenceElimination(equivalenceDerivation: Derivation) extends Derivation {
-    assert(equivalenceDerivation.formula.isInstanceOf[Formula.Equivalence])
-    val equivalance: Formula.Equivalence = equivalenceDerivation.formula.asInstanceOf[Formula.Equivalence]
+    assert(equivalenceDerivation.formula.isInstanceOf[Equivalence])
+    val equivalance: Equivalence = equivalenceDerivation.formula.asInstanceOf[Equivalence]
 
     override def undischargedAssumptions: Assumptions = equivalenceDerivation.undischargedAssumptions
 
     override def formula: Formula = equivalance.backwardsImplication
+  }
+
+  object NegationIntroduction {
+    def apply(statement: Formula, bottomDerivation: Derivation): NegationIntroduction =
+      NegationIntroduction(statement, None, bottomDerivation)
+
+    def apply(statement: Formula, label: String, bottomDerivation: Derivation): NegationIntroduction =
+      NegationIntroduction(statement, Some(label), bottomDerivation)
+  }
+
+  case class NegationIntroduction(statement: Formula, label: Option[String], bottomDerivation: Derivation) extends Derivation {
+    for {
+      label <- label
+      assumption <- bottomDerivation.undischargedAssumptions.labelledAssumptions.get(label)
+    } assert(assumption == statement, s"Expected assumption $assumption to equal $statement for label $label")
+
+    override def formula: Formula = Negation(statement)
+
+    override def undischargedAssumptions: Assumptions = label match {
+      case Some(label) => bottomDerivation.undischargedAssumptions.discharge(label)
+      case None => bottomDerivation.undischargedAssumptions
+    }
+  }
+
+  case class NegationElimination(positiveDerivation: Derivation, negativeDerivation: Derivation) extends Derivation {
+    assert(negativeDerivation.formula.isInstanceOf[Negation])
+    assert(negativeDerivation.formula.asInstanceOf[Negation].formula == positiveDerivation.formula)
+
+    override def formula: Formula = ⊥
+
+    override def undischargedAssumptions: Assumptions =
+      positiveDerivation.undischargedAssumptions ++ negativeDerivation.undischargedAssumptions
   }
 
 }

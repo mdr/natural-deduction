@@ -27,7 +27,10 @@ object DerivationRenderer {
       renderSingleChild(derivation, renderDerivation(equivalenceDerivation, availableLabels), "↔E")
     case BackwardsEquivalenceElimination(equivalenceDerivation) =>
       renderSingleChild(derivation, renderDerivation(equivalenceDerivation, availableLabels), "↔E")
-
+    case NegationIntroduction(_, label, bottomDerivation) =>
+      renderSingleChild(derivation, renderDerivation(bottomDerivation, availableLabels ++ label), "¬I", label)
+    case NegationElimination(positiveDerivation, negativeDerivation) =>
+      renderTwoChildren(derivation, renderDerivation(positiveDerivation, availableLabels), renderDerivation(negativeDerivation, availableLabels), "¬E")
   }
 
   private def renderTwoChildren(parent: Derivation, child1Region: RaggedTextRegion, child2Region: RaggedTextRegion, ruleName: String): RaggedTextRegion = {
