@@ -133,6 +133,22 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
     val derivation =
       (Axiom(φ, "❷") negationElim Axiom(φ.not, "❶")).negationIntro(φ.not, "❶").implicationIntro(φ, "❷")
     derivation.sequent shouldEqual (Ø ⊢ (φ → φ.not.not))
-    println(derivation)
   }
+
+  "Example 2.6.3" should "be provable" in {
+    val derivation =
+      ImplicationIntroduction(φ.not.not, "❷",
+        ReductioAdAbsurdum(φ, "❶",
+          NegationElimination(
+            Axiom(φ.not, "❶"),
+            Axiom(φ.not.not, "❷")
+          )))
+    derivation.sequent shouldEqual (Ø ⊢ (φ.not.not → φ))
+  }
+
+  "Ex falso" should "happen" in {
+    val derivation = (φ.axiom negationElim φ.not.axiom) reductio φ
+    derivation.sequent shouldEqual (Set(φ, φ.not) ⊢ φ)
+  }
+
 }

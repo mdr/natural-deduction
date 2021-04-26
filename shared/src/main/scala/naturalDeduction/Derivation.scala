@@ -3,7 +3,6 @@ package naturalDeduction
 import naturalDeduction.Derivation._
 import naturalDeduction.pretty.DerivationRenderer
 
-import java.util.regex.{MatchResult, Pattern}
 import Formula._
 
 object Sequent {
@@ -80,6 +79,12 @@ sealed trait Derivation {
     NegationIntroduction(formula, label, this)
 
   def negationElim(that: Derivation): NegationElimination = NegationElimination(this, that)
+
+  def reductio(conclusion: Formula, label: String): ReductioAdAbsurdum =
+    ReductioAdAbsurdum(conclusion, label, this)
+
+  def reductio(conclusion: Formula): ReductioAdAbsurdum =
+    ReductioAdAbsurdum(conclusion, this)
 
 }
 
@@ -217,6 +222,29 @@ object Derivation {
 
     override def undischargedAssumptions: Assumptions =
       positiveDerivation.undischargedAssumptions ++ negativeDerivation.undischargedAssumptions
+  }
+
+  object ReductioAdAbsurdum {
+    def apply(conclusion: Formula, bottomDerivation: Derivation): ReductioAdAbsurdum =
+      ReductioAdAbsurdum(conclusion, None, bottomDerivation)
+
+    def apply(conclusion: Formula, label: String, bottomDerivation: Derivation): ReductioAdAbsurdum =
+      ReductioAdAbsurdum(conclusion, Some(label), bottomDerivation)
+  }
+
+  case class ReductioAdAbsurdum(conclusion: Formula, label: Option[String], bottomDerivation: Derivation) extends Derivation {
+    val negation: Negation = conclusion.not
+    for {
+      label <- label
+      assumption <- bottomDerivation.undischargedAssumptions.labelledAssumptions.get(label)
+    } assert(assumption == negation, s"Expected assumption $assumption to equal $negation for label $label")
+
+    override def formula: Formula = conclusion
+
+    override def undischargedAssumptions: Assumptions = label match {
+      case Some(label) => bottomDerivation.undischargedAssumptions.discharge(label)
+      case None => bottomDerivation.undischargedAssumptions
+    }
   }
 
 }
