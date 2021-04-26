@@ -23,34 +23,34 @@ object DerivationRenderer {
       val firstChildLine = childrenRegion.lines.head
       firstChildLine.text.length
     }
-    val lineLength = formulaString.length max lengthOfChildLineWhenClosestPacked
-    val actualHorizontalSpacing = 1 + 0.max(lineLength - lengthOfChildLineWhenClosestPacked)
+    val ruleLineWidth = formulaString.length max lengthOfChildLineWhenClosestPacked
+    val actualHorizontalSpacing = 1 + 0.max(ruleLineWidth - lengthOfChildLineWhenClosestPacked)
     val childrenRegion = child1Region.pasteHorizontal(child2Region, actualHorizontalSpacing)
     val firstChildLine = childrenRegion.lines.head
+    val (parentFormulaOffset, _) = calculateLeftRightPaddingForCentering(formulaString, ruleLineWidth)
     val parentRegion =
       RaggedTextRegion(Seq(
-        LineAndOffset(center(parent.formula.toString, lineLength)),
-        LineAndOffset("─" * lineLength + " " + ruleLabel),
+        LineAndOffset(formulaString, parentFormulaOffset),
+        LineAndOffset("─" * ruleLineWidth + " " + ruleLabel),
       ))
-    childrenRegion pasteVertical parentRegion.shift(firstChildLine.offset)
+    childrenRegion pasteVertical parentRegion.shiftHorizontal(firstChildLine.offset)
   }
 
   private def renderSingleChild(parent: Derivation, child: Derivation, ruleLabel: String): RaggedTextRegion = {
     val formulaString = parent.formula.toString
     val childRegion = renderDerivation(child)
     val firstChildLine = childRegion.lines.head
-    val ruleWidth = formulaString.length max firstChildLine.text.length
-    val ruleLineWidth = formulaString.length max child.formula.toString.length
+    val ruleLineWidth = formulaString.length max firstChildLine.text.length
+    val (parentFormulaOffset, _) = calculateLeftRightPaddingForCentering(formulaString, ruleLineWidth)
     val parentRegion =
       RaggedTextRegion(Seq(
-        LineAndOffset(center(parent.formula.toString, ruleWidth)),
-        LineAndOffset(rtrim(center("─" * ruleLineWidth, ruleWidth)) + " " + ruleLabel),
+        LineAndOffset(formulaString, parentFormulaOffset),
+        LineAndOffset("─" * ruleLineWidth + " " + ruleLabel),
       ))
     // TODO: if firstChildLine.text.length is less than lineLength, we'll need a different shift for parentRegion to
     //       centre the child formula above the rule line.
-    childRegion pasteVertical parentRegion.shift(firstChildLine.offset)
+    childRegion pasteVertical parentRegion.shiftHorizontal(firstChildLine.offset)
   }
-  private def rtrim(s: String): String = s.replaceAll("\\s+$", "")
   private def center(s: String, width: Int): String = {
     val (left, right) = calculateLeftRightPaddingForCentering(s, width)
     " " * left + s + " " * right

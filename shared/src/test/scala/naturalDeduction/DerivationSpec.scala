@@ -32,6 +32,10 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
     println(derivation.sequent)
     println()
     println(DerivationRenderer.renderDerivation(derivation))
+    println()
+    println(DerivationRenderer.renderDerivation(      ConjunctionIntroduction(
+      LeftConjunctionElimination(Axiom(φ ∧ (ψ ∧ χ))),
+      LeftConjunctionElimination(RightConjunctionElimination(Axiom(φ ∧ (ψ ∧ χ)))))))
   }
 
 
