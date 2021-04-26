@@ -4,6 +4,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import Derivation._
 import TestConstants._
+import naturalDeduction.pretty.DerivationRenderer
 
 class DerivationSpec extends AnyFlatSpec with Matchers {
 
@@ -29,13 +30,6 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
       RightConjunctionElimination(RightConjunctionElimination(Axiom(φ ∧ (ψ ∧ χ)))))
     derivation.formula shouldEqual ((φ ∧ ψ) ∧ χ)
     derivation.undischargedAssumptions shouldEqual Set(φ ∧ (ψ ∧ χ))
-    println(derivation.sequent)
-    println()
-    println(DerivationRenderer.renderDerivation(derivation))
-    println()
-    println(DerivationRenderer.renderDerivation(      ConjunctionIntroduction(
-      LeftConjunctionElimination(Axiom(φ ∧ (ψ ∧ χ))),
-      LeftConjunctionElimination(RightConjunctionElimination(Axiom(φ ∧ (ψ ∧ χ)))))))
   }
 
 

@@ -1,7 +1,9 @@
-package naturalDeduction
+package naturalDeduction.pretty
 
-import PartialFunction.cond
-import Formula._
+import naturalDeduction.Formula
+import naturalDeduction.Formula._
+
+import scala.PartialFunction.cond
 
 object FormulaPrettyPrinter {
 

@@ -1,5 +1,7 @@
 package naturalDeduction
 
+import naturalDeduction.pretty.FormulaPrettyPrinter
+
 sealed trait Formula {
 
   import Formula._

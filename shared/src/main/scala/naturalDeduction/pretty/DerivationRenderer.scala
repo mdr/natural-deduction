@@ -1,4 +1,6 @@
-package naturalDeduction
+package naturalDeduction.pretty
+
+import naturalDeduction.Derivation
 
 object DerivationRenderer {
 
@@ -51,6 +53,7 @@ object DerivationRenderer {
     //       centre the child formula above the rule line.
     childRegion pasteVertical parentRegion.shiftHorizontal(firstChildLine.offset)
   }
+
   private def center(s: String, width: Int): String = {
     val (left, right) = calculateLeftRightPaddingForCentering(s, width)
     " " * left + s + " " * right

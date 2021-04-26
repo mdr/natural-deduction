@@ -1,4 +1,4 @@
-package naturalDeduction
+package naturalDeduction.pretty
 
 import util.Utils._
 
@@ -24,10 +24,7 @@ case class RaggedTextRegion(lines: Seq[LineAndOffset]) {
   def toStringNormal: String =
     lines
       .reverse
-      .map { case line@LineAndOffset(text, offset) =>
-        val rightPadding = width - line.rightExtent
-        " " * offset + text + " " * rightPadding
-      }
+      .map { case line@LineAndOffset(text, offset) => " " * offset + text }
       .mkString(sep = "\n")
 
   def toStringDebug: String =
