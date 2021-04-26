@@ -21,5 +21,18 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
     derivation.undischargedAssumptions shouldEqual Set(φ ∧ ψ)
   }
 
+  "Example 2.3.3" should "be provable" in {
+    val derivation = ConjunctionIntroduction(
+      ConjunctionIntroduction(
+        LeftConjunctionElimination(Axiom(φ ∧ (ψ ∧ χ))),
+        LeftConjunctionElimination(RightConjunctionElimination(Axiom(φ ∧ (ψ ∧ χ))))),
+      RightConjunctionElimination(RightConjunctionElimination(Axiom(φ ∧ (ψ ∧ χ)))))
+    derivation.formula shouldEqual ((φ ∧ ψ) ∧ χ)
+    derivation.undischargedAssumptions shouldEqual Set(φ ∧ (ψ ∧ χ))
+    println(derivation.sequent)
+    println()
+    println(DerivationRenderer.renderDerivation(derivation))
+  }
+
 
 }

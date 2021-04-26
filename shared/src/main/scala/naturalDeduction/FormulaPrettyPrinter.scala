@@ -15,7 +15,7 @@ object FormulaPrettyPrinter {
       s"¬${prettyPrintWithParen(subformula, needsParen)}"
     case Conjunction(conjunct1, conjunct2) =>
       val needsParen1 = cond(conjunct1) {
-        case _: Disjunction | _: Implication | _: Equivalence => true
+        case _: Conjunction | _: Disjunction | _: Implication | _: Equivalence => true
       }
       val needsParen2 = cond(conjunct2) {
         case _: Conjunction | _: Disjunction | _: Implication | _: Equivalence => true
@@ -29,6 +29,6 @@ object FormulaPrettyPrinter {
 
   private def prettyPrintWithParen(formula: Formula, needsParen: Boolean): String = maybeParen(prettyPrint(formula), needsParen)
 
-  private def maybeParen(s: String, needsParen: Boolean): String = if (needsParen) s"$s" else s
+  private def maybeParen(s: String, needsParen: Boolean): String = if (needsParen) s"($s)" else s
 
 }

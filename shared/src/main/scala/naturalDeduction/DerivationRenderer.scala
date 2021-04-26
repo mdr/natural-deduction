@@ -39,24 +39,25 @@ object DerivationRenderer {
     val formulaString = parent.formula.toString
     val childRegion = renderDerivation(child)
     val firstChildLine = childRegion.lines.head
-    val lineLength = formulaString.length max firstChildLine.text.length
+    val ruleWidth = formulaString.length max firstChildLine.text.length
+    val ruleLineWidth = formulaString.length max child.formula.toString.length
     val parentRegion =
       RaggedTextRegion(Seq(
-        LineAndOffset(center(parent.formula.toString, lineLength)),
-        LineAndOffset("─" * lineLength + " " + ruleLabel),
+        LineAndOffset(center(parent.formula.toString, ruleWidth)),
+        LineAndOffset(rtrim(center("─" * ruleLineWidth, ruleWidth)) + " " + ruleLabel),
       ))
     // TODO: if firstChildLine.text.length is less than lineLength, we'll need a different shift for parentRegion to
     //       centre the child formula above the rule line.
     childRegion pasteVertical parentRegion.shift(firstChildLine.offset)
   }
-
+  private def rtrim(s: String): String = s.replaceAll("\\s+$", "")
   private def center(s: String, width: Int): String = {
     val (left, right) = calculateLeftRightPaddingForCentering(s, width)
     " " * left + s + " " * right
   }
 
   private def calculateLeftRightPaddingForCentering(s: String, width: Int): (Int, Int) = {
-    assert(s.length <= width)
+    assert(s.length <= width, s"String '$s' is longer (${s.length}) than given width $width")
     val excess = width - s.length
     val equalPadding = excess / 2
     val bonusPadding = excess % 2
