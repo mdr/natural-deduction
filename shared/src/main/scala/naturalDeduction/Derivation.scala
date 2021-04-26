@@ -1,6 +1,6 @@
 package naturalDeduction
 
-import naturalDeduction.Derivation.{ConjunctionIntroduction, ImplicationElimination, ImplicationIntroduction, LeftConjunctionElimination, RightConjunctionElimination}
+import naturalDeduction.Derivation._
 import naturalDeduction.pretty.DerivationRenderer
 
 import java.util.regex.{MatchResult, Pattern}
@@ -59,19 +59,25 @@ sealed trait Derivation {
 
   private def unicodeStrikeThrough(s: String): String = s.flatMap(c => s"$c\u0336")
 
-  def conjunctionIntro(that: Derivation): ConjunctionIntroduction = ConjunctionIntroduction(this, that)
-
-  def implicationElim(that: Derivation): ImplicationElimination = ImplicationElimination(this, that)
-
   def implicationIntro(formula: Formula, label: Option[String] = None): ImplicationIntroduction =
     ImplicationIntroduction(formula, label, this)
 
   def implicationIntro(formula: Formula, label: String): ImplicationIntroduction =
     ImplicationIntroduction(formula, label, this)
 
+  def implicationElim(that: Derivation): ImplicationElimination = ImplicationElimination(this, that)
+
+  def conjunctionIntro(that: Derivation): ConjunctionIntroduction = ConjunctionIntroduction(this, that)
+
   def leftConjunctionElim: LeftConjunctionElimination = LeftConjunctionElimination(this)
 
   def rightConjunctionElim: RightConjunctionElimination = RightConjunctionElimination(this)
+
+  def equivalenceIntro(that: Derivation): EquivalenceIntroduction = EquivalenceIntroduction(this, that)
+
+  def forwardsEquivalenceElim: ForwardsEquivalenceElimination = ForwardsEquivalenceElimination(this)
+
+  def backwardsEquivalenceElim: BackwardsEquivalenceElimination = BackwardsEquivalenceElimination(this)
 }
 
 object Derivation {
@@ -146,6 +152,36 @@ object Derivation {
     override def formula: Formula = implication.consequent
 
     override def undischargedAssumptions: Assumptions = antecedentDerivation.undischargedAssumptions ++ implicationDerivation.undischargedAssumptions
+  }
+
+  case class EquivalenceIntroduction(forwardsDerivation: Derivation, backwardsDerivation: Derivation) extends Derivation {
+    assert(forwardsDerivation.formula.isInstanceOf[Formula.Implication])
+    assert(backwardsDerivation.formula.isInstanceOf[Formula.Implication])
+    val formula1: Formula = forwardsDerivation.formula.asInstanceOf[Formula.Implication].antecedent
+    val formula2: Formula = forwardsDerivation.formula.asInstanceOf[Formula.Implication].consequent
+    assert(backwardsDerivation.formula == (formula2 → formula1))
+
+    override def formula: Formula = formula1 ↔ formula2
+
+    override def undischargedAssumptions: Assumptions = forwardsDerivation.undischargedAssumptions ++ backwardsDerivation.undischargedAssumptions
+  }
+
+  case class ForwardsEquivalenceElimination(equivalenceDerivation: Derivation) extends Derivation {
+    assert(equivalenceDerivation.formula.isInstanceOf[Formula.Equivalence])
+    val equivalance: Formula.Equivalence = equivalenceDerivation.formula.asInstanceOf[Formula.Equivalence]
+
+    override def undischargedAssumptions: Assumptions = equivalenceDerivation.undischargedAssumptions
+
+    override def formula: Formula = equivalance.forwardsImplication
+  }
+
+  case class BackwardsEquivalenceElimination(equivalenceDerivation: Derivation) extends Derivation {
+    assert(equivalenceDerivation.formula.isInstanceOf[Formula.Equivalence])
+    val equivalance: Formula.Equivalence = equivalenceDerivation.formula.asInstanceOf[Formula.Equivalence]
+
+    override def undischargedAssumptions: Assumptions = equivalenceDerivation.undischargedAssumptions
+
+    override def formula: Formula = equivalance.backwardsImplication
   }
 
 }

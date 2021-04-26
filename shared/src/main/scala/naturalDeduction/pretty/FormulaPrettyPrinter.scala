@@ -32,7 +32,14 @@ object FormulaPrettyPrinter {
         case _: Equivalence => true
       }
       s"${prettyPrintWithParen(antecedent, needsParen1)} → ${prettyPrintWithParen(consequent, needsParen2)}"
-    case Equivalence(antecedent, consequent) => s"($antecedent ↔ $consequent)"
+    case Equivalence(formula1, formula2) =>
+      val needsParen1 = cond(formula1) {
+        case _: Implication | _: Equivalence => true
+      }
+      val needsParen2 = cond(formula2) {
+        case _: Implication | _: Equivalence => true
+      }
+      s"${prettyPrintWithParen(formula1, needsParen1)} ↔ ${prettyPrintWithParen(formula2, needsParen2)}"
 
   }
 

@@ -1,26 +1,33 @@
 package naturalDeduction.pretty
 
 import naturalDeduction.Derivation
-import naturalDeduction.Derivation.{ImplicationElimination, ImplicationIntroduction}
+import naturalDeduction.Derivation._
 
 object DerivationRenderer {
 
   def renderDerivation(derivation: Derivation, availableLabels: Set[String] = Set.empty): RaggedTextRegion = derivation match {
-    case Derivation.Axiom(formula, label) =>
+    case Axiom(formula, label) =>
       val isDischarged = availableLabels.intersect(label.toSet).nonEmpty
       val labelPrefix = label.map( _ + " ").getOrElse("")
       val renderedFormula = labelPrefix + (if (isDischarged) "[" + formula.toString + "]" else formula.toString)
       RaggedTextRegion(Seq(LineAndOffset(renderedFormula)))
-    case Derivation.ConjunctionIntroduction(leftDerivation, rightDerivation) =>
+    case ConjunctionIntroduction(leftDerivation, rightDerivation) =>
       renderTwoChildren(derivation, renderDerivation(leftDerivation, availableLabels), renderDerivation(rightDerivation, availableLabels), "∧I")
-    case Derivation.LeftConjunctionElimination(conjunctionDerivation) =>
+    case LeftConjunctionElimination(conjunctionDerivation) =>
       renderSingleChild(derivation, renderDerivation(conjunctionDerivation, availableLabels), "∧E")
-    case Derivation.RightConjunctionElimination(conjunctionDerivation) =>
+    case RightConjunctionElimination(conjunctionDerivation) =>
       renderSingleChild(derivation, renderDerivation(conjunctionDerivation, availableLabels), "∧E")
     case ImplicationIntroduction(_, label, consequentDerivation) =>
       renderSingleChild(derivation, renderDerivation(consequentDerivation, availableLabels ++ label), "→I", label)
     case ImplicationElimination(antecedentDerivation, implicationDerivation) =>
       renderTwoChildren(derivation, renderDerivation(antecedentDerivation, availableLabels), renderDerivation(implicationDerivation, availableLabels), "→E")
+    case EquivalenceIntroduction(forwardsDerivation, backwardsDerivation) =>
+      renderTwoChildren(derivation, renderDerivation(forwardsDerivation, availableLabels), renderDerivation(backwardsDerivation, availableLabels), "↔I")
+    case ForwardsEquivalenceElimination(equivalenceDerivation) =>
+      renderSingleChild(derivation, renderDerivation(equivalenceDerivation, availableLabels), "↔E")
+    case BackwardsEquivalenceElimination(equivalenceDerivation) =>
+      renderSingleChild(derivation, renderDerivation(equivalenceDerivation, availableLabels), "↔E")
+
   }
 
   private def renderTwoChildren(parent: Derivation, child1Region: RaggedTextRegion, child2Region: RaggedTextRegion, ruleName: String): RaggedTextRegion = {

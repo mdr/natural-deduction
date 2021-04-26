@@ -114,4 +114,19 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
     derivation.sequent shouldEqual (Set(φ) ⊢ (φ → (ψ → φ)))
   }
 
+  "Exercise 2.4.3(c)" should "be provable" in {
+    val derivation = (Axiom(ψ, label = "❶") conjunctionIntro Axiom(φ ∧ ψ).leftConjunctionElim).implicationIntro(ψ, "❶")
+    derivation.sequent shouldEqual (Set(φ ∧ ψ) ⊢ (ψ → (ψ ∧ φ)))
+  }
+
+  "Exercise 2.4.3(d)" should "be provable" in {
+    val derivation = Axiom(φ, label = "❶").implicationIntro(φ, "❶")
+    derivation.sequent shouldEqual (Ø ⊢ (φ → φ))
+  }
+
+  "Example 2.5.1" should "be provable" in {
+    val derivation = Axiom(φ ↔ ψ).backwardsEquivalenceElim equivalenceIntro Axiom(φ ↔ ψ).forwardsEquivalenceElim
+    derivation.sequent shouldEqual (Set(φ ↔ ψ) ⊢ (ψ ↔ φ))
+    println(derivation)
+  }
 }
