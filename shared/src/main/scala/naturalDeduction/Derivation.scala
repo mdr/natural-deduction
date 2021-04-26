@@ -1,29 +1,80 @@
 package naturalDeduction
 
+import naturalDeduction.Derivation.{ConjunctionIntroduction, ImplicationElimination, LeftConjunctionElimination, RightConjunctionElimination}
 import naturalDeduction.pretty.DerivationRenderer
+
+import java.util.regex.{MatchResult, Pattern}
+
+object Sequent {
+
+  implicit class RichSet[T <: Formula](assumptions: Set[T]) {
+    def ⊢(conclusion: Formula): Sequent = Sequent(assumptions.toSet, conclusion)
+  }
+
+}
 
 case class Sequent(assumptions: Set[Formula], conclusion: Formula) {
   override def toString: String = s"${assumptions.mkString(", ")} ⊢ $conclusion"
 }
 
+case class Assumptions(anonymousAssumptions: Set[Formula] = Set.empty, labelledAssumptions: Map[String, Formula] = Map.empty) {
+
+  def discharge(label: String): Assumptions = copy(labelledAssumptions = labelledAssumptions - label)
+
+  def ++(that: Assumptions): Assumptions =
+    Assumptions(this.anonymousAssumptions ++ that.anonymousAssumptions, this.labelledAssumptions ++ that.labelledAssumptions)
+
+  def allFormulae: Set[Formula] = anonymousAssumptions ++ labelledAssumptions.values.toSet
+
+}
+
 sealed trait Derivation {
   def formula: Formula
 
-  def undischargedAssumptions: Set[Formula]
+  def undischargedAssumptions: Assumptions
 
-  def sequent: Sequent = Sequent(undischargedAssumptions, formula)
+  def sequent: Sequent = Sequent(undischargedAssumptions.allFormulae, formula)
 
-  override def toString: String = DerivationRenderer.renderDerivation(this).toStringNormal
+  override def toString: String = {
+    val rendered = DerivationRenderer.renderDerivation(this).toStringNormal
+    return rendered
+    val withStrikethrough = "-(.)+?-".r.replaceAllIn(rendered, x => " " + unicodeStrikeThrough(x.group(1)) + " ")
+    """(?m)(\s+)$""".r.replaceAllIn(withStrikethrough, "")
+  }
+
+  private def asJavaFunction[T, U](f: T => U): java.util.function.Function[T, U] = t => f(t)
+
+  private def replaceRegex(s: String, pattern: String, f: String => String): String = {
+    val getFirstGroup = (matchResult: MatchResult) => f(matchResult.group(1))
+    Pattern.compile(pattern).matcher(s).replaceAll(asJavaFunction(getFirstGroup))
+  }
+
+  private def unicodeStrikeThrough(s: String): String = s.flatMap(_ + "\u0336")
+
+  def conjunctionIntro(that: Derivation): ConjunctionIntroduction = ConjunctionIntroduction(this, that)
+
+  def implicationElim(that: Derivation): ImplicationElimination = ImplicationElimination(this, that)
+
+  def leftConjunctionElim: LeftConjunctionElimination = LeftConjunctionElimination(this)
+
+  def rightConjunctionElim: RightConjunctionElimination = RightConjunctionElimination(this)
 }
 
 object Derivation {
 
-  case class Axiom(formula: Formula, isDischarged: Boolean = false) extends Derivation {
-    override val undischargedAssumptions: Set[Formula] = if (isDischarged) Set.empty else Set(formula)
+  implicit class RichFormula(formula: Formula) {
+    def axiom: Axiom = Axiom(formula)
+  }
+
+  case class Axiom(formula: Formula, label: Option[String] = None) extends Derivation {
+    override val undischargedAssumptions: Assumptions = label match {
+      case None => Assumptions(anonymousAssumptions = Set(formula))
+      case Some(label) => Assumptions(labelledAssumptions = Map(label -> formula))
+    }
   }
 
   case class ConjunctionIntroduction(leftDerivation: Derivation, rightDerivation: Derivation) extends Derivation {
-    override def undischargedAssumptions: Set[Formula] = leftDerivation.undischargedAssumptions ++ rightDerivation.undischargedAssumptions
+    override def undischargedAssumptions: Assumptions = leftDerivation.undischargedAssumptions ++ rightDerivation.undischargedAssumptions
 
     override def formula: Formula = leftDerivation.formula ∧ rightDerivation.formula
   }
@@ -31,7 +82,8 @@ object Derivation {
   case class LeftConjunctionElimination(conjunctionDerivation: Derivation) extends Derivation {
     assert(conjunctionDerivation.formula.isInstanceOf[Formula.Conjunction])
     val conjunction: Formula.Conjunction = conjunctionDerivation.formula.asInstanceOf[Formula.Conjunction]
-    override def undischargedAssumptions: Set[Formula] = conjunctionDerivation.undischargedAssumptions
+
+    override def undischargedAssumptions: Assumptions = conjunctionDerivation.undischargedAssumptions
 
     override def formula: Formula = conjunction.conjunct1
   }
@@ -39,15 +91,30 @@ object Derivation {
   case class RightConjunctionElimination(conjunctionDerivation: Derivation) extends Derivation {
     assert(conjunctionDerivation.formula.isInstanceOf[Formula.Conjunction])
     val conjunction: Formula.Conjunction = conjunctionDerivation.formula.asInstanceOf[Formula.Conjunction]
-    override def undischargedAssumptions: Set[Formula] = conjunctionDerivation.undischargedAssumptions
+
+    override def undischargedAssumptions: Assumptions = conjunctionDerivation.undischargedAssumptions
 
     override def formula: Formula = conjunction.conjunct2
   }
 
-  case class ImplicationIntroduction(antecedent: Formula, consequentDerivation: Derivation) extends Derivation {
+  case class ImplicationIntroduction(antecedent: Formula, label: String, consequentDerivation: Derivation) extends Derivation {
+    consequentDerivation.undischargedAssumptions.labelledAssumptions.get(label).foreach { assumption =>
+      assert(assumption == antecedent, s"Expected assumption $assumption to equal $antecedent for label $label")
+    }
+
     override def formula: Formula = antecedent → consequentDerivation.formula
 
-    override def undischargedAssumptions: Set[Formula] = consequentDerivation.undischargedAssumptions
+    override def undischargedAssumptions: Assumptions = consequentDerivation.undischargedAssumptions.discharge(label)
+  }
+
+  case class ImplicationElimination(antecedentDerivation: Derivation, implicationDerivation: Derivation) extends Derivation {
+    assert(implicationDerivation.formula.isInstanceOf[Formula.Implication])
+    val implication: Formula.Implication = implicationDerivation.formula.asInstanceOf[Formula.Implication]
+    assert(antecedentDerivation.formula == implication.antecedent)
+
+    override def formula: Formula = implication.consequent
+
+    override def undischargedAssumptions: Assumptions = antecedentDerivation.undischargedAssumptions ++ implicationDerivation.undischargedAssumptions
   }
 
 }
