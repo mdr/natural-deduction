@@ -11,6 +11,18 @@ object Sequent {
     def ⊢(conclusion: Formula): Sequent = Sequent(assumptions.toSet, conclusion)
   }
 
+  implicit class RichFormula2(formula: Formula) {
+    def ⊢(conclusion: Formula): Sequent = Sequent(Set(formula), conclusion)
+  }
+
+  implicit class RichPair(pair: (Formula, Formula)) {
+    def ⊢(conclusion: Formula): Sequent = Sequent(Set(pair._1, pair._2), conclusion)
+  }
+
+  implicit class RichTriple(triple: (Formula, Formula, Formula)) {
+    def ⊢(conclusion: Formula): Sequent = Sequent(Set(triple._1, triple._2, triple._3), conclusion)
+  }
+
 }
 
 case class Sequent(assumptions: Set[Formula], conclusion: Formula) {
@@ -20,6 +32,11 @@ case class Sequent(assumptions: Set[Formula], conclusion: Formula) {
 case class Assumptions(anonymousAssumptions: Set[Formula] = Set.empty, labelledAssumptions: Map[String, Formula] = Map.empty) {
 
   def discharge(label: String): Assumptions = copy(labelledAssumptions = labelledAssumptions - label)
+
+  def discharge(label: Option[String]): Assumptions = label match {
+    case None => this
+    case Some(label) => discharge(label)
+  }
 
   def ++(that: Assumptions): Assumptions = {
     val commonLabels = this.labelledAssumptions.keySet intersect that.labelledAssumptions.keySet
@@ -146,10 +163,7 @@ object Derivation {
 
     override def formula: Formula = antecedent → consequentDerivation.formula
 
-    override def undischargedAssumptions: Assumptions = label match {
-      case Some(label) => consequentDerivation.undischargedAssumptions.discharge(label)
-      case None => consequentDerivation.undischargedAssumptions
-    }
+    override def undischargedAssumptions: Assumptions = consequentDerivation.undischargedAssumptions.discharge(label)
   }
 
   case class ImplicationElimination(antecedentDerivation: Derivation, implicationDerivation: Derivation) extends Derivation {
@@ -208,14 +222,11 @@ object Derivation {
 
     override def formula: Formula = Negation(statement)
 
-    override def undischargedAssumptions: Assumptions = label match {
-      case Some(label) => bottomDerivation.undischargedAssumptions.discharge(label)
-      case None => bottomDerivation.undischargedAssumptions
-    }
+    override def undischargedAssumptions: Assumptions = bottomDerivation.undischargedAssumptions.discharge(label)
   }
 
   case class NegationElimination(positiveDerivation: Derivation, negativeDerivation: Derivation) extends Derivation {
-    assert(negativeDerivation.formula.isInstanceOf[Negation])
+    assert(negativeDerivation.formula.isInstanceOf[Negation], s"Negative derivation must prove a negation, but was $negativeDerivation")
     assert(negativeDerivation.formula.asInstanceOf[Negation].formula == positiveDerivation.formula)
 
     override def formula: Formula = ⊥
@@ -241,10 +252,7 @@ object Derivation {
 
     override def formula: Formula = conclusion
 
-    override def undischargedAssumptions: Assumptions = label match {
-      case Some(label) => bottomDerivation.undischargedAssumptions.discharge(label)
-      case None => bottomDerivation.undischargedAssumptions
-    }
+    override def undischargedAssumptions: Assumptions = bottomDerivation.undischargedAssumptions.discharge(label)
   }
 
   case class LeftDisjunctionIntroduction(leftDerivation: Derivation, right: Formula) extends Derivation {
@@ -257,6 +265,31 @@ object Derivation {
     override def formula: Formula = left ∨ rightDerivation.formula
 
     override def undischargedAssumptions: Assumptions = rightDerivation.undischargedAssumptions
+  }
+
+  case class DisjunctionElimination(disjunctionDerivation: Derivation,
+                                    leftLabel: Option[String],
+                                    leftDerivation: Derivation,
+                                    rightLabel: Option[String],
+                                    rightDerivation: Derivation) extends Derivation {
+    assert(leftDerivation.formula == rightDerivation.formula)
+    assert(disjunctionDerivation.formula.isInstanceOf[Disjunction])
+    val disjunction: Disjunction = disjunctionDerivation.formula.asInstanceOf[Disjunction]
+    for {
+      label <- leftLabel
+      assumption <- leftDerivation.undischargedAssumptions.labelledAssumptions.get(label)
+    } assert(assumption == disjunction.disjunct1, s"Expected assumption $assumption to equal ${disjunction.disjunct1} for label $label")
+    for {
+      label <- rightLabel
+      assumption <- rightDerivation.undischargedAssumptions.labelledAssumptions.get(label)
+    } assert(assumption == disjunction.disjunct2, s"Expected assumption $assumption to equal ${disjunction.disjunct2} for label $label")
+
+    override def formula: Formula = leftDerivation.formula
+
+    override def undischargedAssumptions: Assumptions =
+      disjunctionDerivation.undischargedAssumptions ++
+        leftDerivation.undischargedAssumptions.discharge(leftLabel) ++
+        rightDerivation.undischargedAssumptions.discharge(rightLabel)
   }
 
 }

@@ -3,8 +3,9 @@ package naturalDeduction
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import Derivation._
-import TestConstants._
-import Sequent.RichSet
+import Derivation.RichFormula
+import TestConstants.{φ, _}
+import Sequent._
 
 class DerivationSpec extends AnyFlatSpec with Matchers {
 
@@ -12,33 +13,33 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
 
   "Exercise 2.2.2(a)" should "be provable" in {
     val derivation = φ.axiom conjunctionIntro (ψ.axiom conjunctionIntro χ.axiom)
-    derivation.sequent shouldEqual (Set(φ, ψ, χ) ⊢ (φ ∧ (ψ ∧ χ)))
+    derivation.sequent shouldEqual ((φ, ψ, χ) ⊢ (φ ∧ (ψ ∧ χ)))
   }
 
   "Exercise 2.2.2(b)" should "be provable" in {
     val derivation = ψ.axiom conjunctionIntro φ.axiom
-    derivation.sequent shouldEqual (Set(φ, ψ) ⊢ (ψ ∧ φ))
+    derivation.sequent shouldEqual ((φ, ψ) ⊢ (ψ ∧ φ))
   }
 
   "Exercise 2.2.2(c)" should "be provable" in {
     val derivation = (φ.axiom conjunctionIntro φ.axiom) conjunctionIntro φ.axiom
-    derivation.sequent shouldEqual (Set(φ) ⊢ ((φ ∧ φ) ∧ φ))
+    derivation.sequent shouldEqual (φ ⊢ ((φ ∧ φ) ∧ φ))
   }
 
   "Exercise 2.2.2(d)" should "be provable" in {
     val derivation =
       (φ.axiom conjunctionIntro ψ.axiom) conjunctionIntro (φ.axiom conjunctionIntro ψ.axiom)
-    derivation.sequent shouldEqual (Set(φ, ψ) ⊢ ((φ ∧ ψ) ∧ (φ ∧ ψ)))
+    derivation.sequent shouldEqual ((φ, ψ) ⊢ ((φ ∧ ψ) ∧ (φ ∧ ψ)))
   }
 
   "Example 2.2.3" should "be provable" in {
     val derivation = (φ.axiom conjunctionIntro ψ.axiom) conjunctionIntro χ.axiom
-    derivation.sequent shouldEqual (Set(φ, ψ, χ) ⊢ ((φ ∧ ψ) ∧ χ))
+    derivation.sequent shouldEqual ((φ, ψ, χ) ⊢ ((φ ∧ ψ) ∧ χ))
   }
 
   "Example 2.3.2" should "be provable" in {
     val derivation = Axiom(φ ∧ ψ).rightConjunctionElim conjunctionIntro Axiom(φ ∧ ψ).leftConjunctionElim
-    derivation.sequent shouldEqual (Set(φ ∧ ψ) ⊢ (ψ ∧ φ))
+    derivation.sequent shouldEqual ((φ ∧ ψ) ⊢ (ψ ∧ φ))
   }
 
   "Example 2.3.3" should "be provable" in {
@@ -47,7 +48,7 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
         Axiom(φ ∧ (ψ ∧ χ)).leftConjunctionElim,
         Axiom(φ ∧ (ψ ∧ χ)).rightConjunctionElim.leftConjunctionElim),
       Axiom(φ ∧ (ψ ∧ χ)).rightConjunctionElim.rightConjunctionElim)
-    derivation.sequent shouldEqual (Set(φ ∧ (ψ ∧ χ)) ⊢ ((φ ∧ ψ) ∧ χ))
+    derivation.sequent shouldEqual ((φ ∧ (ψ ∧ χ)) ⊢ ((φ ∧ ψ) ∧ χ))
   }
 
   "Example 2.4.3" should "be provable" in {
@@ -81,9 +82,8 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
           ImplicationElimination(
             Axiom(φ, "①"),
             Axiom(φ → ψ)),
-          Axiom(ψ → χ))
-      )
-    derivation.sequent shouldEqual (Set(φ → ψ, ψ → χ) ⊢ (φ → χ))
+          Axiom(ψ → χ)))
+    derivation.sequent shouldEqual ((φ → ψ, ψ → χ) ⊢ (φ → χ))
   }
 
   "Exercise 2.4.2(a)" should "be provable" in {
@@ -111,12 +111,12 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
 
   "Exercise 2.4.3(b)" should "be provable" in {
     val derivation = Axiom(φ).implicationIntro(ψ).implicationIntro(φ)
-    derivation.sequent shouldEqual (Set(φ) ⊢ (φ → (ψ → φ)))
+    derivation.sequent shouldEqual ((φ) ⊢ (φ → (ψ → φ)))
   }
 
   "Exercise 2.4.3(c)" should "be provable" in {
     val derivation = (Axiom(ψ, label = "❶") conjunctionIntro Axiom(φ ∧ ψ).leftConjunctionElim).implicationIntro(ψ, "❶")
-    derivation.sequent shouldEqual (Set(φ ∧ ψ) ⊢ (ψ → (ψ ∧ φ)))
+    derivation.sequent shouldEqual ((φ ∧ ψ) ⊢ (ψ → (ψ ∧ φ)))
   }
 
   "Exercise 2.4.3(d)" should "be provable" in {
@@ -126,7 +126,7 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
 
   "Example 2.5.1" should "be provable" in {
     val derivation = Axiom(φ ↔ ψ).backwardsEquivalenceElim equivalenceIntro Axiom(φ ↔ ψ).forwardsEquivalenceElim
-    derivation.sequent shouldEqual (Set(φ ↔ ψ) ⊢ (ψ ↔ φ))
+    derivation.sequent shouldEqual ((φ ↔ ψ) ⊢ (ψ ↔ φ))
   }
 
   "Example 2.6.1" should "be provable" in {
@@ -148,7 +148,7 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
 
   "Ex falso" should "happen" in {
     val derivation = (φ.axiom negationElim φ.not.axiom) reductio φ
-    derivation.sequent shouldEqual (Set(φ, φ.not) ⊢ φ)
+    derivation.sequent shouldEqual ((φ, φ.not) ⊢ φ)
   }
 
   "Example 2.7.1 (2nd derivation)" should "be provable" in {
@@ -171,4 +171,48 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
     derivation.sequent shouldEqual (Ø ⊢ (φ ∨ φ.not))
   }
 
+  "Exercise 2.7.2(a)" should "be provable" in {
+    val derivation =
+      DisjunctionElimination(
+        Axiom(φ ∨ ψ),
+        Some("❶"),
+        RightDisjunctionIntroduction(ψ, Axiom(φ, "❶")),
+        Some("❷"),
+        LeftDisjunctionIntroduction(Axiom(ψ, "❷"), φ))
+    derivation.sequent shouldEqual ((φ ∨ ψ) ⊢ (ψ ∨ φ))
+  }
+
+  "Exercise 2.7.1(c)" should "be provable" in {
+    val derivation =
+      ImplicationIntroduction(φ → ψ, "❶",
+        ReductioAdAbsurdum(φ.not ∨ ψ, "❷",
+          NegationElimination(
+            ConjunctionIntroduction(
+              ReductioAdAbsurdum(φ, "❹",
+                NegationElimination(
+                  LeftDisjunctionIntroduction(
+                    Axiom(φ.not, "❹"),
+                    ψ),
+                  Axiom((φ.not ∨ ψ).not, "❷"))),
+              NegationIntroduction(ψ, "❺",
+                NegationElimination(
+                  RightDisjunctionIntroduction(
+                    φ.not,
+                    Axiom(ψ, "❺")),
+                  Axiom((φ.not ∨ ψ).not, "❷")))),
+            NegationIntroduction(φ ∧ ψ.not, "❸",
+              NegationElimination(
+                RightDisjunctionIntroduction(
+                  φ.not,
+                  ImplicationElimination(
+                    LeftConjunctionElimination(
+                      Axiom(φ ∧ ψ.not, "❸")),
+                    Axiom(φ → ψ, "❶"))),
+                Axiom((φ.not ∨ ψ).not, "❷"))))))
+    derivation.sequent shouldEqual (Ø ⊢ ((φ → ψ) → (φ.not ∨ ψ)))
+    println(derivation.sequent)
+    println(derivation)
+
+  }
+  // ❶ ❷ ❸ ❹ ❺ φ ψ χ ∨ ∧ →
 }

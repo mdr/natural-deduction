@@ -8,7 +8,7 @@ object DerivationRenderer {
   def renderDerivation(derivation: Derivation, availableLabels: Set[String] = Set.empty): RaggedTextRegion = derivation match {
     case Axiom(formula, label) =>
       val isDischarged = availableLabels.intersect(label.toSet).nonEmpty
-      val labelPrefix = label.map( _ + " ").getOrElse("")
+      val labelPrefix = label.map(_ + " ").getOrElse("")
       val renderedFormula = labelPrefix + (if (isDischarged) "[" + formula.toString + "]" else formula.toString)
       RaggedTextRegion(Seq(LineAndOffset(renderedFormula)))
     case ConjunctionIntroduction(leftDerivation, rightDerivation) =>
@@ -34,9 +34,34 @@ object DerivationRenderer {
     case ReductioAdAbsurdum(_, label, bottomDerivation) =>
       renderSingleChild(derivation, renderDerivation(bottomDerivation, availableLabels ++ label), "RAA", label)
     case LeftDisjunctionIntroduction(leftDerivation, _) =>
-      renderSingleChild(derivation, renderDerivation(leftDerivation, availableLabels ), "∨I")
+      renderSingleChild(derivation, renderDerivation(leftDerivation, availableLabels), "∨I")
     case RightDisjunctionIntroduction(_, rightDerivation) =>
-      renderSingleChild(derivation, renderDerivation(rightDerivation, availableLabels ), "∨I")
+      renderSingleChild(derivation, renderDerivation(rightDerivation, availableLabels), "∨I")
+    case DisjunctionElimination(disjunctionDerivation, leftLabel, leftDerivation, rightLabel, rightDerivation) =>
+      renderThreeChildren(
+        derivation,
+        renderDerivation(disjunctionDerivation, availableLabels),
+        renderDerivation(leftDerivation, availableLabels ++ leftLabel),
+        renderDerivation(rightDerivation, availableLabels ++ rightLabel),
+        "∨E",
+        (leftLabel.toSeq ++ rightLabel).mkString(" ") match { case "" => None; case s => Some(s) })
+  }
+
+  private def renderSingleChild(parent: Derivation, childRegion: RaggedTextRegion, ruleName: String, label: Option[String] = None): RaggedTextRegion = {
+    val formulaString = parent.formula.toString
+    val firstChildLine = childRegion.lines.head
+    val firstChildLineOffset = firstChildLine.offset // beta
+    val ruleLineWidth = formulaString.length max firstChildLine.text.length
+    val (parentFormulaOffset, _) = calculateLeftRightPaddingForCentering(formulaString, ruleLineWidth)
+    val labelPrefix = label.map(_ + " ").getOrElse("")
+    val parentRegion =
+      RaggedTextRegion(Seq(
+        LineAndOffset(formulaString, parentFormulaOffset + labelPrefix.length),
+        LineAndOffset(labelPrefix + "─" * ruleLineWidth + " " + ruleName),
+      ))
+    val (childFormulaOffset, _) = calculateLeftRightPaddingForCentering(firstChildLine.text, ruleLineWidth) // alpha
+    childRegion.shiftHorizontal(0.max((childFormulaOffset + labelPrefix.length) - firstChildLineOffset)) pasteVertical
+      parentRegion.shiftHorizontal(0.max(firstChildLineOffset - (childFormulaOffset + labelPrefix.length)))
   }
 
   private def renderTwoChildren(parent: Derivation, child1Region: RaggedTextRegion, child2Region: RaggedTextRegion, ruleName: String): RaggedTextRegion = {
@@ -60,11 +85,27 @@ object DerivationRenderer {
     childrenRegion pasteVertical parentRegion.shiftHorizontal(firstChildLine.offset)
   }
 
-  private def renderSingleChild(parent: Derivation, childRegion: RaggedTextRegion, ruleName: String, label: Option[String] = None): RaggedTextRegion = {
+  private def renderThreeChildren(parent: Derivation,
+                                  child1Region: RaggedTextRegion,
+                                  child2Region: RaggedTextRegion,
+                                  child3Region: RaggedTextRegion,
+                                  ruleName: String,
+                                  label: Option[String] = None): RaggedTextRegion = {
+    val minHorizSpacing = 3
     val formulaString = parent.formula.toString
-    val firstChildLine = childRegion.lines.head
-    val firstChildLineOffset = firstChildLine.offset // beta
-    val ruleLineWidth = formulaString.length max firstChildLine.text.length
+    val lengthOfChildLineWhenClosestPacked = {
+      val childrenRegion = child1Region
+        .pasteHorizontal(child2Region, minHorizSpacing)
+        .pasteHorizontal(child3Region, minHorizSpacing)
+      val firstChildLine = childrenRegion.lines.head
+      firstChildLine.text.length
+    }
+    val ruleLineWidth = formulaString.length max lengthOfChildLineWhenClosestPacked
+    val excessSpace = 0.max(ruleLineWidth - lengthOfChildLineWhenClosestPacked)
+    val childrenRegion = child1Region
+      .pasteHorizontal(child2Region, minHorizSpacing + excessSpace / 2)
+      .pasteHorizontal(child3Region, minHorizSpacing + excessSpace / 2)
+    val firstChildLine = childrenRegion.lines.head
     val (parentFormulaOffset, _) = calculateLeftRightPaddingForCentering(formulaString, ruleLineWidth)
     val labelPrefix = label.map(_ + " ").getOrElse("")
     val parentRegion =
@@ -72,9 +113,7 @@ object DerivationRenderer {
         LineAndOffset(formulaString, parentFormulaOffset + labelPrefix.length),
         LineAndOffset(labelPrefix + "─" * ruleLineWidth + " " + ruleName),
       ))
-    val (childFormulaOffset, _) = calculateLeftRightPaddingForCentering(firstChildLine.text, ruleLineWidth) // alpha
-    childRegion.shiftHorizontal(0.max((childFormulaOffset + labelPrefix.length) - firstChildLineOffset)) pasteVertical
-      parentRegion.shiftHorizontal(0.max(firstChildLineOffset - (childFormulaOffset + labelPrefix.length)))
+    childrenRegion.shiftHorizontal(labelPrefix.length) pasteVertical parentRegion.shiftHorizontal(firstChildLine.offset)
   }
 
   private def calculateLeftRightPaddingForCentering(s: String, width: Int): (Int, Int) = {
