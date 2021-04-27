@@ -12,28 +12,107 @@
         body {
             font-family: "Computer Modern Serif", serif;
         }
-        .box-shadow { box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05); }
-        .rule-row {
+
+        .box-shadow {
+            box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
+        }
+
+        html {
+            font-size: 1.2rem;
+        }
+
+        .discharged-axiom {
+            position: relative;
+        }
+        .discharged-axiom:before {
+            position: absolute;
+            content: "";
+            left: 0;
+            top: 50%;
+            right: 0;
+            border-top: 1px solid;
+            border-color: inherit;
+
+            -webkit-transform:rotate(-5deg);
+            -moz-transform:rotate(-5deg);
+            -ms-transform:rotate(-5deg);
+            -o-transform:rotate(-5deg);
+            transform:rotate(-5deg);
+        }
+        .rule {
+            display: inline-flex;
+            flex-direction: column;
+        }
+
+        .rule-top {
+            display: inline-flex;
+            flex-direction: row;
+        }
+
+        .rule-top-main {
+            flex-grow: 1;
+
             display: inline-flex;
             flex-direction: row;
             align-items: flex-end;
         }
-        .rule-column {
+
+        .rule-top-main-part {
+            flex-grow: 1;
+            /* To center: */
             display: inline-flex;
-            flex-direction: column;
-            align-items: stretch;
-         }
-        .rule-column-top {
-            margin-bottom: 0;
-            align-self: center
+            justify-content: center;
         }
-        .rule-column-bottom {
-            margin-bottom: 0;
-            align-self: center
+
+        .rule-top-main-spacer {
+            flex-grow: 1;
+            width: 8px;
         }
-        .rule-column-line {
-            border-bottom: 2px black solid;
+
+        .rule-top-left-label {
+            width: 23px;
         }
+
+        .rule-top-right-label {
+            width: 23px;
+        }
+
+        .rule-bottom {
+            display: inline-flex;
+            flex-direction: row;
+            justify-content: center;
+        }
+
+        .rule-bottom-left-label {
+            width: 23px;
+            position: relative;
+            top: -7px;
+            /*padding-right: 4px;*/
+            font-size: 85%;
+
+            /* To center: */
+            display: flex;
+            justify-content: center;
+        }
+
+        .rule-bottom-main {
+            border-top: 1px black solid;
+            flex-grow: 1;
+
+            /* To center: */
+            display: flex;
+            justify-content: center;
+        }
+
+        .rule-bottom-right-label {
+            position: relative;
+            top: -7px;
+            padding-left: 4px;
+            font-size: 70%;
+            width: 23px;
+            white-space: nowrap;
+        }
+
     </style>
 </head>
 <body>

@@ -5,44 +5,44 @@ import naturalDeduction.Derivation._
 
 object DerivationRenderer {
 
-  def renderDerivation(derivation: Derivation, availableLabels: Set[String] = Set.empty): RaggedTextRegion = derivation match {
+  def renderDerivation(derivation: Derivation, labels: Set[String] = Set.empty): RaggedTextRegion = derivation match {
     case Axiom(formula, label) =>
-      val isDischarged = availableLabels.intersect(label.toSet).nonEmpty
+      val isDischarged = labels.intersect(label.toSet).nonEmpty
       val labelPrefix = label.map(_ + " ").getOrElse("")
       val renderedFormula = labelPrefix + (if (isDischarged) "[" + formula.toString + "]" else formula.toString)
       RaggedTextRegion(Seq(LineAndOffset(renderedFormula)))
     case ConjunctionIntroduction(leftDerivation, rightDerivation) =>
-      renderTwoChildren(derivation, renderDerivation(leftDerivation, availableLabels), renderDerivation(rightDerivation, availableLabels), "∧I")
+      renderTwoChildren(derivation, renderDerivation(leftDerivation, labels), renderDerivation(rightDerivation, labels), "∧I")
     case LeftConjunctionElimination(conjunctionDerivation) =>
-      renderSingleChild(derivation, renderDerivation(conjunctionDerivation, availableLabels), "∧E")
+      renderSingleChild(derivation, renderDerivation(conjunctionDerivation, labels), "∧E")
     case RightConjunctionElimination(conjunctionDerivation) =>
-      renderSingleChild(derivation, renderDerivation(conjunctionDerivation, availableLabels), "∧E")
+      renderSingleChild(derivation, renderDerivation(conjunctionDerivation, labels), "∧E")
     case ImplicationIntroduction(_, label, consequentDerivation) =>
-      renderSingleChild(derivation, renderDerivation(consequentDerivation, availableLabels ++ label), "→I", label)
+      renderSingleChild(derivation, renderDerivation(consequentDerivation, labels ++ label), "→I", label)
     case ImplicationElimination(antecedentDerivation, implicationDerivation) =>
-      renderTwoChildren(derivation, renderDerivation(antecedentDerivation, availableLabels), renderDerivation(implicationDerivation, availableLabels), "→E")
+      renderTwoChildren(derivation, renderDerivation(antecedentDerivation, labels), renderDerivation(implicationDerivation, labels), "→E")
     case EquivalenceIntroduction(forwardsDerivation, backwardsDerivation) =>
-      renderTwoChildren(derivation, renderDerivation(forwardsDerivation, availableLabels), renderDerivation(backwardsDerivation, availableLabels), "↔I")
+      renderTwoChildren(derivation, renderDerivation(forwardsDerivation, labels), renderDerivation(backwardsDerivation, labels), "↔I")
     case ForwardsEquivalenceElimination(equivalenceDerivation) =>
-      renderSingleChild(derivation, renderDerivation(equivalenceDerivation, availableLabels), "↔E")
+      renderSingleChild(derivation, renderDerivation(equivalenceDerivation, labels), "↔E")
     case BackwardsEquivalenceElimination(equivalenceDerivation) =>
-      renderSingleChild(derivation, renderDerivation(equivalenceDerivation, availableLabels), "↔E")
+      renderSingleChild(derivation, renderDerivation(equivalenceDerivation, labels), "↔E")
     case NegationIntroduction(_, label, bottomDerivation) =>
-      renderSingleChild(derivation, renderDerivation(bottomDerivation, availableLabels ++ label), "¬I", label)
+      renderSingleChild(derivation, renderDerivation(bottomDerivation, labels ++ label), "¬I", label)
     case NegationElimination(positiveDerivation, negativeDerivation) =>
-      renderTwoChildren(derivation, renderDerivation(positiveDerivation, availableLabels), renderDerivation(negativeDerivation, availableLabels), "¬E")
+      renderTwoChildren(derivation, renderDerivation(positiveDerivation, labels), renderDerivation(negativeDerivation, labels), "¬E")
     case ReductioAdAbsurdum(_, label, bottomDerivation) =>
-      renderSingleChild(derivation, renderDerivation(bottomDerivation, availableLabels ++ label), "RAA", label)
+      renderSingleChild(derivation, renderDerivation(bottomDerivation, labels ++ label), "RAA", label)
     case LeftDisjunctionIntroduction(leftDerivation, _) =>
-      renderSingleChild(derivation, renderDerivation(leftDerivation, availableLabels), "∨I")
+      renderSingleChild(derivation, renderDerivation(leftDerivation, labels), "∨I")
     case RightDisjunctionIntroduction(_, rightDerivation) =>
-      renderSingleChild(derivation, renderDerivation(rightDerivation, availableLabels), "∨I")
+      renderSingleChild(derivation, renderDerivation(rightDerivation, labels), "∨I")
     case DisjunctionElimination(disjunctionDerivation, leftLabel, leftDerivation, rightLabel, rightDerivation) =>
       renderThreeChildren(
         derivation,
-        renderDerivation(disjunctionDerivation, availableLabels),
-        renderDerivation(leftDerivation, availableLabels ++ leftLabel),
-        renderDerivation(rightDerivation, availableLabels ++ rightLabel),
+        renderDerivation(disjunctionDerivation, labels),
+        renderDerivation(leftDerivation, labels ++ leftLabel),
+        renderDerivation(rightDerivation, labels ++ rightLabel),
         "∨E",
         (leftLabel.toSeq ++ rightLabel).mkString(" ") match { case "" => None; case s => Some(s) })
   }
