@@ -79,44 +79,33 @@ object App {
   }
 
   private def rule1(parent: Derivation, child: TagMod, rightLabel: String, leftLabel: Option[String] = None): TagMod =
-    <.div(^.`class` := "rule",
-      <.div(^.`class` := "rule-top",
-        <.div(^.`class` := "rule-top-left-label").when(leftLabel.isDefined),
-        <.div(^.`class` := "rule-top-main",
-          <.div(^.`class` := "rule-top-main-part", child)),
-        <.div(^.`class` := "rule-top-right-label")),
-      <.div(^.`class` := "rule-bottom",
-        leftLabel.whenDefined(l => <.div(^.`class` := "rule-bottom-left-label", l)),
-        <.div(^.`class` := "rule-bottom-main", parent.formula.toString),
-        <.div(^.`class` := "rule-bottom-right-label", rightLabel)))
+    rule(parent, Seq(child), rightLabel, leftLabel)
 
-  private def rule2(parent: Derivation, child1: TagMod, child2: TagMod, rightLabel: String): TagMod =
-    <.div(^.`class` := "rule",
-      <.div(^.`class` := "rule-top",
-        <.div(^.`class` := "rule-top-main",
-          <.div(^.`class` := "rule-top-main-part", child1),
-          <.div(^.`class` := "rule-top-main-spacer"),
-          <.div(^.`class` := "rule-top-main-part", child2)),
-        <.div(^.`class` := "rule-top-right-label")),
-      <.div(^.`class` := "rule-bottom",
-        <.div(^.`class` := "rule-bottom-main", parent.formula.toString),
-        <.div(^.`class` := "rule-bottom-right-label", rightLabel)))
+  private def rule2(parent: Derivation, child1: TagMod, child2: TagMod, rightLabel: String, leftLabel: Option[String] = None): TagMod =
+    rule(parent, Seq(child1, child2), rightLabel, leftLabel)
 
   private def rule3(parent: Derivation, child1: TagMod, child2: TagMod, child3: TagMod, rightLabel: String, leftLabel: Option[String] = None): TagMod =
+    rule(parent, Seq(child1, child2, child3), rightLabel, leftLabel)
+
+  def intersperse[A](a: Seq[A], b: Seq[A]): Seq[A] = a match {
+    case Seq(first, rest@_*) => first +: intersperse(b, rest)
+    case _ => b
+  }
+
+  private def rule(parent: Derivation, children: Seq[TagMod], rightLabel: String, leftLabel: Option[String] = None): TagMod = {
     <.div(^.`class` := "rule",
       <.div(^.`class` := "rule-top",
         <.div(^.`class` := "rule-top-left-label").when(leftLabel.isDefined),
         <.div(^.`class` := "rule-top-main",
-          <.div(^.`class` := "rule-top-main-part", child1),
-          <.div(^.`class` := "rule-top-main-spacer"),
-          <.div(^.`class` := "rule-top-main-part", child2),
-          <.div(^.`class` := "rule-top-main-spacer"),
-          <.div(^.`class` := "rule-top-main-part", child3)),
+          children.map(child =>
+            <.div(^.`class` := "rule-top-main-part", child))
+            .mkTagMod(<.div(^.`class` := "rule-top-main-spacer"))),
         <.div(^.`class` := "rule-top-right-label")),
       <.div(^.`class` := "rule-bottom",
         leftLabel.whenDefined(l => <.div(^.`class` := "rule-bottom-left-label", l)),
         <.div(^.`class` := "rule-bottom-main", parent.formula.toString),
         <.div(^.`class` := "rule-bottom-right-label", rightLabel)))
+  }
 
   private val φ = PropositionalVariable("φ")
   private val ψ = PropositionalVariable("ψ")
