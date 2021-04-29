@@ -214,5 +214,5 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
     println(derivation)
 
   }
-  // ❶ ❷ ❸ ❹ ❺ φ ψ χ ∨ ∧ →
+  // ❶ ❷ ❸ ❹ ❺ φ ψ χ Ø ⊢ ¬ ∨ ∧ → ↔
 }

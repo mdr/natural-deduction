@@ -1,7 +1,13 @@
 package naturalDeduction
+
+import japgolly.scalajs.react.{Callback, ComponentDom, ReactDOM, ScalaComponent}
 import japgolly.scalajs.react.vdom.TagMod
 import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation._
+
+import scala.scalajs.js
+import scala.scalajs.js.{Any, Dynamic}
+import scala.scalajs.js.Dynamic.global
 
 object DerivationHtmlRenderer {
 
@@ -69,9 +75,32 @@ object DerivationHtmlRenderer {
             .mkTagMod(<.div(^.`class` := "rule-top-main-spacer"))),
         <.div(^.`class` := "rule-top-right-label")),
       <.div(^.`class` := "rule-bottom",
-        leftLabel.whenDefined(l => <.div(^.`class` := "rule-bottom-left-label", l)),
+        leftLabel.whenDefined(label =>
+          LeftRuleLabel.component(LeftRuleLabelProps(label, parent.formula /* not right, todo */))),
         <.div(^.`class` := "rule-bottom-main", parent.formula.toString),
         <.div(^.`class` := "rule-bottom-right-label", rightLabel)))
   }
+
+}
+
+case class LeftRuleLabelProps(label: String, formula: Formula)
+
+object LeftRuleLabel {
+  val dataToggle = VdomAttr("data-toggle")
+
+  def render(props: LeftRuleLabelProps) =
+    <.div(
+      ^.`class` := "rule-bottom-left-label",
+      ^.title := props.formula.toString,
+      dataToggle := "tooltip",
+      props.label)
+
+  val component =
+    ScalaComponent.builder[LeftRuleLabelProps]("LeftRuleLabel")
+      .render_P(render)
+      .componentDidMount(x => Callback {
+        global.$(x.getDOMNode.asElement()).tooltip()
+      })
+      .build
 
 }

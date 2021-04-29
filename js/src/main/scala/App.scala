@@ -1,17 +1,29 @@
-import App.derivation
+import ExampleDerivations.{derivation1, derivation2}
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.vdom.TagMod
 import japgolly.scalajs.react.vdom.html_<^._
-import naturalDeduction.{Derivation, DerivationHtmlRenderer}
 import naturalDeduction.Derivation._
-import naturalDeduction.Formula.PropositionalVariable
+import naturalDeduction.parser.FormulaParser
+import naturalDeduction.{Derivation, DerivationHtmlRenderer}
 
 object App {
-  val dataToggle = VdomAttr("data-toggle")
 
-  case class State()
+  case class State(newFormulaText: String = "", derivations: Seq[Derivation] = Seq.empty) {
+    def acceptNewFormulaAsNewDerivation: State =
+      copy(
+        derivations = derivations :+ Axiom(FormulaParser.parseFormula(newFormulaText)),
+        newFormulaText = "")
+
+    def newFormulaIsValid: Boolean = FormulaParser.tryParseFormula(newFormulaText).isRight
+  }
 
   class Backend($: BackendScope[Unit, State]) {
+    private def onChange(e: ReactEventFromInput) = {
+      val newValue = e.target.value
+      $.modState(_.copy(newFormulaText = newValue))
+    }
+
+    private def handleSubmit(e: ReactEventFromInput) =
+      e.preventDefaultCB >> $.modState(_.acceptNewFormulaAsNewDerivation)
 
     def render(state: State) = {
       <.div(^.`class` := "container-fluid p-0",
@@ -25,9 +37,18 @@ object App {
         <.div(^.`class` := "container",
           <.p(),
           <.p("An implementation of natural deduction proofs as described in ", <.em("Mathematical Logic"), " by Ian Chiswell and Wilfrid Hodges."),
-          derivationCard(derivation),
+          state.derivations.map(derivationCard).mkTagMod(<.br()),
           <.br(),
-          derivationCard(derivation2)))
+          <.form(^.`class` := "form-row align-items-center",
+            ^.onSubmit ==> handleSubmit,
+            <.div(^.`class` := "col-auto",
+              <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Add formula...", ^.onChange ==> onChange, ^.value := state.newFormulaText)),
+            <.div(^.`class` := "col-auto",
+              <.button(^.`type` := "submit", ^.`class` := "btn btn-secondary mb-2", "Start New Derivation", ^.disabled := !state.newFormulaIsValid),
+            ),
+          ),
+        )
+      )
     }
 
   }
@@ -38,29 +59,8 @@ object App {
       <.div(^.`class` := "card-body",
         DerivationHtmlRenderer.renderDerivation(derivation)))
 
-  private val φ = PropositionalVariable("φ")
-  private val ψ = PropositionalVariable("ψ")
-  private val χ = PropositionalVariable("χ")
-
-  val derivation: Derivation =
-    ImplicationIntroduction(φ.not.not, "❷",
-      ReductioAdAbsurdum(φ, "❶",
-        NegationElimination(
-          Axiom(φ.not, "❶"),
-          Axiom(φ.not.not, "❷")
-        )))
-
-  val derivation2 =
-    ImplicationIntroduction(ψ → χ, "❸",
-      ImplicationIntroduction(φ → ψ, "❷",
-        ImplicationIntroduction(φ, "❶",
-          ImplicationElimination(
-            ImplicationElimination(Axiom(φ, "❶"), Axiom(φ → ψ, "❷")),
-            Axiom(ψ → χ, "❸")))))
-
-
   val app = ScalaComponent.builder[Unit]("App")
-    .initialState(State())
+    .initialState(State(derivations = Seq(derivation1, derivation2)))
     .renderBackend[Backend]
     .build
 
