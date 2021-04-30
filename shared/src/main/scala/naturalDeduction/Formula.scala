@@ -1,5 +1,7 @@
 package naturalDeduction
 
+import naturalDeduction.parser.FormulaParser
+import upickle.default._
 import naturalDeduction.pretty.FormulaPrettyPrinter
 
 sealed trait Formula {
@@ -14,7 +16,7 @@ sealed trait Formula {
 
   def ↔(that: Formula): Equivalence = Equivalence(this, that)
 
-  def not : Negation = Negation(this)
+  def not: Negation = Negation(this)
 
   override def toString: String = FormulaPrettyPrinter.prettyPrint(this)
 
@@ -22,10 +24,14 @@ sealed trait Formula {
 
 object Formula {
 
+  implicit val formulaReadWrite: ReadWriter[Formula] =
+    readwriter[String].bimap[Formula](_.toString, FormulaParser.parseFormula)
+
   val ⊥ = Bottom
 
   case object Bottom extends Formula {
   }
+
 
   case class PropositionalVariable(name: String) extends Formula {
   }

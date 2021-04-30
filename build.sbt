@@ -15,6 +15,7 @@ lazy val proj = crossProject(JSPlatform, JVMPlatform).in(file(".")).
     version := "0.1",
     scalacOptions := Seq("-unchecked", "-deprecation"),
     libraryDependencies += "org.scala-lang.modules" %%% "scala-parser-combinators" % "1.1.2",
+    libraryDependencies += "com.lihaoyi" %%% "upickle" % "1.3.8",
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.1.1" % "test",
   ).
   jvmSettings().

@@ -126,7 +126,8 @@ class DerivationHtmlRenderer(props: DerivationProps) {
           .when(backwardsRulesPossible),
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Introduction", ^.onClick --> manipulationInfo.onImplicationIntroBackwards(path))
           .when(canImplicationIntroBackwards(derivation)),
-        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination...", ^.onClick --> manipulationInfo.onImplicationElimBackwards(path)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination...", ^.onClick --> manipulationInfo.onImplicationElimBackwards(path))
+          .when(derivation.isAxiom),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Introduction", ^.onClick --> manipulationInfo.onConjunctionIntroBackwards(path))
           .when(canConjunctionIntroBackwards(derivation)),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination...", ^.onClick --> manipulationInfo.onConjunctionElimBackwards(path))

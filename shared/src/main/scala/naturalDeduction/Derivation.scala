@@ -6,6 +6,8 @@ import Formula._
 
 import scala.annotation.tailrec
 
+import upickle.default.{ReadWriter => RW, macroRW}
+
 object Sequent {
 
   implicit class RichSet[T <: Formula](assumptions: Set[T]) {
@@ -162,6 +164,24 @@ sealed trait Derivation {
 
 object Derivation {
 
+  implicit val rw: RW[Derivation] =
+    RW.merge(
+      Axiom.rw,
+      ConjunctionIntroduction.rw,
+      LeftConjunctionElimination.rw,
+      RightConjunctionElimination.rw,
+      ImplicationIntroduction.rw,
+      ImplicationElimination.rw,
+      EquivalenceIntroduction.rw,
+      ForwardsEquivalenceElimination.rw,
+      BackwardsEquivalenceElimination.rw,
+      NegationIntroduction.rw,
+      NegationElimination.rw,
+      ReductioAdAbsurdum.rw,
+      LeftDisjunctionIntroduction.rw,
+      RightDisjunctionIntroduction.rw,
+      DisjunctionElimination.rw)
+
   val ALL_LABELS: Seq[String] = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖㉗㉘㉙㉚㉛㉜㉝㉞㉟㊱㊲㊳㊴㊵㊶㊷㊸㊹㊺㊻㊼㊽㊾㊿".toSeq.map(_.toString)
 
   implicit class RichFormula(formula: Formula) {
@@ -169,6 +189,8 @@ object Derivation {
   }
 
   object Axiom {
+    implicit val rw: RW[Axiom] = macroRW
+
     def apply(formula: Formula, label: String): Axiom = Axiom(formula, Some(label))
   }
 
@@ -187,6 +209,10 @@ object Derivation {
     override def labels: Set[String] = label.toSet
   }
 
+  object ConjunctionIntroduction {
+    implicit val rw: RW[ConjunctionIntroduction] = macroRW
+  }
+
   case class ConjunctionIntroduction(leftDerivation: Derivation, rightDerivation: Derivation) extends Derivation {
     override def undischargedAssumptions: Assumptions = leftDerivation.undischargedAssumptions ++ rightDerivation.undischargedAssumptions
 
@@ -199,6 +225,10 @@ object Derivation {
       case 1 => copy(rightDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
+  }
+
+  object LeftConjunctionElimination {
+    implicit val rw: RW[LeftConjunctionElimination] = macroRW
   }
 
   case class LeftConjunctionElimination(conjunctionDerivation: Derivation) extends Derivation {
@@ -217,7 +247,12 @@ object Derivation {
     }
   }
 
+  object RightConjunctionElimination {
+    implicit val rw: RW[RightConjunctionElimination] = macroRW
+  }
+
   case class RightConjunctionElimination(conjunctionDerivation: Derivation) extends Derivation {
+
     assert(conjunctionDerivation.formula.isInstanceOf[Conjunction])
     val conjunction: Conjunction = conjunctionDerivation.formula.asInstanceOf[Conjunction]
 
@@ -234,6 +269,8 @@ object Derivation {
   }
 
   object ImplicationIntroduction {
+    implicit val rw: RW[ImplicationIntroduction] = macroRW
+
     def apply(antecedent: Formula, consequentDerivation: Derivation): ImplicationIntroduction =
       ImplicationIntroduction(antecedent, None, consequentDerivation)
 
@@ -242,6 +279,7 @@ object Derivation {
   }
 
   case class ImplicationIntroduction(antecedent: Formula, label: Option[String], consequentDerivation: Derivation) extends Derivation {
+
     for {
       label <- label
       assumption <- consequentDerivation.undischargedAssumptions.labelledAssumptions.get(label)
@@ -262,7 +300,12 @@ object Derivation {
 
   }
 
+  object ImplicationElimination {
+    implicit val rw: RW[ImplicationElimination] = macroRW
+  }
+
   case class ImplicationElimination(antecedentDerivation: Derivation, implicationDerivation: Derivation) extends Derivation {
+
     assert(implicationDerivation.formula.isInstanceOf[Implication], s"Expected implicationDerivation to prove an Implication, but instead it proved ${implicationDerivation.formula}")
     val implication: Implication = implicationDerivation.formula.asInstanceOf[Implication]
     assert(antecedentDerivation.formula == implication.antecedent, s"Mismatched antecedent formulae: ${antecedentDerivation.formula} vs ${implication.antecedent}")
@@ -280,7 +323,12 @@ object Derivation {
     }
   }
 
+  object EquivalenceIntroduction {
+    implicit val rw: RW[EquivalenceIntroduction] = macroRW
+  }
+
   case class EquivalenceIntroduction(forwardsDerivation: Derivation, backwardsDerivation: Derivation) extends Derivation {
+
     assert(forwardsDerivation.formula.isInstanceOf[Implication])
     assert(backwardsDerivation.formula.isInstanceOf[Implication])
     val formula1: Formula = forwardsDerivation.formula.asInstanceOf[Implication].antecedent
@@ -300,6 +348,10 @@ object Derivation {
     }
   }
 
+  object ForwardsEquivalenceElimination {
+    implicit val rw: RW[ForwardsEquivalenceElimination] = macroRW
+  }
+
   case class ForwardsEquivalenceElimination(equivalenceDerivation: Derivation) extends Derivation {
     assert(equivalenceDerivation.formula.isInstanceOf[Equivalence])
     val equivalance: Equivalence = equivalenceDerivation.formula.asInstanceOf[Equivalence]
@@ -314,6 +366,10 @@ object Derivation {
       case 0 => copy(equivalenceDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
+  }
+
+  object BackwardsEquivalenceElimination {
+    implicit val rw: RW[BackwardsEquivalenceElimination] = macroRW
   }
 
   case class BackwardsEquivalenceElimination(equivalenceDerivation: Derivation) extends Derivation {
@@ -333,6 +389,7 @@ object Derivation {
   }
 
   object NegationIntroduction {
+    implicit val rw: RW[NegationIntroduction] = macroRW
     def apply(statement: Formula, bottomDerivation: Derivation): NegationIntroduction =
       NegationIntroduction(statement, None, bottomDerivation)
 
@@ -360,6 +417,10 @@ object Derivation {
     override def labels: Set[String] = label.toSet ++ children.flatMap(_.labels)
   }
 
+  object NegationElimination {
+    implicit val rw: RW[NegationElimination] = macroRW
+  }
+
   case class NegationElimination(positiveDerivation: Derivation, negativeDerivation: Derivation) extends Derivation {
     assert(negativeDerivation.formula.isInstanceOf[Negation], s"Negative derivation must prove a negation, but was $negativeDerivation")
     assert(negativeDerivation.formula.asInstanceOf[Negation].formula == positiveDerivation.formula)
@@ -379,6 +440,7 @@ object Derivation {
   }
 
   object ReductioAdAbsurdum {
+    implicit val rw: RW[ReductioAdAbsurdum] = macroRW
     def apply(conclusion: Formula, bottomDerivation: Derivation): ReductioAdAbsurdum =
       ReductioAdAbsurdum(conclusion, None, bottomDerivation)
 
@@ -408,7 +470,12 @@ object Derivation {
     override def labels: Set[String] = label.toSet ++ children.flatMap(_.labels)
   }
 
+  object LeftDisjunctionIntroduction {
+    implicit val rw: RW[LeftDisjunctionIntroduction] = macroRW
+  }
+
   case class LeftDisjunctionIntroduction(leftDerivation: Derivation, right: Formula) extends Derivation {
+
     override def formula: Formula = leftDerivation.formula ∨ right
 
     override def undischargedAssumptions: Assumptions = leftDerivation.undischargedAssumptions
@@ -421,7 +488,12 @@ object Derivation {
     }
   }
 
+  object RightDisjunctionIntroduction {
+    implicit val rw: RW[RightDisjunctionIntroduction] = macroRW
+  }
+
   case class RightDisjunctionIntroduction(left: Formula, rightDerivation: Derivation) extends Derivation {
+
     override def formula: Formula = left ∨ rightDerivation.formula
 
     override def undischargedAssumptions: Assumptions = rightDerivation.undischargedAssumptions
@@ -434,11 +506,15 @@ object Derivation {
     }
   }
 
+  object DisjunctionElimination {
+    implicit val rw: RW[DisjunctionElimination] = macroRW
+  }
   case class DisjunctionElimination(disjunctionDerivation: Derivation,
                                     leftLabel: Option[String],
                                     leftDerivation: Derivation,
                                     rightLabel: Option[String],
                                     rightDerivation: Derivation) extends Derivation {
+
     assert(leftDerivation.formula == rightDerivation.formula)
     assert(disjunctionDerivation.formula.isInstanceOf[Disjunction])
     val disjunction: Disjunction = disjunctionDerivation.formula.asInstanceOf[Disjunction]

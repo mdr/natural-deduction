@@ -4,8 +4,11 @@ import naturalDeduction.Derivation._
 import naturalDeduction.Formula.{Conjunction, Implication, PropositionalVariable}
 import naturalDeduction.parser.FormulaParser
 import naturalDeduction._
+import org.scalajs.dom.{console, window}
+import upickle.default._
 
 import scala.scalajs.js.Dynamic.global
+import scala.scalajs.js.URIUtils
 
 sealed trait ModalState {
   def withModalFormula(newValue: String): ModalState
@@ -138,7 +141,7 @@ object App {
       Callback {
         global.$("#interactionModal").modal("hide")
       } >>
-        $.modState { oldState =>
+        modState { oldState =>
           oldState.modalState match {
             case Some(ConjunctionElimBackwardsModalState(derivationIndex, path, conclusion, conjunctToPick, newFormulaText)) =>
               val newFormula = FormulaParser.parseFormula(newFormulaText)
@@ -159,20 +162,20 @@ object App {
       }
 
     private def onSwapConjuncts: Callback =
-      $.modState(_.swapConjuncts)
+      modState(_.swapConjuncts)
 
     private def onChangeModalFormula(e: ReactEventFromInput): Callback = {
       val newValue = e.target.value
-      $.modState(_.withModalFormula(newValue))
+      modState(_.withModalFormula(newValue))
     }
 
     private def onChangeNewFormula(e: ReactEventFromInput): Callback = {
       val newValue = e.target.value
-      $.modState(_.copy(newFormulaText = newValue))
+      modState(_.copy(newFormulaText = newValue))
     }
 
     private def handleSubmitNewFormula(e: ReactEventFromInput) =
-      e.preventDefaultCB >> $.modState(_.acceptNewFormulaAsNewDerivation)
+      e.preventDefaultCB >> modState(_.acceptNewFormulaAsNewDerivation)
 
     def render(state: State): VdomTag =
       <.div(^.`class` := "container-fluid p-0",
@@ -259,17 +262,16 @@ object App {
         )
       )
 
-    private def implicationEliminationDerivation(antecedent: Formula, consequent: Formula) = {
+    private def implicationEliminationDerivation(antecedent: Formula, consequent: Formula): ImplicationElimination =
       ImplicationElimination(antecedent.axiom, (antecedent → consequent).axiom)
-    }
 
     private def onRemoveDerivation(derivationIndex: Int)(path: DerivationPath): Callback =
-      $.modState(_.transformDerivation(derivationIndex, _.transform(path, convertToAxiom)))
+      modState(_.transformDerivation(derivationIndex, _.transform(path, convertToAxiom)))
 
     private def convertToAxiom(derivation: Derivation): Axiom = Axiom(derivation.formula)
 
     private def onConjunctionIntroBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
-      $.modState(_.transformDerivation(derivationIndex, _.transform(path, conjunctionIntroBackwards)))
+      modState(_.transformDerivation(derivationIndex, _.transform(path, conjunctionIntroBackwards)))
 
     private def conjunctionIntroBackwards(derivation: Derivation): Derivation = {
       val conjunction = derivation.formula.asInstanceOf[Conjunction]
@@ -277,7 +279,7 @@ object App {
     }
 
     private def onImplicationIntroBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
-      $.modState(_.transformDerivation(derivationIndex, implicationIntroBackwards(path)))
+      modState(_.transformDerivation(derivationIndex, implicationIntroBackwards(path)))
 
     private def implicationIntroBackwards(path: DerivationPath)(derivation: Derivation): Derivation =
       derivation.transform(path, implicationIntroBackwards(derivation.nextFreshLabel))
@@ -288,13 +290,22 @@ object App {
     }
 
     private def onConjunctionElimForwards(derivationIndex: Int)(path: DerivationPath, child: Int): Callback =
-      $.modState(_.transformDerivation(derivationIndex, _.transform(path, conjunctionElimForwards(child))))
+      modState(_.transformDerivation(derivationIndex, _.transform(path, conjunctionElimForwards(child))))
 
     private def onUndoClicked: Callback =
-      $.modState(_.undo)
+      modState(_.undo)
 
     private def onRedoClicked: Callback =
-      $.modState(_.redo)
+      modState(_.redo)
+
+    private def syncUrlHash: Callback =
+      $.modState(state => {
+        window.location.hash = write(state.derivations)
+        state
+      })
+
+    final def modState(mod: State => State): Callback =
+      $.modState(mod) >> syncUrlHash
 
     private def conjunctionElimForwards(child: Int)(derivation: Derivation): Derivation =
       child match {
@@ -304,21 +315,21 @@ object App {
 
 
     private def onInlineDerivation(derivationIndex: Int)(path: DerivationPath, derivationIndexToInline: Int): Callback =
-      $.modState(oldState =>
+      modState(oldState =>
         oldState.transformDerivation(derivationIndex, _.set(path, oldState.derivations(derivationIndexToInline)))
       )
 
     private def onDischargeAssumption(derivationIndex: Int)(path: DerivationPath, label: String): Callback =
-      $.modState(_.transformDerivation(derivationIndex, _.transform(path, _.dischargeAxiom(label))))
+      modState(_.transformDerivation(derivationIndex, _.transform(path, _.dischargeAxiom(label))))
 
     private def onConjunctionElimBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
-      $.modState(_.showConjunctionElimBackwardsModalState(derivationIndex, path)) >>
+      modState(_.showConjunctionElimBackwardsModalState(derivationIndex, path)) >>
         Callback {
           global.$("#interactionModal").modal()
         }
 
     private def onImplicationElimBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
-      $.modState(_.showImplicationElimBackwardsModalState(derivationIndex, path)) >>
+      modState(_.showImplicationElimBackwardsModalState(derivationIndex, path)) >>
         Callback {
           global.$("#interactionModal").modal()
         }
@@ -352,18 +363,23 @@ object App {
       )
 
     private def onDeleteDerivation(derivationIndex: Int): Callback =
-      $.modState(_.deleteDerivation(derivationIndex))
+      modState(_.deleteDerivation(derivationIndex))
 
     private def onDuplicateDerivation(derivationIndex: Int): Callback =
-      $.modState(_.duplicateDerivation(derivationIndex))
+      modState(_.duplicateDerivation(derivationIndex))
 
   }
 
   val app = ScalaComponent.builder[Unit]("App")
     //    .initialState(State(derivations = Seq(φ.axiom conjunctionIntro ψ.axiom)))
     //        .initialState(State(derivations = Seq(derivation1, derivation2, derivation3)))
-    .initialState(State(derivations = Seq.empty))
+    .initialState(State(derivations = initialDerivations))
     .renderBackend[Backend]
     .build
+
+  private def initialDerivations: Seq[Derivation] = window.location.hash match {
+    case "" => Seq.empty
+    case s => read[Seq[Derivation]](URIUtils.decodeURIComponent(s.substring(1)))
+  }
 
 }
