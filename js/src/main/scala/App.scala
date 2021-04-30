@@ -12,8 +12,6 @@ sealed trait ModalState {
 
   def title: String
 
-  def withConjunctToPick(conjunctToPick: Int): ModalState = this
-
   def swapConjuncts: ModalState = this
 
   def canComplete: Boolean
@@ -23,15 +21,26 @@ sealed trait ModalState {
 case class ConjunctionElimBackwardsModalState(derivationIndex: Int,
                                               path: DerivationPath,
                                               conclusion: Formula,
-                                              conjunctToPick: Int,
+                                              conjunctToPick: Int = 0,
                                               formulaText: String = "") extends ModalState {
   def title: String = "∧-Elimination Backwards"
 
-  def withModalFormula(newText: String): ConjunctionElimBackwardsModalState = copy(formulaText = newText)
-
-  override def withConjunctToPick(conjunctToPick: Int): ModalState = copy(conjunctToPick = conjunctToPick)
+  def withModalFormula(newText: String): ModalState = copy(formulaText = newText)
 
   override def swapConjuncts: ModalState = copy(conjunctToPick = if (conjunctToPick == 0) 1 else 0)
+
+  override def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
+}
+
+case class ImplicationElimBackwardsModalState(derivationIndex: Int,
+                                              path: DerivationPath,
+                                              consequent: Formula,
+                                              formulaText: String = "") extends ModalState {
+  def title: String = "→-Elimination Backwards"
+
+  def withModalFormula(newText: String): ModalState = copy(formulaText = newText)
+
+  override def swapConjuncts: ModalState = this
 
   override def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
 }
@@ -79,8 +88,6 @@ object App {
 
     def updateModalState(f: ModalState => ModalState): State = copy(modalState = modalState map f)
 
-    def updateConjunctToPick(conjunctToPick: Int): State = updateModalState(_.withConjunctToPick(conjunctToPick))
-
     def swapConjuncts: State = updateModalState(_.swapConjuncts)
 
     def withModalFormula(newValue: String): State = updateModalState(_.withModalFormula(newValue))
@@ -115,7 +122,12 @@ object App {
 
     def showConjunctionElimBackwardsModalState(derivationIndex: Int, path: DerivationPath): State = {
       val conclusion = getDerivation(derivationIndex).get(path).formula
-      copy(modalState = Some(ConjunctionElimBackwardsModalState(derivationIndex, path, conclusion, 0, "")))
+      copy(modalState = Some(ConjunctionElimBackwardsModalState(derivationIndex, path, conclusion)))
+    }
+
+    def showImplicationElimBackwardsModalState(derivationIndex: Int, path: DerivationPath): State = {
+      val consequent = getDerivation(derivationIndex).get(path).formula
+      copy(modalState = Some(ImplicationElimBackwardsModalState(derivationIndex, path, consequent)))
     }
 
   }
@@ -132,7 +144,11 @@ object App {
               val newFormula = FormulaParser.parseFormula(newFormulaText)
               val newDerivation: Derivation = conjunctionEliminationDerivation(conclusion, newFormula, conjunctToPick)
               oldState.transformDerivation(derivationIndex, _.set(path, newDerivation)).closeModal
-            case _ => oldState
+            case Some(ImplicationElimBackwardsModalState(derivationIndex, path, consequent, newFormulaText)) =>
+              val newFormula = FormulaParser.parseFormula(newFormulaText)
+              val newDerivation = implicationEliminationDerivation(newFormula, consequent)
+              oldState.transformDerivation(derivationIndex, _.set(path, newDerivation)).closeModal
+            case None => oldState
           }
         }
 
@@ -198,6 +214,22 @@ object App {
                       )
                     ),
                   )
+                case ImplicationElimBackwardsModalState(_, _, consequent, formulaText) =>
+                  val newFormulaOpt = FormulaParser.tryParseFormula(formulaText).toOption
+                  val newFormula = newFormulaOpt.getOrElse(PropositionalVariable("?"))
+                  val derivation = implicationEliminationDerivation(newFormula, consequent)
+                  <.div(
+                    <.div(^.`class` := "d-flex justify-content-center",
+                      DerivationComponent.component(DerivationProps(derivation))
+                    ),
+                    <.br(),
+                    <.div(^.className := "form-row align-items-center",
+                      <.div(^.className := "col-9",
+                        <.label(^.className := "sr-only", ^.`for` := "inlineFormInput", "Name"),
+                        <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Antecedent...", ^.onChange ==> onChangeModalFormula, ^.value := formulaText),
+                      ),
+                    ),
+                  )
               }),
               <.div(^.className := "modal-footer",
                 <.button(^.`type` := "button", ^.className := "btn btn-secondary", VdomAttr("data-dismiss") := "modal", "Close"),
@@ -226,6 +258,10 @@ object App {
           ),
         )
       )
+
+    private def implicationEliminationDerivation(antecedent: Formula, consequent: Formula) = {
+      ImplicationElimination(antecedent.axiom, (antecedent → consequent).axiom)
+    }
 
     private def onRemoveDerivation(derivationIndex: Int)(path: DerivationPath): Callback =
       $.modState(_.transformDerivation(derivationIndex, _.transform(path, convertToAxiom)))
@@ -281,6 +317,12 @@ object App {
           global.$("#interactionModal").modal()
         }
 
+    private def onImplicationElimBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
+      $.modState(_.showImplicationElimBackwardsModalState(derivationIndex, path)) >>
+        Callback {
+          global.$("#interactionModal").modal()
+        }
+
     private def derivationCard(derivation: Derivation, derivationIndex: Int, formulaToDerivationIndices: Map[Formula, Seq[Int]]): VdomNode =
       <.div(^.`class` := "card",
         <.div(^.`class` := "card-header",
@@ -300,6 +342,7 @@ object App {
                 onConjunctionElimForwards(derivationIndex),
                 onConjunctionElimBackwards(derivationIndex),
                 onImplicationIntroBackwards(derivationIndex),
+                onImplicationElimBackwards(derivationIndex),
                 onInlineDerivation(derivationIndex),
                 onDischargeAssumption(derivationIndex),
                 derivationIndex,

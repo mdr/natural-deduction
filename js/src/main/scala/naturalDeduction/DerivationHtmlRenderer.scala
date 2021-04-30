@@ -12,6 +12,7 @@ case class ManipulationInfo(
                              onConjunctionElimForwards: (DerivationPath, Int) => Callback,
                              onConjunctionElimBackwards: DerivationPath => Callback,
                              onImplicationIntroBackwards: DerivationPath => Callback,
+                             onImplicationElimBackwards: DerivationPath => Callback,
                              onInlineDerivation: (DerivationPath, Int) => Callback,
                              onDischargeAssumption: (DerivationPath, String) => Callback,
                              derivationIndex: Int,
@@ -125,6 +126,7 @@ class DerivationHtmlRenderer(props: DerivationProps) {
           .when(backwardsRulesPossible),
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Introduction", ^.onClick --> manipulationInfo.onImplicationIntroBackwards(path))
           .when(canImplicationIntroBackwards(derivation)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination...", ^.onClick --> manipulationInfo.onImplicationElimBackwards(path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Introduction", ^.onClick --> manipulationInfo.onConjunctionIntroBackwards(path))
           .when(canConjunctionIntroBackwards(derivation)),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination...", ^.onClick --> manipulationInfo.onConjunctionElimBackwards(path))

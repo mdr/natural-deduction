@@ -263,9 +263,9 @@ object Derivation {
   }
 
   case class ImplicationElimination(antecedentDerivation: Derivation, implicationDerivation: Derivation) extends Derivation {
-    assert(implicationDerivation.formula.isInstanceOf[Implication])
+    assert(implicationDerivation.formula.isInstanceOf[Implication], s"Expected implicationDerivation to prove an Implication, but instead it proved ${implicationDerivation.formula}")
     val implication: Implication = implicationDerivation.formula.asInstanceOf[Implication]
-    assert(antecedentDerivation.formula == implication.antecedent)
+    assert(antecedentDerivation.formula == implication.antecedent, s"Mismatched antecedent formulae: ${antecedentDerivation.formula} vs ${implication.antecedent}")
 
     override def formula: Formula = implication.consequent
 
