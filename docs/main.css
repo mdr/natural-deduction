@@ -10,6 +10,11 @@ html {
     font-size: 1.2rem;
 }
 
+.tooltip {
+    font-family: "Computer Modern Serif", serif;
+    font-size: 1rem;
+}
+
 .discharged-axiom {
     position: relative;
 }
@@ -84,6 +89,7 @@ html {
     /* To center: */
     display: flex;
     justify-content: center;
+    white-space: nowrap;
 }
 
 .rule-bottom-main {

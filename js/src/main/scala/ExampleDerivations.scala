@@ -1,12 +1,12 @@
 import naturalDeduction.Derivation
-import naturalDeduction.Derivation.{Axiom, ImplicationElimination, ImplicationIntroduction, NegationElimination, ReductioAdAbsurdum}
+import naturalDeduction.Derivation._
 import naturalDeduction.Formula.PropositionalVariable
 
 object ExampleDerivations {
 
-  private val φ = PropositionalVariable("φ")
-  private val ψ = PropositionalVariable("ψ")
-  private val χ = PropositionalVariable("χ")
+  val φ = PropositionalVariable("φ")
+  val ψ = PropositionalVariable("ψ")
+  val χ = PropositionalVariable("χ")
 
   val derivation1: Derivation =
     ImplicationIntroduction(φ.not.not, "❷",
@@ -23,5 +23,13 @@ object ExampleDerivations {
           ImplicationElimination(
             ImplicationElimination(Axiom(φ, "❶"), Axiom(φ → ψ, "❷")),
             Axiom(ψ → χ, "❸")))))
+
+  val derivation3: Derivation =
+    DisjunctionElimination(
+      Axiom(φ ∨ ψ),
+      Some("❶"),
+      RightDisjunctionIntroduction(ψ, Axiom(φ, "❶")),
+      Some("❷"),
+      LeftDisjunctionIntroduction(Axiom(ψ, "❷"), φ))
 
 }

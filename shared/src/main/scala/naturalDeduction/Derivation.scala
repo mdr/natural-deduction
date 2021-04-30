@@ -2,8 +2,9 @@ package naturalDeduction
 
 import naturalDeduction.Derivation._
 import naturalDeduction.pretty.DerivationRenderer
-
 import Formula._
+
+import scala.annotation.tailrec
 
 object Sequent {
 
@@ -59,6 +60,31 @@ sealed trait Derivation {
   def undischargedAssumptions: Assumptions
 
   def sequent: Sequent = Sequent(undischargedAssumptions.allFormulae, formula)
+
+  def children: Seq[Derivation]
+
+  def replaceChild(i: Int, newChild: Derivation): Derivation
+
+  def isAxiom: Boolean = this.isInstanceOf[Axiom]
+
+  @tailrec
+  private def get(childChoices: Seq[Int]): Derivation = childChoices match {
+    case Seq() => this
+    case Seq(firstChoice, remainingChoices@_*) => children(firstChoice).get(remainingChoices)
+  }
+
+  def get(path: DerivationPath): Derivation = get(path.childChoices)
+
+  def set(path: DerivationPath, replacement: Derivation): Derivation = set(path.childChoices, replacement)
+
+  private def set(childChoices: Seq[Int], replacement: Derivation): Derivation = childChoices match {
+    case Seq() => replacement
+    case Seq(firstChoice, remainingChoices@_*) =>
+      val newChild = children(firstChoice).set(remainingChoices, replacement)
+      replaceChild(firstChoice, newChild)
+  }
+
+  def transform(path: DerivationPath, f: Derivation => Derivation): Derivation = set(path, f(get(path)))
 
   override def toString: String = {
     val rendered = DerivationRenderer.renderDerivation(this).toStringNormal
@@ -121,12 +147,25 @@ object Derivation {
       case None => Assumptions(anonymousAssumptions = Set(formula))
       case Some(label) => Assumptions(labelledAssumptions = Map(label -> formula))
     }
+
+    override def children: Seq[Derivation] = Seq.empty
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation =
+      throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
   }
 
   case class ConjunctionIntroduction(leftDerivation: Derivation, rightDerivation: Derivation) extends Derivation {
     override def undischargedAssumptions: Assumptions = leftDerivation.undischargedAssumptions ++ rightDerivation.undischargedAssumptions
 
     override def formula: Formula = leftDerivation.formula ∧ rightDerivation.formula
+
+    override def children: Seq[Derivation] = Seq(leftDerivation, rightDerivation)
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+      case 0 => copy(leftDerivation = newChild)
+      case 1 => copy(rightDerivation = newChild)
+      case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+    }
   }
 
   case class LeftConjunctionElimination(conjunctionDerivation: Derivation) extends Derivation {
@@ -136,6 +175,13 @@ object Derivation {
     override def undischargedAssumptions: Assumptions = conjunctionDerivation.undischargedAssumptions
 
     override def formula: Formula = conjunction.conjunct1
+
+    override def children: Seq[Derivation] = Seq(conjunctionDerivation)
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+      case 0 => copy(conjunctionDerivation = newChild)
+      case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+    }
   }
 
   case class RightConjunctionElimination(conjunctionDerivation: Derivation) extends Derivation {
@@ -145,6 +191,13 @@ object Derivation {
     override def undischargedAssumptions: Assumptions = conjunctionDerivation.undischargedAssumptions
 
     override def formula: Formula = conjunction.conjunct2
+
+    override def children: Seq[Derivation] = Seq(conjunctionDerivation)
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+      case 0 => copy(conjunctionDerivation = newChild)
+      case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+    }
   }
 
   object ImplicationIntroduction {
@@ -164,6 +217,13 @@ object Derivation {
     override def formula: Formula = antecedent → consequentDerivation.formula
 
     override def undischargedAssumptions: Assumptions = consequentDerivation.undischargedAssumptions.discharge(label)
+
+    override def children: Seq[Derivation] = Seq(consequentDerivation)
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+      case 0 => copy(consequentDerivation = newChild)
+      case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+    }
   }
 
   case class ImplicationElimination(antecedentDerivation: Derivation, implicationDerivation: Derivation) extends Derivation {
@@ -174,6 +234,14 @@ object Derivation {
     override def formula: Formula = implication.consequent
 
     override def undischargedAssumptions: Assumptions = antecedentDerivation.undischargedAssumptions ++ implicationDerivation.undischargedAssumptions
+
+    override def children: Seq[Derivation] = Seq(antecedentDerivation, implicationDerivation)
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+      case 0 => copy(antecedentDerivation = newChild)
+      case 1 => copy(implicationDerivation = newChild)
+      case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+    }
   }
 
   case class EquivalenceIntroduction(forwardsDerivation: Derivation, backwardsDerivation: Derivation) extends Derivation {
@@ -186,6 +254,14 @@ object Derivation {
     override def formula: Formula = formula1 ↔ formula2
 
     override def undischargedAssumptions: Assumptions = forwardsDerivation.undischargedAssumptions ++ backwardsDerivation.undischargedAssumptions
+
+    override def children: Seq[Derivation] = Seq(forwardsDerivation, backwardsDerivation)
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+      case 0 => copy(forwardsDerivation = newChild)
+      case 1 => copy(backwardsDerivation = newChild)
+      case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+    }
   }
 
   case class ForwardsEquivalenceElimination(equivalenceDerivation: Derivation) extends Derivation {
@@ -195,6 +271,13 @@ object Derivation {
     override def undischargedAssumptions: Assumptions = equivalenceDerivation.undischargedAssumptions
 
     override def formula: Formula = equivalance.forwardsImplication
+
+    override def children: Seq[Derivation] = Seq(equivalenceDerivation)
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+      case 0 => copy(equivalenceDerivation = newChild)
+      case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+    }
   }
 
   case class BackwardsEquivalenceElimination(equivalenceDerivation: Derivation) extends Derivation {
@@ -204,6 +287,13 @@ object Derivation {
     override def undischargedAssumptions: Assumptions = equivalenceDerivation.undischargedAssumptions
 
     override def formula: Formula = equivalance.backwardsImplication
+
+    override def children: Seq[Derivation] = Seq(equivalenceDerivation)
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+      case 0 => copy(equivalenceDerivation = newChild)
+      case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+    }
   }
 
   object NegationIntroduction {
@@ -223,6 +313,13 @@ object Derivation {
     override def formula: Formula = Negation(statement)
 
     override def undischargedAssumptions: Assumptions = bottomDerivation.undischargedAssumptions.discharge(label)
+
+    override def children: Seq[Derivation] = Seq(bottomDerivation)
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+      case 0 => copy(bottomDerivation = newChild)
+      case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+    }
   }
 
   case class NegationElimination(positiveDerivation: Derivation, negativeDerivation: Derivation) extends Derivation {
@@ -233,6 +330,14 @@ object Derivation {
 
     override def undischargedAssumptions: Assumptions =
       positiveDerivation.undischargedAssumptions ++ negativeDerivation.undischargedAssumptions
+
+    override def children: Seq[Derivation] = Seq(positiveDerivation, negativeDerivation)
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+      case 0 => copy(positiveDerivation = newChild)
+      case 1 => copy(negativeDerivation = newChild)
+      case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+    }
   }
 
   object ReductioAdAbsurdum {
@@ -241,6 +346,7 @@ object Derivation {
 
     def apply(conclusion: Formula, label: String, bottomDerivation: Derivation): ReductioAdAbsurdum =
       ReductioAdAbsurdum(conclusion, Some(label), bottomDerivation)
+
   }
 
   case class ReductioAdAbsurdum(conclusion: Formula, label: Option[String], bottomDerivation: Derivation) extends Derivation {
@@ -253,18 +359,39 @@ object Derivation {
     override def formula: Formula = conclusion
 
     override def undischargedAssumptions: Assumptions = bottomDerivation.undischargedAssumptions.discharge(label)
+
+    override def children: Seq[Derivation] = Seq(bottomDerivation)
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+      case 0 => copy(bottomDerivation = newChild)
+      case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+    }
   }
 
   case class LeftDisjunctionIntroduction(leftDerivation: Derivation, right: Formula) extends Derivation {
     override def formula: Formula = leftDerivation.formula ∨ right
 
     override def undischargedAssumptions: Assumptions = leftDerivation.undischargedAssumptions
+
+    override def children: Seq[Derivation] = Seq(leftDerivation)
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+      case 0 => copy(leftDerivation = newChild)
+      case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+    }
   }
 
   case class RightDisjunctionIntroduction(left: Formula, rightDerivation: Derivation) extends Derivation {
     override def formula: Formula = left ∨ rightDerivation.formula
 
     override def undischargedAssumptions: Assumptions = rightDerivation.undischargedAssumptions
+
+    override def children: Seq[Derivation] = Seq(rightDerivation)
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+      case 0 => copy(rightDerivation = newChild)
+      case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+    }
   }
 
   case class DisjunctionElimination(disjunctionDerivation: Derivation,
@@ -290,6 +417,23 @@ object Derivation {
       disjunctionDerivation.undischargedAssumptions ++
         leftDerivation.undischargedAssumptions.discharge(leftLabel) ++
         rightDerivation.undischargedAssumptions.discharge(rightLabel)
+
+    override def children: Seq[Derivation] = Seq(disjunctionDerivation, leftDerivation, rightDerivation)
+
+    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+      case 0 => copy(disjunctionDerivation = newChild)
+      case 1 => copy(leftDerivation = newChild)
+      case 2 => copy(rightDerivation = newChild)
+      case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+    }
   }
 
+}
+
+object DerivationPath {
+  val empty: DerivationPath = DerivationPath(Seq.empty)
+}
+
+case class DerivationPath(childChoices: Seq[Int]) {
+  def choose(choice: Int): DerivationPath = copy(childChoices = childChoices :+ choice)
 }
