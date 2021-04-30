@@ -15,6 +15,8 @@ sealed trait ModalState {
 
   def withConjunctToPick(conjunctToPick: Int): ModalState = this
 
+  def swapConjuncts: ModalState = this
+
   def canComplete: Boolean
 
 }
@@ -30,7 +32,28 @@ case class ConjunctionElimBackwardsModalState(derivationIndex: Int,
 
   override def withConjunctToPick(conjunctToPick: Int): ModalState = copy(conjunctToPick = conjunctToPick)
 
+  override def swapConjuncts: ModalState = copy(conjunctToPick = if (conjunctToPick == 0) 1 else 0)
+
   override def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
+}
+
+case class UndoRedo[T](undoStack: List[T] = List.empty, redoStack: List[T] = List.empty) {
+  def canUndo: Boolean = undoStack.nonEmpty
+
+  def canRedo: Boolean = redoStack.nonEmpty
+
+  def push(state: T): UndoRedo[T] = copy(undoStack = state :: undoStack)
+
+  def undo(currentState: T): (T, UndoRedo[T]) = {
+    val previousState :: restOfUndoStack = undoStack
+    (previousState, UndoRedo(restOfUndoStack, currentState :: redoStack))
+  }
+
+  def redo(currentState: T): (T, UndoRedo[T]) = {
+    val previousState :: restOfRedoStack = redoStack
+    (previousState, UndoRedo(currentState :: undoStack, restOfRedoStack))
+  }
+
 }
 
 object App {
@@ -38,26 +61,48 @@ object App {
   case class State(
                     newFormulaText: String = "",
                     derivations: Seq[Derivation] = Seq.empty,
-                    modalState: Option[ModalState] = None) {
+                    modalState: Option[ModalState] = None,
+                    undoRedo: UndoRedo[Seq[Derivation]] = UndoRedo()
+                  ) {
+
+    def deleteDerivation(derivationIndex: Int): State =
+      withUndo(
+        copy(
+          derivations = derivations.patch(derivationIndex, Seq.empty, 1)))
 
     def updateModalState(f: ModalState => ModalState): State = copy(modalState = modalState map f)
 
     def updateConjunctToPick(conjunctToPick: Int): State = updateModalState(_.withConjunctToPick(conjunctToPick))
 
+    def swapConjuncts: State = updateModalState(_.swapConjuncts)
+
     def withModalFormula(newValue: String): State = updateModalState(_.withModalFormula(newValue))
 
+    def withUndo(newState: State): State = newState.copy(undoRedo = undoRedo.push(derivations))
+
+    def undo: State = {
+      val (newDerivations, newUndoRedo) = undoRedo.undo(derivations)
+      copy(derivations = newDerivations, undoRedo = newUndoRedo)
+    }
+
+    def redo: State = {
+      val (newDerivations, newUndoRedo) = undoRedo.redo(derivations)
+      copy(derivations = newDerivations, undoRedo = newUndoRedo)
+    }
+
     def acceptNewFormulaAsNewDerivation: State =
-      copy(
-        derivations = derivations :+ Axiom(FormulaParser.parseFormula(newFormulaText)),
-        newFormulaText = "")
+      withUndo(
+        copy(
+          derivations = derivations :+ Axiom(FormulaParser.parseFormula(newFormulaText)),
+          newFormulaText = ""))
 
     def newFormulaIsValid: Boolean = FormulaParser.tryParseFormula(newFormulaText).isRight
 
     def getDerivation(i: Int): Derivation = derivations(i)
 
-    def setDerivation(i: Int, derivation: Derivation): State = copy(derivations = derivations.patch(i, Seq(derivation), 1))
+    private def setDerivation(i: Int, derivation: Derivation): State = copy(derivations = derivations.patch(i, Seq(derivation), 1))
 
-    def transformDerivation(i: Int, f: Derivation => Derivation): State = setDerivation(i, f(getDerivation(i)))
+    def transformDerivation(i: Int, f: Derivation => Derivation): State = withUndo(setDerivation(i, f(getDerivation(i))))
 
     def closeModal: State = copy(modalState = None)
 
@@ -69,7 +114,7 @@ object App {
 
   class Backend($: BackendScope[Unit, State]) {
 
-    private def onConfirmModal(e: ReactEventFromInput): Callback =
+    private def onConfirmModal: Callback =
       Callback {
         global.$("#interactionModal").modal("hide")
       } >>
@@ -83,15 +128,14 @@ object App {
           }
         }
 
-
     private def conjunctionEliminationDerivation(conjunct1: Formula, conjunct2: Formula, conjunctToPick: Int): Derivation =
       conjunctToPick match {
         case 0 => LeftConjunctionElimination(Axiom(Conjunction(conjunct1, conjunct2)))
         case 1 => RightConjunctionElimination(Axiom(Conjunction(conjunct2, conjunct1)))
       }
 
-    private def onChangeConjunctToPick(conjunctToPick: Int)(e: ReactEventFromInput): Callback =
-      $.modState(_.updateConjunctToPick(conjunctToPick))
+    private def onSwapConjuncts: Callback =
+      $.modState(_.swapConjuncts)
 
     private def onChangeModalFormula(e: ReactEventFromInput): Callback = {
       val newValue = e.target.value
@@ -134,31 +178,22 @@ object App {
                       DerivationComponent.component(DerivationProps(derivation))
                     ),
                     <.br(),
-                    <.form(^.`class` := "form",
-                      <.div(^.className := "mb-3",
-                        //                        <.label(^.`for` := "exampleFormControlInput1", ^.className := "form-label", "Email address"),
-                        <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Enter the other formula", ^.onChange ==> onChangeModalFormula, ^.value := formulaText),
+                    <.div(^.className := "form-row align-items-center",
+                      <.div(^.className := "col-9",
+                        <.label(^.className := "sr-only", ^.`for` := "inlineFormInput", "Name"),
+                        <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Other conjunct...", ^.onChange ==> onChangeModalFormula, ^.value := formulaText),
                       ),
-                      <.div(^.className := "form-check form-check-inline",
-                        <.input(^.className := "form-check-input", ^.`type` := "radio", ^.id := "pickLeft", ^.name := "pickLeft",
-                          ^.onChange ==> onChangeConjunctToPick(0),
-                          ^.checked := conjunctToPick == 0
+                      <.div(^.className := "col",
+                        <.button(^.`class` := "btn btn-outline-secondary mb-2", ^.`type` := "button", ^.onClick --> onSwapConjuncts,
+                          <.span(<.i(^.className := "fas fa-exchange-alt"), " Swap"),
                         ),
-                        <.label(^.className := "form-check-label", ^.`for` := "pickLeft", "Pick the left conjunct")
-                      ),
-                      <.div(^.className := "form-check form-check-inline",
-                        <.input(^.className := "form-check-input", ^.`type` := "radio", ^.id := "pickRight", ^.name := "pickRight",
-                          ^.onChange ==> onChangeConjunctToPick(1),
-                          ^.checked := conjunctToPick == 1
-                        ),
-                        <.label(^.className := "form-check-label", ^.`for` := "pickRight", "Pick the right conjunct")
-                      ),
+                      )
                     ),
                   )
               }),
               <.div(^.className := "modal-footer",
                 <.button(^.`type` := "button", ^.className := "btn btn-secondary", VdomAttr("data-dismiss") := "modal", "Close"),
-                <.button(^.`type` := "button", ^.className := "btn btn-primary", "Apply", ^.disabled := !state.modalState.exists(_.canComplete), ^.onClick ==> onConfirmModal)
+                <.button(^.`type` := "button", ^.className := "btn btn-primary", "Apply", ^.disabled := !state.modalState.exists(_.canComplete), ^.onClick --> onConfirmModal)
               )
             )
           )
@@ -166,6 +201,11 @@ object App {
         <.div(^.`class` := "container",
           <.p(),
           <.p("An implementation of natural deduction proofs as described in ", <.em("Mathematical Logic"), " by Ian Chiswell and Wilfrid Hodges."),
+          <.div(^.`class` := "btn-group", ^.role := "group",
+            <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", <.i(^.className := "fas fa-undo"), ^.onClick --> onUndoClicked, ^.disabled := !state.undoRedo.canUndo),
+            <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", <.i(^.className := "fas fa-redo"), ^.onClick --> onRedoClicked, ^.disabled := !state.undoRedo.canRedo),
+          ),
+          <.p(),
           state.derivations.zipWithIndex.map((derivationCard _).tupled).mkTagMod(<.br()),
           <.br(),
           <.form(^.`class` := "form-row align-items-center",
@@ -195,6 +235,12 @@ object App {
     private def onConjunctionElimForwards(derivationIndex: Int)(path: DerivationPath, child: Int): Callback =
       $.modState(_.transformDerivation(derivationIndex, _.transform(path, conjunctionElimForwards(child))))
 
+    private def onUndoClicked: Callback =
+      $.modState(_.undo)
+
+    private def onRedoClicked: Callback =
+      $.modState(_.redo)
+
     private def conjunctionElimForwards(child: Int)(derivation: Derivation): Derivation =
       child match {
         case 0 => LeftConjunctionElimination(derivation)
@@ -211,18 +257,23 @@ object App {
       <.div(^.`class` := "card",
         <.div(^.`class` := "card-header",
           s"${derivationIndex + 1}. ${derivation.sequent}",
-          <.div(^.`class` := "card-body",
-            DerivationComponent.component(
-              DerivationProps(derivation,
-                Some(DerivationManipulationCallbacks(
-                  onRemoveDerivation(derivationIndex),
-                  onConjunctionIntroBackwards(derivationIndex),
-                  onConjunctionElimForwards(derivationIndex),
-                  onConjunctionElimBackwards(derivationIndex),
-                ))))
-          )
+          <.button(^.`class` := "btn btn-outline-secondary float-right", ^.`type` := "button", <.i(^.className := "fas fa-trash"), ^.onClick --> onDeleteDerivation(derivationIndex))
+        ),
+
+        <.div(^.`class` := "card-body",
+          DerivationComponent.component(
+            DerivationProps(derivation,
+              Some(DerivationManipulationCallbacks(
+                onRemoveDerivation(derivationIndex),
+                onConjunctionIntroBackwards(derivationIndex),
+                onConjunctionElimForwards(derivationIndex),
+                onConjunctionElimBackwards(derivationIndex),
+              ))))
         )
       )
+
+    private def onDeleteDerivation(derivationIndex: Int): Callback =
+      $.modState(_.deleteDerivation(derivationIndex))
 
   }
 

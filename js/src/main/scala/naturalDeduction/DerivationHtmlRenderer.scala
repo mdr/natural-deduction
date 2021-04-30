@@ -88,7 +88,10 @@ class DerivationHtmlRenderer(props: DerivationProps) {
     case _ => b
   }
 
-  private def renderManipulatableFormula(derivation: Derivation, path: DerivationPath, callbacks: DerivationManipulationCallbacks): VdomNode =
+  private def renderManipulatableFormula(derivation: Derivation, path: DerivationPath, callbacks: DerivationManipulationCallbacks): VdomNode = {
+    val forwardsRulesPossible = canConjunctionElimForwards(derivation, path)
+    val backwardsRulesPossible = derivation.isAxiom
+    val otherRulesPossible = !derivation.isAxiom
     <.a(^.`class` := "dropdown link-secondary",
       <.div(
         ^.`type` := "button",
@@ -98,23 +101,33 @@ class DerivationHtmlRenderer(props: DerivationProps) {
         CustomAttributes.ariaExpanded := "false",
         derivation.formula.toString),
       <.div(^.className := "dropdown-menu", CustomAttributes.ariaLabelledBy := "ruleActionMenuTrigger",
-        <.h6(^.className := "dropdown-header", "Forwards rule"),
+        <.h6(^.className := "dropdown-header", "↓ Apply rule forwards")
+          .when(forwardsRulesPossible),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick left)", ^.onClick --> callbacks.onConjunctionElimForwards(path, 0))
           .when(canConjunctionElimForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick right)", ^.onClick --> callbacks.onConjunctionElimForwards(path, 1))
           .when(canConjunctionElimForwards(derivation, path)),
-        <.div(^.`class` := "dropdown-divider"),
-        <.h6(^.className := "dropdown-header", "Backwards rule"),
+
+        <.div(^.`class` := "dropdown-divider")
+          .when(forwardsRulesPossible && backwardsRulesPossible),
+
+        <.h6(^.className := "dropdown-header", "↑ Apply rule backwards")
+          .when(backwardsRulesPossible),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Introduction", ^.onClick --> callbacks.onConjunctionIntroBackwards(path))
           .when(canConjunctionIntroBackwards(derivation)),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination...", ^.onClick --> callbacks.onConjunctionElimBackwards(path))
           .when(derivation.isAxiom),
-        <.div(^.`class` := "dropdown-divider"),
-        <.h6(^.className := "dropdown-header", "Other"),
-        <.div(^.className := "dropdown-item", ^.href := "#", "Remove sub-derivation", ^.onClick --> callbacks.onRemoveDerivation(path))
+
+        <.div(^.`class` := "dropdown-divider")
+          .when(otherRulesPossible && (forwardsRulesPossible || backwardsRulesPossible)),
+
+        <.h6(^.className := "dropdown-header", "Other")
+          .when(otherRulesPossible),
+        <.div(^.className := "dropdown-item", ^.href := "#", "Remove subderivation", ^.onClick --> callbacks.onRemoveDerivation(path))
           .when(!derivation.isAxiom),
       )
     )
+  }
 
   private def canConjunctionElimForwards(derivation: Derivation, path: DerivationPath): Boolean =
     path == DerivationPath.empty && derivation.formula.isInstanceOf[Conjunction]
