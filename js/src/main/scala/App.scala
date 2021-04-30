@@ -2,9 +2,9 @@ import ExampleDerivations._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation._
-import naturalDeduction.Formula.Conjunction
+import naturalDeduction.Formula.{Conjunction, PropositionalVariable}
 import naturalDeduction.parser.FormulaParser
-import naturalDeduction.{Derivation, DerivationComponent, DerivationPath, DerivationProps, Formula}
+import naturalDeduction.{Derivation, DerivationComponent, DerivationManipulationCallbacks, DerivationPath, DerivationProps, Formula}
 
 import scala.scalajs.js.Dynamic.global
 
@@ -14,6 +14,9 @@ sealed trait ModalState {
   def title: String
 
   def withConjunctToPick(conjunctToPick: Int): ModalState = this
+
+  def canComplete: Boolean
+
 }
 
 case class ConjunctionElimBackwardsModalState(derivationIndex: Int,
@@ -26,6 +29,8 @@ case class ConjunctionElimBackwardsModalState(derivationIndex: Int,
   def withModalFormula(newText: String): ConjunctionElimBackwardsModalState = copy(formulaText = newText)
 
   override def withConjunctToPick(conjunctToPick: Int): ModalState = copy(conjunctToPick = conjunctToPick)
+
+  override def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
 }
 
 object App {
@@ -72,15 +77,18 @@ object App {
           oldState.modalState match {
             case Some(ConjunctionElimBackwardsModalState(derivationIndex, path, conclusion, conjunctToPick, newFormulaText)) =>
               val newFormula = FormulaParser.parseFormula(newFormulaText)
-              val newDerivation = conjunctToPick match {
-                case 0 => LeftConjunctionElimination(Axiom(Conjunction(conclusion, newFormula)))
-                case 1 => RightConjunctionElimination(Axiom(Conjunction(newFormula, conclusion)))
-              }
+              val newDerivation: Derivation = conjunctionEliminationDerivation(conclusion, newFormula, conjunctToPick)
               oldState.transformDerivation(derivationIndex, _.set(path, newDerivation)).closeModal
             case _ => oldState
           }
         }
 
+
+    private def conjunctionEliminationDerivation(conjunct1: Formula, conjunct2: Formula, conjunctToPick: Int): Derivation =
+      conjunctToPick match {
+        case 0 => LeftConjunctionElimination(Axiom(Conjunction(conjunct1, conjunct2)))
+        case 1 => RightConjunctionElimination(Axiom(Conjunction(conjunct2, conjunct1)))
+      }
 
     private def onChangeConjunctToPick(conjunctToPick: Int)(e: ReactEventFromInput): Callback =
       $.modState(_.updateConjunctToPick(conjunctToPick))
@@ -117,27 +125,40 @@ object App {
                 )
               ),
               <.div(^.className := "modal-body", state.modalState.map {
-                case ConjunctionElimBackwardsModalState(_, _, _, conjuctToPick, formulaText) =>
-                  <.form(^.`class` := "form-row align-items-center",
-                    <.div(^.`class` := "col-auto",
-                      <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Add formula...", ^.onChange ==> onChangeModalFormula, ^.value := formulaText)),
-                    <.div(^.className := "custom-control custom-radio custom-control-inline",
-                      <.input(^.`type` := "radio", ^.id := "customRadioInline1", ^.name := "customRadioInline1", ^.className := "custom-control-input",
-                        ^.onChange ==> onChangeConjunctToPick(0),
-                        (^.checked := true).when(conjuctToPick == 0)),
-                      <.label(^.className := "custom-control-label", ^.`for` := "customRadioInline1", "Pick the left conjunct")
+                case ConjunctionElimBackwardsModalState(_, _, conclusion, conjunctToPick, formulaText) =>
+                  val newFormulaOpt = FormulaParser.tryParseFormula(formulaText).toOption
+                  val newFormula = newFormulaOpt.getOrElse(PropositionalVariable("?"))
+                  val derivation = conjunctionEliminationDerivation(conclusion, newFormula, conjunctToPick)
+                  <.div(
+                    <.div(^.`class` := "d-flex justify-content-center",
+                      DerivationComponent.component(DerivationProps(derivation))
                     ),
-                    <.div(^.className := "custom-control custom-radio custom-control-inline",
-                      <.input(^.`type` := "radio", ^.id := "customRadioInline2", ^.name := "customRadioInline1", ^.className := "custom-control-input",
-                        ^.onChange ==> onChangeConjunctToPick(1),
-                        (^.checked := true).when(conjuctToPick == 1)),
-                      <.label(^.className := "custom-control-label", ^.`for` := "customRadioInline2", "Pick the right conjunct")
-                    )
+                    <.br(),
+                    <.form(^.`class` := "form",
+                      <.div(^.className := "mb-3",
+                        //                        <.label(^.`for` := "exampleFormControlInput1", ^.className := "form-label", "Email address"),
+                        <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Enter the other formula", ^.onChange ==> onChangeModalFormula, ^.value := formulaText),
+                      ),
+                      <.div(^.className := "form-check form-check-inline",
+                        <.input(^.className := "form-check-input", ^.`type` := "radio", ^.id := "pickLeft", ^.name := "pickLeft",
+                          ^.onChange ==> onChangeConjunctToPick(0),
+                          ^.checked := conjunctToPick == 0
+                        ),
+                        <.label(^.className := "form-check-label", ^.`for` := "pickLeft", "Pick the left conjunct")
+                      ),
+                      <.div(^.className := "form-check form-check-inline",
+                        <.input(^.className := "form-check-input", ^.`type` := "radio", ^.id := "pickRight", ^.name := "pickRight",
+                          ^.onChange ==> onChangeConjunctToPick(1),
+                          ^.checked := conjunctToPick == 1
+                        ),
+                        <.label(^.className := "form-check-label", ^.`for` := "pickRight", "Pick the right conjunct")
+                      ),
+                    ),
                   )
               }),
               <.div(^.className := "modal-footer",
                 <.button(^.`type` := "button", ^.className := "btn btn-secondary", VdomAttr("data-dismiss") := "modal", "Close"),
-                <.button(^.`type` := "button", ^.className := "btn btn-primary", "Save changes", ^.onClick ==> onConfirmModal)
+                <.button(^.`type` := "button", ^.className := "btn btn-primary", "Apply", ^.disabled := !state.modalState.exists(_.canComplete), ^.onClick ==> onConfirmModal)
               )
             )
           )
@@ -186,18 +207,22 @@ object App {
           global.$("#interactionModal").modal()
         }
 
-    private def derivationCard(derivation: Derivation, derivationIndex: Int) =
+    private def derivationCard(derivation: Derivation, derivationIndex: Int): VdomNode =
       <.div(^.`class` := "card",
         <.div(^.`class` := "card-header",
           s"${derivationIndex + 1}. ${derivation.sequent}",
           <.div(^.`class` := "card-body",
             DerivationComponent.component(
               DerivationProps(derivation,
-                onRemoveDerivation(derivationIndex),
-                onConjunctionIntroBackwards(derivationIndex),
-                onConjunctionElimForwards(derivationIndex),
-                onConjunctionElimBackwards(derivationIndex),
-              )))))
+                Some(DerivationManipulationCallbacks(
+                  onRemoveDerivation(derivationIndex),
+                  onConjunctionIntroBackwards(derivationIndex),
+                  onConjunctionElimForwards(derivationIndex),
+                  onConjunctionElimBackwards(derivationIndex),
+                ))))
+          )
+        )
+      )
 
   }
 
