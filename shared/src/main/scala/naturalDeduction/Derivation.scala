@@ -27,7 +27,7 @@ object Sequent {
 }
 
 case class Sequent(assumptions: Set[Formula], conclusion: Formula) {
-  override def toString: String = s"${assumptions.mkString(", ")} ⊢ $conclusion"
+  override def toString: String = s"{${assumptions.mkString(", ")}} ⊢ $conclusion"
 }
 
 case class Assumptions(anonymousAssumptions: Set[Formula] = Set.empty, labelledAssumptions: Map[String, Formula] = Map.empty) {
@@ -55,6 +55,10 @@ case class Assumptions(anonymousAssumptions: Set[Formula] = Set.empty, labelledA
 }
 
 sealed trait Derivation {
+  def nextFreshLabel: String = (ALL_LABELS diff this.labels.toSeq).headOption.getOrElse("Out of labels!")
+
+  def labels: Set[String] = children.flatMap(_.labels).toSet
+
   def formula: Formula
 
   def undischargedAssumptions: Assumptions
@@ -133,6 +137,8 @@ sealed trait Derivation {
 
 object Derivation {
 
+  val ALL_LABELS: Seq[String] = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖㉗㉘㉙㉚㉛㉜㉝㉞㉟㊱㊲㊳㊴㊵㊶㊷㊸㊹㊺㊻㊼㊽㊾㊿".toSeq.map(_.toString)
+
   implicit class RichFormula(formula: Formula) {
     def axiom: Axiom = Axiom(formula)
   }
@@ -152,6 +158,8 @@ object Derivation {
 
     override def replaceChild(i: Int, newChild: Derivation): Derivation =
       throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
+
+    override def labels: Set[String] = label.toSet
   }
 
   case class ConjunctionIntroduction(leftDerivation: Derivation, rightDerivation: Derivation) extends Derivation {
@@ -224,6 +232,9 @@ object Derivation {
       case 0 => copy(consequentDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
+
+    override def labels: Set[String] = label.toSet ++ children.flatMap(_.labels)
+
   }
 
   case class ImplicationElimination(antecedentDerivation: Derivation, implicationDerivation: Derivation) extends Derivation {
@@ -320,6 +331,8 @@ object Derivation {
       case 0 => copy(bottomDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
+
+    override def labels: Set[String] = label.toSet ++ children.flatMap(_.labels)
   }
 
   case class NegationElimination(positiveDerivation: Derivation, negativeDerivation: Derivation) extends Derivation {
@@ -366,6 +379,8 @@ object Derivation {
       case 0 => copy(bottomDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
+
+    override def labels: Set[String] = label.toSet ++ children.flatMap(_.labels)
   }
 
   case class LeftDisjunctionIntroduction(leftDerivation: Derivation, right: Formula) extends Derivation {
@@ -426,6 +441,9 @@ object Derivation {
       case 2 => copy(rightDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
+
+    override def labels: Set[String] = leftLabel.toSet ++ rightLabel.toSet ++ children.flatMap(_.labels)
+
   }
 
 }

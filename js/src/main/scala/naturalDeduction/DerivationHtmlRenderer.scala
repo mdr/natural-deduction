@@ -4,17 +4,18 @@ import japgolly.scalajs.react.vdom.TagMod
 import naturalDeduction.Derivation._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
-import naturalDeduction.Formula.Conjunction
+import naturalDeduction.Formula.{Conjunction, Implication}
 
 case class ManipulationInfo(
-                                            onRemoveDerivation: DerivationPath => Callback,
-                                            onConjunctionIntroBackwards: DerivationPath => Callback,
-                                            onConjunctionElimForwards: (DerivationPath, Int) => Callback,
-                                            onConjunctionElimBackwards: DerivationPath => Callback,
-                                            onInlineDerivation: (DerivationPath, Int) => Callback,
-                                            derivationIndex: Int,
-                                            formulaToDerivationIndices: Map[Formula, Seq[Int]],
-                                          )
+                             onRemoveDerivation: DerivationPath => Callback,
+                             onConjunctionIntroBackwards: DerivationPath => Callback,
+                             onConjunctionElimForwards: (DerivationPath, Int) => Callback,
+                             onConjunctionElimBackwards: DerivationPath => Callback,
+                             onImplicationIntroBackwards: DerivationPath => Callback,
+                             onInlineDerivation: (DerivationPath, Int) => Callback,
+                             derivationIndex: Int,
+                             formulaToDerivationIndices: Map[Formula, Seq[Int]],
+                           )
 
 case class DerivationProps(
                             derivation: Derivation,
@@ -120,6 +121,8 @@ class DerivationHtmlRenderer(props: DerivationProps) {
 
         <.h6(^.className := "dropdown-header", "↑ Apply rule backwards")
           .when(backwardsRulesPossible),
+        <.div(^.className := "dropdown-item", ^.href := "#", "→-Introduction", ^.onClick --> manipulationInfo.onImplicationIntroBackwards(path))
+          .when(canImplicationIntroBackwards(derivation)),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Introduction", ^.onClick --> manipulationInfo.onConjunctionIntroBackwards(path))
           .when(canConjunctionIntroBackwards(derivation)),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination...", ^.onClick --> manipulationInfo.onConjunctionElimBackwards(path))
@@ -144,6 +147,9 @@ class DerivationHtmlRenderer(props: DerivationProps) {
 
   private def canConjunctionIntroBackwards(derivation: Derivation): Boolean =
     derivation.isAxiom && derivation.formula.isInstanceOf[Conjunction]
+
+  private def canImplicationIntroBackwards(derivation: Derivation): Boolean =
+    derivation.isAxiom && derivation.formula.isInstanceOf[Implication]
 
   private def rule(parent: Derivation, children: Seq[TagMod], rightLabel: String, leftLabel: Option[String] = None, path: DerivationPath): VdomNode = {
     <.div(^.`class` := "rule",

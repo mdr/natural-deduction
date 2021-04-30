@@ -2,9 +2,9 @@ import ExampleDerivations._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation._
-import naturalDeduction.Formula.{Conjunction, PropositionalVariable}
+import naturalDeduction.Formula.{Conjunction, Implication, PropositionalVariable}
 import naturalDeduction.parser.FormulaParser
-import naturalDeduction.{Derivation, DerivationComponent, ManipulationInfo, DerivationPath, DerivationProps, Formula}
+import naturalDeduction.{Derivation, DerivationComponent, DerivationPath, DerivationProps, Formula, ManipulationInfo}
 
 import scala.scalajs.js.Dynamic.global
 
@@ -42,7 +42,7 @@ case class UndoRedo[T](undoStack: List[T] = List.empty, redoStack: List[T] = Lis
 
   def canRedo: Boolean = redoStack.nonEmpty
 
-  def push(state: T): UndoRedo[T] = copy(undoStack = state :: undoStack)
+  def push(state: T): UndoRedo[T] = copy(undoStack = state :: undoStack, redoStack = List.empty)
 
   def undo(currentState: T): (T, UndoRedo[T]) = {
     val previousState :: restOfUndoStack = undoStack
@@ -241,6 +241,17 @@ object App {
       ConjunctionIntroduction(Axiom(conjunction.conjunct1), Axiom(conjunction.conjunct2))
     }
 
+    private def onImplicationIntroBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
+      $.modState(_.transformDerivation(derivationIndex, implicationIntroBackwards(path)))
+
+    private def implicationIntroBackwards(path: DerivationPath)(derivation: Derivation): Derivation =
+      derivation.transform(path, implicationIntroBackwards(derivation.nextFreshLabel))
+
+    private def implicationIntroBackwards(nextFreshLabel: String)(derivation: Derivation): Derivation = {
+      val implication = derivation.formula.asInstanceOf[Implication]
+      ImplicationIntroduction(implication.antecedent, nextFreshLabel, Axiom(implication.consequent))
+    }
+
     private def onConjunctionElimForwards(derivationIndex: Int)(path: DerivationPath, child: Int): Callback =
       $.modState(_.transformDerivation(derivationIndex, _.transform(path, conjunctionElimForwards(child))))
 
@@ -286,6 +297,7 @@ object App {
                 onConjunctionIntroBackwards(derivationIndex),
                 onConjunctionElimForwards(derivationIndex),
                 onConjunctionElimBackwards(derivationIndex),
+                onImplicationIntroBackwards(derivationIndex),
                 onInlineDerivation(derivationIndex),
                 derivationIndex,
                 formulaToDerivationIndices,
