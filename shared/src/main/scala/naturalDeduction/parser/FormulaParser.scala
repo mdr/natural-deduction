@@ -17,12 +17,14 @@ object FormulaParser extends RegexParsers {
 
   private def formula4: Parser[Formula] = (("¬" | "~" | "!") ~> formula4) ^^ Negation | formula5
 
-  private def formula5: Parser[Formula] =
+  private def formula5: Parser[Formula] = {
+    "theta" ^^^ PropositionalVariable("θ") |
     "phi" ^^^ PropositionalVariable("φ") |
       "psi" ^^^ PropositionalVariable("ψ") |
       "chi" ^^^ PropositionalVariable("χ") |
       variable |
       ("(" ~> formula <~ ")")
+  }
 
   private def variable: Parser[PropositionalVariable] = "" ~> // handle whitespace
     rep1(acceptIf(Character.isJavaIdentifierStart)("identifier expected but '" + _ + "' found"),
