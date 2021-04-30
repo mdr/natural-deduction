@@ -4,7 +4,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation._
 import naturalDeduction.Formula.{Conjunction, PropositionalVariable}
 import naturalDeduction.parser.FormulaParser
-import naturalDeduction.{Derivation, DerivationComponent, DerivationManipulationCallbacks, DerivationPath, DerivationProps, Formula}
+import naturalDeduction.{Derivation, DerivationComponent, ManipulationInfo, DerivationPath, DerivationProps, Formula}
 
 import scala.scalajs.js.Dynamic.global
 
@@ -65,10 +65,18 @@ object App {
                     undoRedo: UndoRedo[Seq[Derivation]] = UndoRedo()
                   ) {
 
+    lazy val formulaToDerivationIndices: Map[Formula, Seq[Int]] =
+      derivations.zipWithIndex.groupMap(_._1.formula)(_._2)
+
     def deleteDerivation(derivationIndex: Int): State =
       withUndo(
         copy(
           derivations = derivations.patch(derivationIndex, Seq.empty, 1)))
+
+    def duplicateDerivation(derivationIndex: Int): State =
+      withUndo(
+        copy(
+          derivations = derivations.patch(derivationIndex, Seq(derivations(derivationIndex), derivations(derivationIndex)), 1)))
 
     def updateModalState(f: ModalState => ModalState): State = copy(modalState = modalState map f)
 
@@ -110,6 +118,7 @@ object App {
       val conclusion = getDerivation(derivationIndex).get(path).formula
       copy(modalState = Some(ConjunctionElimBackwardsModalState(derivationIndex, path, conclusion, 0, "")))
     }
+
   }
 
   class Backend($: BackendScope[Unit, State]) {
@@ -206,7 +215,7 @@ object App {
             <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", <.i(^.className := "fas fa-redo"), ^.onClick --> onRedoClicked, ^.disabled := !state.undoRedo.canRedo),
           ),
           <.p(),
-          state.derivations.zipWithIndex.map((derivationCard _).tupled).mkTagMod(<.br()),
+          state.derivations.zipWithIndex.map { case (derivation, index) => derivationCard(derivation, index, state.formulaToDerivationIndices) }.mkTagMod(<.br()),
           <.br(),
           <.form(^.`class` := "form-row align-items-center",
             ^.onSubmit ==> handleSubmitNewFormula,
@@ -247,27 +256,39 @@ object App {
         case 1 => RightConjunctionElimination(derivation)
       }
 
+
+    private def onInlineDerivation(derivationIndex: Int)(path: DerivationPath, derivationIndexToInline: Int): Callback =
+      $.modState(oldState =>
+        oldState.transformDerivation(derivationIndex, _.set(path, oldState.derivations(derivationIndexToInline)))
+      )
+
     private def onConjunctionElimBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
       $.modState(_.showConjunctionElimBackwardsModalState(derivationIndex, path)) >>
         Callback {
           global.$("#interactionModal").modal()
         }
 
-    private def derivationCard(derivation: Derivation, derivationIndex: Int): VdomNode =
+    private def derivationCard(derivation: Derivation, derivationIndex: Int, formulaToDerivationIndices: Map[Formula, Seq[Int]]): VdomNode =
       <.div(^.`class` := "card",
         <.div(^.`class` := "card-header",
           s"${derivationIndex + 1}. ${derivation.sequent}",
-          <.button(^.`class` := "btn btn-outline-secondary float-right", ^.`type` := "button", <.i(^.className := "fas fa-trash"), ^.onClick --> onDeleteDerivation(derivationIndex))
+          <.div(^.`class` := "btn-group float-right", ^.role := "group",
+            <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", <.i(^.className := "fas fa-clone"), ^.onClick --> onDuplicateDerivation(derivationIndex)),
+            <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", <.i(^.className := "fas fa-trash"), ^.onClick --> onDeleteDerivation(derivationIndex)),
+          ),
         ),
 
         <.div(^.`class` := "card-body",
           DerivationComponent.component(
             DerivationProps(derivation,
-              Some(DerivationManipulationCallbacks(
+              Some(ManipulationInfo(
                 onRemoveDerivation(derivationIndex),
                 onConjunctionIntroBackwards(derivationIndex),
                 onConjunctionElimForwards(derivationIndex),
                 onConjunctionElimBackwards(derivationIndex),
+                onInlineDerivation(derivationIndex),
+                derivationIndex,
+                formulaToDerivationIndices,
               ))))
         )
       )
@@ -275,11 +296,15 @@ object App {
     private def onDeleteDerivation(derivationIndex: Int): Callback =
       $.modState(_.deleteDerivation(derivationIndex))
 
+    private def onDuplicateDerivation(derivationIndex: Int): Callback =
+      $.modState(_.duplicateDerivation(derivationIndex))
+
   }
 
   val app = ScalaComponent.builder[Unit]("App")
-    .initialState(State(derivations = Seq(φ.axiom conjunctionIntro ψ.axiom)))
-    //    .initialState(State(derivations = Seq(derivation1, derivation2, derivation3)))
+    //    .initialState(State(derivations = Seq(φ.axiom conjunctionIntro ψ.axiom)))
+    //        .initialState(State(derivations = Seq(derivation1, derivation2, derivation3)))
+    .initialState(State(derivations = Seq.empty))
     .renderBackend[Backend]
     .build
 
