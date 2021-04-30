@@ -27,7 +27,8 @@ object Sequent {
 }
 
 case class Sequent(assumptions: Set[Formula], conclusion: Formula) {
-  override def toString: String = s"{${assumptions.mkString(", ")}} ⊢ $conclusion"
+  override def toString: String =
+    if (assumptions.isEmpty) s"⊢ $conclusion" else s"{${assumptions.mkString(", ")}} ⊢ $conclusion"
 }
 
 case class Assumptions(anonymousAssumptions: Set[Formula] = Set.empty, labelledAssumptions: Map[String, Formula] = Map.empty) {
@@ -55,6 +56,11 @@ case class Assumptions(anonymousAssumptions: Set[Formula] = Set.empty, labelledA
 }
 
 sealed trait Derivation {
+
+  def dischargeAxiom(label: String): Derivation = this match {
+    case axiom: Axiom => axiom.copy(label = Some(label))
+  }
+
   def nextFreshLabel: String = (ALL_LABELS diff this.labels.toSeq).headOption.getOrElse("Out of labels!")
 
   def labels: Set[String] = children.flatMap(_.labels).toSet
@@ -70,6 +76,25 @@ sealed trait Derivation {
   def replaceChild(i: Int, newChild: Derivation): Derivation
 
   def isAxiom: Boolean = this.isInstanceOf[Axiom]
+
+  def bindingsAtPath(path: DerivationPath): Map[String, Formula] = bindingsAtPath(path.childChoices)
+
+  private def bindingsAtPath(childChoices: Seq[Int]): Map[String, Formula] =
+    childChoices match {
+      case Seq() => Map.empty
+      case Seq(firstChoice, remainingChoices@_*) => {
+        val childDerivation = children(firstChoice)
+        val bindingsHere: Map[String, Formula] = this match {
+          case raa@ReductioAdAbsurdum(_, Some(label), _) => Map(label -> raa.negation)
+          case NegationIntroduction(statement, Some(label), _) => Map(label -> statement)
+          case ImplicationIntroduction(antecedent, Some(label), _) => Map(label -> antecedent)
+          case de@DisjunctionElimination(_, Some(leftLabel), _, _, _) if firstChoice == 1 => Map(leftLabel -> de.disjunction.disjunct1)
+          case de@DisjunctionElimination(_, _, _, Some(rightLabel), _) if firstChoice == 2 => Map(rightLabel -> de.disjunction.disjunct2)
+          case _ => Map.empty
+        }
+        bindingsHere ++ childDerivation.bindingsAtPath(remainingChoices)
+      }
+    }
 
   @tailrec
   private def get(childChoices: Seq[Int]): Derivation = childChoices match {

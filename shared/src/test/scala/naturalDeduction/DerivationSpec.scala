@@ -210,9 +210,19 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
                     Axiom(φ → ψ, "❶"))),
                 Axiom((φ.not ∨ ψ).not, "❷"))))))
     derivation.sequent shouldEqual (Ø ⊢ ((φ → ψ) → (φ.not ∨ ψ)))
-    println(derivation.sequent)
-    println(derivation)
-
   }
+
+  "bindingsAtPath" should "work" in {
+    //    ❶ [φ]
+    //    ───── →I
+    //    ψ → φ
+    //❶ ───────── →I
+    //  φ → ψ → φ
+    val derivation = Axiom(φ, "❶").implicationIntro(ψ).implicationIntro(φ, "❶")
+    derivation.bindingsAtPath(DerivationPath(Seq.empty)) shouldBe Map.empty
+    derivation.bindingsAtPath(DerivationPath(Seq(0))) shouldBe Map("❶" -> φ)
+    derivation.bindingsAtPath(DerivationPath(Seq(0, 0))) shouldBe Map("❶" -> φ)
+  }
+
   // ❶ ❷ ❸ ❹ ❺ φ ψ χ Ø ⊢ ¬ ∨ ∧ → ↔
 }

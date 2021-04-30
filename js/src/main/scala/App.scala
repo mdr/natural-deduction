@@ -1,10 +1,9 @@
-import ExampleDerivations._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation._
 import naturalDeduction.Formula.{Conjunction, Implication, PropositionalVariable}
 import naturalDeduction.parser.FormulaParser
-import naturalDeduction.{Derivation, DerivationComponent, DerivationPath, DerivationProps, Formula, ManipulationInfo}
+import naturalDeduction._
 
 import scala.scalajs.js.Dynamic.global
 
@@ -273,6 +272,9 @@ object App {
         oldState.transformDerivation(derivationIndex, _.set(path, oldState.derivations(derivationIndexToInline)))
       )
 
+    private def onDischargeAssumption(derivationIndex: Int)(path: DerivationPath, label: String): Callback =
+      $.modState(_.transformDerivation(derivationIndex, _.transform(path, _.dischargeAxiom(label))))
+
     private def onConjunctionElimBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
       $.modState(_.showConjunctionElimBackwardsModalState(derivationIndex, path)) >>
         Callback {
@@ -299,6 +301,7 @@ object App {
                 onConjunctionElimBackwards(derivationIndex),
                 onImplicationIntroBackwards(derivationIndex),
                 onInlineDerivation(derivationIndex),
+                onDischargeAssumption(derivationIndex),
                 derivationIndex,
                 formulaToDerivationIndices,
               ))))

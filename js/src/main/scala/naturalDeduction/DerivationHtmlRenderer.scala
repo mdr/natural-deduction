@@ -13,6 +13,7 @@ case class ManipulationInfo(
                              onConjunctionElimBackwards: DerivationPath => Callback,
                              onImplicationIntroBackwards: DerivationPath => Callback,
                              onInlineDerivation: (DerivationPath, Int) => Callback,
+                             onDischargeAssumption: (DerivationPath, String) => Callback,
                              derivationIndex: Int,
                              formulaToDerivationIndices: Map[Formula, Seq[Int]],
                            )
@@ -97,9 +98,10 @@ class DerivationHtmlRenderer(props: DerivationProps) {
   private def renderManipulatableFormula(derivation: Derivation, path: DerivationPath, manipulationInfo: ManipulationInfo): VdomNode = {
     val inlineableDerivationIndices =
       manipulationInfo.formulaToDerivationIndices.getOrElse(derivation.formula, Seq.empty).filter(_ => derivation.isAxiom).filter(i => i != manipulationInfo.derivationIndex).sorted
+    val dischargeableLabels = props.derivation.bindingsAtPath(path).groupMap(_._2)(_._1).getOrElse(derivation.formula, Seq.empty).filter(_ => derivation.isAxiom).toSeq.sorted
     val forwardsRulesPossible = canConjunctionElimForwards(derivation, path)
     val backwardsRulesPossible = derivation.isAxiom
-    val otherActionsPossible = !derivation.isAxiom || inlineableDerivationIndices.nonEmpty
+    val otherActionsPossible = !derivation.isAxiom || inlineableDerivationIndices.nonEmpty || dischargeableLabels.nonEmpty
     <.a(^.`class` := "dropdown link-secondary",
       <.div(
         ^.`type` := "button",
@@ -137,7 +139,9 @@ class DerivationHtmlRenderer(props: DerivationProps) {
           .when(!derivation.isAxiom),
         inlineableDerivationIndices.toVdomArray(i =>
           <.div(^.className := "dropdown-item", ^.href := "#", s"Inline derivation #${i + 1}", ^.onClick --> manipulationInfo.onInlineDerivation(path, i))
-        )
+        ),
+        dischargeableLabels.toVdomArray(label =>
+          <.div(^.className := "dropdown-item", ^.href := "#", s"Discharge assumption $label", ^.onClick --> manipulationInfo.onDischargeAssumption(path, label)))
       )
     )
   }
