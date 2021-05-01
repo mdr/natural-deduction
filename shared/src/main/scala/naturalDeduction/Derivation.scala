@@ -301,6 +301,9 @@ object Derivation {
   }
 
   object ImplicationElimination {
+    def apply(antecedent: Formula, consequent: Formula): ImplicationElimination =
+      ImplicationElimination(antecedent.axiom, (antecedent → consequent).axiom)
+
     implicit val rw: RW[ImplicationElimination] = macroRW
   }
 

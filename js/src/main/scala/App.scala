@@ -1,139 +1,14 @@
+import ConjunctionElimBackwardsModalState.conjunctionEliminationDerivation
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation._
 import naturalDeduction.Formula.{Conjunction, Implication, PropositionalVariable}
-import naturalDeduction.parser.FormulaParser
 import naturalDeduction._
-import org.scalajs.dom.{console, window}
-import upickle.default._
+import naturalDeduction.parser.FormulaParser
 
 import scala.scalajs.js.Dynamic.global
-import scala.scalajs.js.URIUtils
-
-sealed trait ModalState {
-  def withModalFormula(newValue: String): ModalState
-
-  def title: String
-
-  def swapConjuncts: ModalState = this
-
-  def canComplete: Boolean
-
-}
-
-case class ConjunctionElimBackwardsModalState(derivationIndex: Int,
-                                              path: DerivationPath,
-                                              conclusion: Formula,
-                                              conjunctToPick: Int = 0,
-                                              formulaText: String = "") extends ModalState {
-  def title: String = "∧-Elimination Backwards"
-
-  def withModalFormula(newText: String): ModalState = copy(formulaText = newText)
-
-  override def swapConjuncts: ModalState = copy(conjunctToPick = if (conjunctToPick == 0) 1 else 0)
-
-  override def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
-}
-
-case class ImplicationElimBackwardsModalState(derivationIndex: Int,
-                                              path: DerivationPath,
-                                              consequent: Formula,
-                                              formulaText: String = "") extends ModalState {
-  def title: String = "→-Elimination Backwards"
-
-  def withModalFormula(newText: String): ModalState = copy(formulaText = newText)
-
-  override def swapConjuncts: ModalState = this
-
-  override def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
-}
-
-case class UndoRedo[T](undoStack: List[T] = List.empty, redoStack: List[T] = List.empty) {
-  def canUndo: Boolean = undoStack.nonEmpty
-
-  def canRedo: Boolean = redoStack.nonEmpty
-
-  def push(state: T): UndoRedo[T] = copy(undoStack = state :: undoStack, redoStack = List.empty)
-
-  def undo(currentState: T): (T, UndoRedo[T]) = {
-    val previousState :: restOfUndoStack = undoStack
-    (previousState, UndoRedo(restOfUndoStack, currentState :: redoStack))
-  }
-
-  def redo(currentState: T): (T, UndoRedo[T]) = {
-    val previousState :: restOfRedoStack = redoStack
-    (previousState, UndoRedo(currentState :: undoStack, restOfRedoStack))
-  }
-
-}
 
 object App {
-
-  case class State(
-                    newFormulaText: String = "",
-                    derivations: Seq[Derivation] = Seq.empty,
-                    modalState: Option[ModalState] = None,
-                    undoRedo: UndoRedo[Seq[Derivation]] = UndoRedo()
-                  ) {
-
-    lazy val formulaToDerivationIndices: Map[Formula, Seq[Int]] =
-      derivations.zipWithIndex.groupMap(_._1.formula)(_._2)
-
-    def deleteDerivation(derivationIndex: Int): State =
-      withUndo(
-        copy(
-          derivations = derivations.patch(derivationIndex, Seq.empty, 1)))
-
-    def duplicateDerivation(derivationIndex: Int): State =
-      withUndo(
-        copy(
-          derivations = derivations.patch(derivationIndex, Seq(derivations(derivationIndex), derivations(derivationIndex)), 1)))
-
-    def updateModalState(f: ModalState => ModalState): State = copy(modalState = modalState map f)
-
-    def swapConjuncts: State = updateModalState(_.swapConjuncts)
-
-    def withModalFormula(newValue: String): State = updateModalState(_.withModalFormula(newValue))
-
-    def withUndo(newState: State): State = newState.copy(undoRedo = undoRedo.push(derivations))
-
-    def undo: State = {
-      val (newDerivations, newUndoRedo) = undoRedo.undo(derivations)
-      copy(derivations = newDerivations, undoRedo = newUndoRedo)
-    }
-
-    def redo: State = {
-      val (newDerivations, newUndoRedo) = undoRedo.redo(derivations)
-      copy(derivations = newDerivations, undoRedo = newUndoRedo)
-    }
-
-    def acceptNewFormulaAsNewDerivation: State =
-      withUndo(
-        copy(
-          derivations = derivations :+ Axiom(FormulaParser.parseFormula(newFormulaText)),
-          newFormulaText = ""))
-
-    def newFormulaIsValid: Boolean = FormulaParser.tryParseFormula(newFormulaText).isRight
-
-    def getDerivation(i: Int): Derivation = derivations(i)
-
-    private def setDerivation(i: Int, derivation: Derivation): State = copy(derivations = derivations.patch(i, Seq(derivation), 1))
-
-    def transformDerivation(i: Int, f: Derivation => Derivation): State = withUndo(setDerivation(i, f(getDerivation(i))))
-
-    def closeModal: State = copy(modalState = None)
-
-    def showConjunctionElimBackwardsModalState(derivationIndex: Int, path: DerivationPath): State = {
-      val conclusion = getDerivation(derivationIndex).get(path).formula
-      copy(modalState = Some(ConjunctionElimBackwardsModalState(derivationIndex, path, conclusion)))
-    }
-
-    def showImplicationElimBackwardsModalState(derivationIndex: Int, path: DerivationPath): State = {
-      val consequent = getDerivation(derivationIndex).get(path).formula
-      copy(modalState = Some(ImplicationElimBackwardsModalState(derivationIndex, path, consequent)))
-    }
-
-  }
 
   class Backend($: BackendScope[Unit, State]) {
 
@@ -141,25 +16,9 @@ object App {
       Callback {
         global.$("#interactionModal").modal("hide")
       } >>
-        modState { oldState =>
-          oldState.modalState match {
-            case Some(ConjunctionElimBackwardsModalState(derivationIndex, path, conclusion, conjunctToPick, newFormulaText)) =>
-              val newFormula = FormulaParser.parseFormula(newFormulaText)
-              val newDerivation: Derivation = conjunctionEliminationDerivation(conclusion, newFormula, conjunctToPick)
-              oldState.transformDerivation(derivationIndex, _.set(path, newDerivation)).closeModal
-            case Some(ImplicationElimBackwardsModalState(derivationIndex, path, consequent, newFormulaText)) =>
-              val newFormula = FormulaParser.parseFormula(newFormulaText)
-              val newDerivation = implicationEliminationDerivation(newFormula, consequent)
-              oldState.transformDerivation(derivationIndex, _.set(path, newDerivation)).closeModal
-            case None => oldState
-          }
-        }
-
-    private def conjunctionEliminationDerivation(conjunct1: Formula, conjunct2: Formula, conjunctToPick: Int): Derivation =
-      conjunctToPick match {
-        case 0 => LeftConjunctionElimination(Axiom(Conjunction(conjunct1, conjunct2)))
-        case 1 => RightConjunctionElimination(Axiom(Conjunction(conjunct2, conjunct1)))
-      }
+        modState(oldState =>
+          oldState.modalState.map(_.complete(oldState)).getOrElse(oldState).closeModal
+        )
 
     private def onSwapConjuncts: Callback =
       modState(_.swapConjuncts)
@@ -220,7 +79,7 @@ object App {
                 case ImplicationElimBackwardsModalState(_, _, consequent, formulaText) =>
                   val newFormulaOpt = FormulaParser.tryParseFormula(formulaText).toOption
                   val newFormula = newFormulaOpt.getOrElse(PropositionalVariable("?"))
-                  val derivation = implicationEliminationDerivation(newFormula, consequent)
+                  val derivation = ImplicationElimination(newFormula, consequent)
                   <.div(
                     <.div(^.`class` := "d-flex justify-content-center",
                       DerivationComponent.component(DerivationProps(derivation))
@@ -243,18 +102,20 @@ object App {
         ),
         <.div(^.`class` := "container",
           <.p(),
-          <.p("An implementation of natural deduction proofs as described in ", <.em("Mathematical Logic"), " by Ian Chiswell and Wilfrid Hodges."),
           <.div(^.`class` := "btn-group", ^.role := "group",
             <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", <.i(^.className := "fas fa-undo"), ^.onClick --> onUndoClicked, ^.disabled := !state.undoRedo.canUndo),
             <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", <.i(^.className := "fas fa-redo"), ^.onClick --> onRedoClicked, ^.disabled := !state.undoRedo.canRedo),
+            <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", CustomAttributes.dataToggle := "collapse", CustomAttributes.dataTarget := "#help", <.i(^.className := "fas fa-question-circle")),
           ),
+          Help.component(),
+          <.p(),
           <.p(),
           state.derivations.zipWithIndex.map { case (derivation, index) => derivationCard(derivation, index, state.formulaToDerivationIndices) }.mkTagMod(<.br()),
           <.br(),
           <.form(^.`class` := "form-row align-items-center",
             ^.onSubmit ==> handleSubmitNewFormula,
             <.div(^.`class` := "col-auto",
-              <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Add formula...", ^.onChange ==> onChangeNewFormula, ^.value := state.newFormulaText)),
+              <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Formula...", ^.onChange ==> onChangeNewFormula, ^.value := state.newFormulaText)),
             <.div(^.`class` := "col-auto",
               <.button(^.`type` := "submit", ^.`class` := "btn btn-secondary mb-2", "Start New Derivation", ^.disabled := !state.newFormulaIsValid),
             ),
@@ -262,8 +123,11 @@ object App {
         )
       )
 
-    private def implicationEliminationDerivation(antecedent: Formula, consequent: Formula): ImplicationElimination =
-      ImplicationElimination(antecedent.axiom, (antecedent → consequent).axiom)
+    private def onDeleteDerivation(derivationIndex: Int): Callback =
+      modState(_.deleteDerivation(derivationIndex))
+
+    private def onDuplicateDerivation(derivationIndex: Int): Callback =
+      modState(_.duplicateDerivation(derivationIndex))
 
     private def onRemoveDerivation(derivationIndex: Int)(path: DerivationPath): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, convertToAxiom)))
@@ -292,15 +156,13 @@ object App {
     private def onConjunctionElimForwards(derivationIndex: Int)(path: DerivationPath, child: Int): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, conjunctionElimForwards(child))))
 
-    private def onUndoClicked: Callback =
-      modState(_.undo)
+    private def onUndoClicked: Callback = modState(_.undo)
 
-    private def onRedoClicked: Callback =
-      modState(_.redo)
+    private def onRedoClicked: Callback = modState(_.redo)
 
     private def syncUrlHash: Callback =
       $.modState(state => {
-        window.location.hash = write(state.derivations)
+        UrlHashSync.writeToHash(state.derivations)
         state
       })
 
@@ -312,7 +174,6 @@ object App {
         case 0 => LeftConjunctionElimination(derivation)
         case 1 => RightConjunctionElimination(derivation)
       }
-
 
     private def onInlineDerivation(derivationIndex: Int)(path: DerivationPath, derivationIndexToInline: Int): Callback =
       modState(oldState =>
@@ -362,24 +223,11 @@ object App {
         )
       )
 
-    private def onDeleteDerivation(derivationIndex: Int): Callback =
-      modState(_.deleteDerivation(derivationIndex))
-
-    private def onDuplicateDerivation(derivationIndex: Int): Callback =
-      modState(_.duplicateDerivation(derivationIndex))
-
   }
 
   val app = ScalaComponent.builder[Unit]("App")
-    //    .initialState(State(derivations = Seq(φ.axiom conjunctionIntro ψ.axiom)))
-    //        .initialState(State(derivations = Seq(derivation1, derivation2, derivation3)))
-    .initialState(State(derivations = initialDerivations))
+    .initialState(State(derivations = UrlHashSync.readFromHash))
     .renderBackend[Backend]
     .build
-
-  private def initialDerivations: Seq[Derivation] = window.location.hash match {
-    case "" => Seq.empty
-    case s => read[Seq[Derivation]](URIUtils.decodeURIComponent(s.substring(1)))
-  }
 
 }
