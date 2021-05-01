@@ -226,11 +226,11 @@ object Derivation {
     def apply(antecedent: Formula, consequentDerivation: Derivation): ImplicationIntroduction =
       ImplicationIntroduction(antecedent, None, consequentDerivation)
 
-    def apply(antecedent: Formula, label: String, consequentDerivation: Derivation): ImplicationIntroduction =
+    def apply(antecedent: Formula, label: Label, consequentDerivation: Derivation): ImplicationIntroduction =
       ImplicationIntroduction(antecedent, Some(label), consequentDerivation)
   }
 
-  case class ImplicationIntroduction(antecedent: Formula, label: Option[String], consequentDerivation: Derivation) extends Derivation {
+  case class ImplicationIntroduction(antecedent: Formula, label: Option[Label], consequentDerivation: Derivation) extends Derivation {
 
     for {
       label <- label
@@ -349,11 +349,11 @@ object Derivation {
     def apply(statement: Formula, bottomDerivation: Derivation): NegationIntroduction =
       NegationIntroduction(statement, None, bottomDerivation)
 
-    def apply(statement: Formula, label: String, bottomDerivation: Derivation): NegationIntroduction =
+    def apply(statement: Formula, label: Label, bottomDerivation: Derivation): NegationIntroduction =
       NegationIntroduction(statement, Some(label), bottomDerivation)
   }
 
-  case class NegationIntroduction(statement: Formula, label: Option[String], bottomDerivation: Derivation) extends Derivation {
+  case class NegationIntroduction(statement: Formula, label: Option[Label], bottomDerivation: Derivation) extends Derivation {
     for {
       label <- label
       assumption <- bottomDerivation.undischargedAssumptions.labelledAssumptions.get(label)
@@ -401,12 +401,12 @@ object Derivation {
     def apply(conclusion: Formula, bottomDerivation: Derivation): ReductioAdAbsurdum =
       ReductioAdAbsurdum(conclusion, None, bottomDerivation)
 
-    def apply(conclusion: Formula, label: String, bottomDerivation: Derivation): ReductioAdAbsurdum =
+    def apply(conclusion: Formula, label: Label, bottomDerivation: Derivation): ReductioAdAbsurdum =
       ReductioAdAbsurdum(conclusion, Some(label), bottomDerivation)
 
   }
 
-  case class ReductioAdAbsurdum(conclusion: Formula, label: Option[String], bottomDerivation: Derivation) extends Derivation {
+  case class ReductioAdAbsurdum(conclusion: Formula, label: Option[Label], bottomDerivation: Derivation) extends Derivation {
     val negation: Negation = conclusion.not
     for {
       label <- label

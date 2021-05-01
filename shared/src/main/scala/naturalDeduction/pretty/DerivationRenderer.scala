@@ -1,6 +1,6 @@
 package naturalDeduction.pretty
 
-import naturalDeduction.Derivation
+import naturalDeduction.{Derivation, Label}
 import naturalDeduction.Derivation._
 
 object DerivationRenderer {
@@ -47,7 +47,7 @@ object DerivationRenderer {
         (leftLabel.toSeq ++ rightLabel).mkString(" ") match { case "" => None; case s => Some(s) })
   }
 
-  private def renderSingleChild(parent: Derivation, childRegion: RaggedTextRegion, ruleName: String, label: Option[String] = None): RaggedTextRegion = {
+  private def renderSingleChild(parent: Derivation, childRegion: RaggedTextRegion, ruleName: String, label: Option[Label] = None): RaggedTextRegion = {
     val formulaString = parent.formula.toString
     val firstChildLine = childRegion.lines.head
     val firstChildLineOffset = firstChildLine.offset // beta
@@ -90,7 +90,7 @@ object DerivationRenderer {
                                   child2Region: RaggedTextRegion,
                                   child3Region: RaggedTextRegion,
                                   ruleName: String,
-                                  label: Option[String] = None): RaggedTextRegion = {
+                                  label: Option[Label] = None): RaggedTextRegion = {
     val minHorizSpacing = 3
     val formulaString = parent.formula.toString
     val lengthOfChildLineWhenClosestPacked = {

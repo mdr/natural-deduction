@@ -90,7 +90,7 @@ class DerivationHtmlRenderer(props: DerivationProps) {
         path = path)
   }
 
-  private def rule1(parent: Derivation, child: TagMod, rightLabel: String, leftLabel: Option[Label] = None, path: DerivationPath): VdomNode =
+  private def rule1(parent: Derivation, child: TagMod, rightLabel: Label, leftLabel: Option[Label] = None, path: DerivationPath): VdomNode =
     rule(parent, Seq(child), rightLabel, leftLabel, path)
 
   private def rule2(parent: Derivation, child1: VdomNode, child2: VdomNode, rightLabel: Label, leftLabel: Option[Label] = None, path: DerivationPath): VdomNode =
@@ -99,7 +99,7 @@ class DerivationHtmlRenderer(props: DerivationProps) {
   private def rule3(parent: Derivation, child1: VdomNode, child2: VdomNode, child3: VdomNode, rightLabel: Label, leftLabel: Option[Label] = None, path: DerivationPath): VdomNode =
     rule(parent, Seq(child1, child2, child3), rightLabel, leftLabel, path)
 
-  private def rule(parent: Derivation, children: Seq[TagMod], rightLabel: String, leftLabel: Option[String] = None, path: DerivationPath): VdomNode = {
+  private def rule(parent: Derivation, children: Seq[TagMod], rightLabel: Label, leftLabel: Option[Label] = None, path: DerivationPath): VdomNode = {
     <.div(^.`class` := "rule",
       <.div(^.`class` := "rule-top",
         <.div(^.`class` := "rule-top-left-label").when(leftLabel.isDefined),
@@ -160,20 +160,6 @@ class DerivationHtmlRenderer(props: DerivationProps) {
         }),
       <.div(^.className := "dropdown-menu", CustomAttributes.ariaLabelledBy := "ruleActionMenuTrigger",
 
-        <.h6(^.className := "dropdown-header", "↓ Apply rule forwards")
-          .when(forwardsRulesPossible),
-        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick left)", ^.onClick --> onConjunctionElimForwards(0))
-          .when(canConjunctionElimForwards(derivation, path)),
-        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick right)", ^.onClick --> onConjunctionElimForwards(1))
-          .when(canConjunctionElimForwards(derivation, path)),
-        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as antecedent)...", ^.onClick --> onImplicationElimForwardsFromAntecedent)
-          .when(path.isRoot),
-        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as implication)", ^.onClick --> onImplicationElimForwardsFromImplication)
-          .when(path.isRoot && derivation.formula.isInstanceOf[Implication]),
-
-        <.div(^.`class` := "dropdown-divider")
-          .when(forwardsRulesPossible && backwardsRulesPossible),
-
         <.h6(^.className := "dropdown-header", "↑ Apply rule backwards")
           .when(backwardsRulesPossible),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Introduction", ^.onClick --> onConjunctionIntroBackwards(path))
@@ -184,6 +170,20 @@ class DerivationHtmlRenderer(props: DerivationProps) {
           .when(canImplicationIntroBackwards(derivation)),
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination...", ^.onClick --> onImplicationElimBackwards(path))
           .when(derivation.isAxiom),
+
+        <.div(^.`class` := "dropdown-divider")
+          .when(backwardsRulesPossible && forwardsRulesPossible),
+
+        <.h6(^.className := "dropdown-header", "↓ Apply rule forwards")
+          .when(forwardsRulesPossible),
+        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick left)", ^.onClick --> onConjunctionElimForwards(0))
+          .when(canConjunctionElimForwards(derivation, path)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick right)", ^.onClick --> onConjunctionElimForwards(1))
+          .when(canConjunctionElimForwards(derivation, path)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as antecedent)...", ^.onClick --> onImplicationElimForwardsFromAntecedent)
+          .when(path.isRoot),
+        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as implication)", ^.onClick --> onImplicationElimForwardsFromImplication)
+          .when(path.isRoot && derivation.formula.isInstanceOf[Implication]),
 
         <.div(^.`class` := "dropdown-divider")
           .when(otherActionsPossible && (forwardsRulesPossible || backwardsRulesPossible)),

@@ -2,12 +2,11 @@ package naturalDeduction.html
 
 import japgolly.scalajs.react.{Callback, ScalaComponent}
 import japgolly.scalajs.react.vdom.html_<^._
-import naturalDeduction.Formula
-import naturalDeduction.html.TooltipUtils.activateTooltip
+import naturalDeduction.{Formula, Label}
 
 import scala.scalajs.js.Dynamic.global
 
-case class LeftRuleLabelProps(label: String, labelToFormula: Map[String, Formula])
+case class LeftRuleLabelProps(label: Label, labelToFormula: Map[Label, Formula])
 
 object LeftRuleLabel {
 

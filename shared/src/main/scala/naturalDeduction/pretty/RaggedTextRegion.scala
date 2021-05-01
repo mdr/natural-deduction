@@ -24,7 +24,7 @@ case class RaggedTextRegion(lines: Seq[LineAndOffset]) {
   def toStringNormal: String =
     lines
       .reverse
-      .map { case line@LineAndOffset(text, offset) => " " * offset + text }
+      .map { case LineAndOffset(text, offset) => " " * offset + text }
       .mkString(sep = "\n")
 
   def toStringDebug: String =
