@@ -171,3 +171,9 @@ a.dropdown {
 .tooltip:hover:before, .tooltip:hover:after {
     opacity:1;
 }
+
+div[type='button'] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
