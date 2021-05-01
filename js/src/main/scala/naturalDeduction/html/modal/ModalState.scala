@@ -1,9 +1,10 @@
-package naturalDeduction.html
+package naturalDeduction.html.modal
 
 import naturalDeduction.Derivation._
-import naturalDeduction.Formula.Conjunction
+import naturalDeduction.Formula.{Conjunction, Implication}
 import naturalDeduction._
-import naturalDeduction.html.ConjunctionElimBackwardsModalState.conjunctionEliminationDerivation
+import naturalDeduction.html.State
+import naturalDeduction.html.modal.ConjunctionElimBackwardsModalState.conjunctionEliminationDerivation
 import naturalDeduction.parser.FormulaParser
 
 sealed trait ModalState {
@@ -64,5 +65,22 @@ case class ImplicationElimBackwardsModalState(derivationIndex: Int,
     val newFormula = FormulaParser.parseFormula(formulaText)
     val newDerivation = ImplicationElimination(newFormula, consequent)
     state.transformDerivation(derivationIndex, _.set(path, newDerivation))
+  }
+}
+
+
+case class ImplicationElimForwardsFromAntecedentModalState(derivationIndex: Int,
+                                                           antecedent: Formula,
+                                                           formulaText: String = "") extends ModalState {
+  def title: String = "→-Elimination Forwards"
+
+  def withModalFormula(newText: String): ModalState = copy(formulaText = newText)
+
+  override def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
+
+  override def complete(state: State): State = {
+    val consequent = FormulaParser.parseFormula(formulaText)
+    val newDerivation = ImplicationElimination(antecedent, consequent)
+    state.setDerivation(derivationIndex, newDerivation)
   }
 }

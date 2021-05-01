@@ -1,11 +1,12 @@
-package naturalDeduction.html
+package naturalDeduction.html.modal
 
-import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.VdomNode
 import japgolly.scalajs.react.vdom.html_<^._
+import japgolly.scalajs.react.{Callback, ScalaComponent}
 import naturalDeduction.Derivation.ImplicationElimination
 import naturalDeduction.Formula.PropositionalVariable
 import naturalDeduction.html.ReactUtils.getTargetValueThen
+import naturalDeduction.html.{DerivationComponent, DerivationProps}
 import naturalDeduction.parser.FormulaParser
 
 object ImplicationElimBackwardsModalBody {
@@ -34,7 +35,13 @@ object ImplicationElimBackwardsModalBody {
       <.div(^.className := "form-row align-items-center",
         <.div(^.className := "col-12",
           <.label(^.className := "sr-only", ^.`for` := "inlineFormInput", "Name"),
-          <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Antecedent...", ^.onChange ==> onChangeModalFormula, ^.value := formulaText),
+          <.input(
+            ^.`class` := "form-control mb-2",
+            ^.`type` := "text",
+            ^.placeholder := "Antecedent...",
+            ^.onChange ==> onChangeModalFormula,
+            ^.value := formulaText
+          ),
         ),
       ),
     )

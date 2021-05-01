@@ -1,14 +1,9 @@
-package naturalDeduction.html
+package naturalDeduction.html.modal
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.VdomNode
 import japgolly.scalajs.react.vdom.html_<^._
-import naturalDeduction.Derivation.ImplicationElimination
-import naturalDeduction.Formula.PropositionalVariable
-import naturalDeduction.html
-import naturalDeduction.html.ConjunctionElimBackwardsModalState.conjunctionEliminationDerivation
 import naturalDeduction.html.ReactUtils.getTargetValueThen
-import naturalDeduction.parser.FormulaParser
 
 case class ModalProps(
                        modalState: Option[ModalState],
@@ -37,9 +32,14 @@ object Modal {
           ),
           <.div(^.className := "modal-body", modalState.map {
             case state: ConjunctionElimBackwardsModalState =>
-              ConjunctionElimBackwardsModalBody.component(ConjunctionElimBackwardsModalBody.Props(state, props.onChangeModalFormula, onSwapConjuncts))
+              ConjunctionElimBackwardsModalBody.component(
+                ConjunctionElimBackwardsModalBody.Props(state, props.onChangeModalFormula, onSwapConjuncts))
             case state: ImplicationElimBackwardsModalState =>
-              ImplicationElimBackwardsModalBody.component(ImplicationElimBackwardsModalBody.Props(state, props.onChangeModalFormula))
+              ImplicationElimBackwardsModalBody.component(
+                ImplicationElimBackwardsModalBody.Props(state, props.onChangeModalFormula))
+            case state: ImplicationElimForwardsFromAntecedentModalState =>
+              ImplicationElimForwardsFromAntecedentModalBody.component(
+                ImplicationElimForwardsFromAntecedentModalBody.Props(state, props.onChangeModalFormula))
           }),
           <.div(^.className := "modal-footer",
             <.button(

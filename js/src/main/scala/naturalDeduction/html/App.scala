@@ -5,6 +5,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation._
 import naturalDeduction.Formula.{Conjunction, Implication}
 import naturalDeduction._
+import naturalDeduction.html.modal.{Modal, ModalProps}
 
 import scala.scalajs.js.Dynamic.global
 
@@ -134,17 +135,18 @@ object App {
     private def onUndischargeAssumption(derivationIndex: Int)(path: DerivationPath): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, _.undischargeAxiom)))
 
+    private val showModal: Callback = Callback {
+      global.$("#interactionModal").modal()
+    }
+
     private def onConjunctionElimBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
-      modState(_.showConjunctionElimBackwardsModalState(derivationIndex, path)) >>
-        Callback {
-          global.$("#interactionModal").modal()
-        }
+      modState(_.showConjunctionElimBackwardsModal(derivationIndex, path)) >> showModal
 
     private def onImplicationElimBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
-      modState(_.showImplicationElimBackwardsModalState(derivationIndex, path)) >>
-        Callback {
-          global.$("#interactionModal").modal()
-        }
+      modState(_.showImplicationElimBackwardsModal(derivationIndex, path)) >> showModal
+
+    private def onImplicationElimForwardsFromAntecedent(derivationIndex: Int): Callback =
+      modState(_.showImplicationElimForwardsFromAntecedentModal(derivationIndex)) >> showModal
 
     private def derivationCard(derivation: Derivation, derivationIndex: Int, formulaToDerivationIndices: Map[Formula, Seq[Int]]): VdomNode =
       <.div(^.`class` := "card",
@@ -165,6 +167,7 @@ object App {
                 onConjunctionElimBackwards(derivationIndex),
                 onImplicationIntroBackwards(derivationIndex),
                 onImplicationElimBackwards(derivationIndex),
+                onImplicationElimForwardsFromAntecedent(derivationIndex),
                 onInlineDerivation(derivationIndex),
                 onDischargeAssumption(derivationIndex),
                 onUndischargeAssumption(derivationIndex),

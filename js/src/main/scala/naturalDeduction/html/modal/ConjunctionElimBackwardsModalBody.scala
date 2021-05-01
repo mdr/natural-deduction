@@ -1,13 +1,12 @@
-package naturalDeduction.html
+package naturalDeduction.html.modal
 
-import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.VdomNode
 import japgolly.scalajs.react.vdom.html_<^._
-import naturalDeduction.Derivation.ImplicationElimination
+import japgolly.scalajs.react.{Callback, ScalaComponent}
 import naturalDeduction.Formula.PropositionalVariable
-import naturalDeduction.html
-import naturalDeduction.html.ConjunctionElimBackwardsModalState.conjunctionEliminationDerivation
 import naturalDeduction.html.ReactUtils.getTargetValueThen
+import naturalDeduction.html.modal.ConjunctionElimBackwardsModalState.conjunctionEliminationDerivation
+import naturalDeduction.html.{DerivationComponent, DerivationProps}
 import naturalDeduction.parser.FormulaParser
 
 object ConjunctionElimBackwardsModalBody {

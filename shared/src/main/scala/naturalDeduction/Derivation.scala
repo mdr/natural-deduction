@@ -564,5 +564,7 @@ object DerivationPath {
 }
 
 case class DerivationPath(childChoices: Seq[Int]) {
+  def isRoot: Boolean = childChoices.isEmpty
+
   def choose(choice: Int): DerivationPath = copy(childChoices = childChoices :+ choice)
 }

@@ -14,6 +14,7 @@ case class ManipulationInfo(
                              onConjunctionElimBackwards: DerivationPath => Callback,
                              onImplicationIntroBackwards: DerivationPath => Callback,
                              onImplicationElimBackwards: DerivationPath => Callback,
+                             onImplicationElimForwardsFromAntecedent: Callback,
                              onInlineDerivation: (DerivationPath, Int) => Callback,
                              onDischargeAssumption: (DerivationPath, String) => Callback,
                              onUndischargeAssumption: DerivationPath => Callback,
@@ -102,7 +103,7 @@ class DerivationHtmlRenderer(props: DerivationProps) {
     val inlineableDerivationIndices =
       manipulationInfo.formulaToDerivationIndices.getOrElse(derivation.formula, Seq.empty).filter(_ => derivation.isAxiom).filter(i => i != manipulationInfo.derivationIndex).sorted
     val dischargeableLabels = props.derivation.bindingsAtPath(path).groupMap(_._2)(_._1).getOrElse(derivation.formula, Seq.empty).filter(_ => derivation.isAxiom && !canUndischargeAxiom(derivation)).toSeq.sorted
-    val forwardsRulesPossible = canConjunctionElimForwards(derivation, path)
+    val forwardsRulesPossible = path.isRoot
     val backwardsRulesPossible = derivation.isAxiom
     val otherActionsPossible = !derivation.isAxiom || inlineableDerivationIndices.nonEmpty || dischargeableLabels.nonEmpty || canUndischargeAxiom(derivation)
     <.a(^.`class` := "dropdown link-secondary",
@@ -123,6 +124,8 @@ class DerivationHtmlRenderer(props: DerivationProps) {
           .when(canConjunctionElimForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick right)", ^.onClick --> manipulationInfo.onConjunctionElimForwards(path, 1))
           .when(canConjunctionElimForwards(derivation, path)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as antecedent)...", ^.onClick --> manipulationInfo.onImplicationElimForwardsFromAntecedent)
+          .when(path.isRoot),
 
         <.div(^.`class` := "dropdown-divider")
           .when(forwardsRulesPossible && backwardsRulesPossible),
@@ -161,7 +164,7 @@ class DerivationHtmlRenderer(props: DerivationProps) {
   }
 
   private def canConjunctionElimForwards(derivation: Derivation, path: DerivationPath): Boolean =
-    path == DerivationPath.empty && derivation.formula.isInstanceOf[Conjunction]
+    path.isRoot && derivation.formula.isInstanceOf[Conjunction]
 
   private def canConjunctionIntroBackwards(derivation: Derivation): Boolean =
     derivation.isAxiom && derivation.formula.isInstanceOf[Conjunction]

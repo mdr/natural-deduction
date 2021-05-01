@@ -1,6 +1,7 @@
 package naturalDeduction.html
 
 import naturalDeduction.Derivation.Axiom
+import naturalDeduction.html.modal.{ConjunctionElimBackwardsModalState, ImplicationElimBackwardsModalState, ImplicationElimForwardsFromAntecedentModalState, ModalState}
 import naturalDeduction.parser.FormulaParser
 import naturalDeduction.{Derivation, DerivationPath, Formula}
 
@@ -52,20 +53,25 @@ case class State(
 
   def getDerivation(i: Int): Derivation = derivations(i)
 
-  private def setDerivation(i: Int, derivation: Derivation): State = copy(derivations = derivations.patch(i, Seq(derivation), 1))
+  def setDerivation(i: Int, derivation: Derivation): State = copy(derivations = derivations.patch(i, Seq(derivation), 1))
 
   def transformDerivation(i: Int, f: Derivation => Derivation): State = withUndo(setDerivation(i, f(getDerivation(i))))
 
   def closeModal: State = copy(modalState = None)
 
-  def showConjunctionElimBackwardsModalState(derivationIndex: Int, path: DerivationPath): State = {
+  def showConjunctionElimBackwardsModal(derivationIndex: Int, path: DerivationPath): State = {
     val conclusion = getDerivation(derivationIndex).get(path).formula
     copy(modalState = Some(ConjunctionElimBackwardsModalState(derivationIndex, path, conclusion)))
   }
 
-  def showImplicationElimBackwardsModalState(derivationIndex: Int, path: DerivationPath): State = {
+  def showImplicationElimBackwardsModal(derivationIndex: Int, path: DerivationPath): State = {
     val consequent = getDerivation(derivationIndex).get(path).formula
     copy(modalState = Some(ImplicationElimBackwardsModalState(derivationIndex, path, consequent)))
+  }
+
+  def showImplicationElimForwardsFromAntecedentModal(derivationIndex: Int): State = {
+    val antecedent = getDerivation(derivationIndex).formula
+    copy(modalState = Some(ImplicationElimForwardsFromAntecedentModalState(derivationIndex, antecedent)))
   }
 
 }
