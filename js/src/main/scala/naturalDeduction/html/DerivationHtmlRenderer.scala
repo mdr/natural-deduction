@@ -15,6 +15,7 @@ case class ManipulationInfo(
                              onImplicationIntroBackwards: DerivationPath => Callback,
                              onImplicationElimBackwards: DerivationPath => Callback,
                              onImplicationElimForwardsFromAntecedent: Callback,
+                             onImplicationElimForwardsFromImplication: Callback,
                              onInlineDerivation: (DerivationPath, Int) => Callback,
                              onDischargeAssumption: (DerivationPath, String) => Callback,
                              onUndischargeAssumption: DerivationPath => Callback,
@@ -126,6 +127,8 @@ class DerivationHtmlRenderer(props: DerivationProps) {
           .when(canConjunctionElimForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as antecedent)...", ^.onClick --> manipulationInfo.onImplicationElimForwardsFromAntecedent)
           .when(path.isRoot),
+        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as implication)", ^.onClick --> manipulationInfo.onImplicationElimForwardsFromImplication)
+          .when(path.isRoot && derivation.formula.isInstanceOf[Implication]),
 
         <.div(^.`class` := "dropdown-divider")
           .when(forwardsRulesPossible && backwardsRulesPossible),

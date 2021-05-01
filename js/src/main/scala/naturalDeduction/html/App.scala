@@ -124,6 +124,14 @@ object App {
         case 1 => RightConjunctionElimination(derivation)
       }
 
+    private def onImplicationElimForwardsFromImplication(derivationIndex: Int): Callback =
+      modState(_.transformDerivation(derivationIndex, implicationElimForwardsFromImplication))
+
+    private def implicationElimForwardsFromImplication(derivation: Derivation): ImplicationElimination = {
+      val implication = derivation.formula.asInstanceOf[Implication]
+      ImplicationElimination(Axiom(implication.antecedent), derivation)
+    }
+
     private def onInlineDerivation(derivationIndex: Int)(path: DerivationPath, derivationIndexToInline: Int): Callback =
       modState(oldState =>
         oldState.transformDerivation(derivationIndex, _.set(path, oldState.derivations(derivationIndexToInline)))
@@ -168,6 +176,7 @@ object App {
                 onImplicationIntroBackwards(derivationIndex),
                 onImplicationElimBackwards(derivationIndex),
                 onImplicationElimForwardsFromAntecedent(derivationIndex),
+                onImplicationElimForwardsFromImplication(derivationIndex),
                 onInlineDerivation(derivationIndex),
                 onDischargeAssumption(derivationIndex),
                 onUndischargeAssumption(derivationIndex),
