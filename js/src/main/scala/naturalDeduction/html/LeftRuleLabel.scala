@@ -1,9 +1,11 @@
 package naturalDeduction.html
 
-import japgolly.scalajs.react.ScalaComponent
+import japgolly.scalajs.react.{Callback, ScalaComponent}
 import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Formula
 import naturalDeduction.html.TooltipUtils.activateTooltip
+
+import scala.scalajs.js.Dynamic.global
 
 case class LeftRuleLabelProps(label: String, labelToFormula: Map[String, Formula])
 
@@ -12,7 +14,9 @@ object LeftRuleLabel {
   val component =
     ScalaComponent.builder[LeftRuleLabelProps]("LeftRuleLabel")
       .render_P(render)
-      .componentDidMount(activateTooltip)
+      .componentDidMount(scope => Callback {
+        global.$(scope.getDOMNode.asElement()).tooltip()
+      })
       .build
 
   def render(props: LeftRuleLabelProps): VdomTag =
