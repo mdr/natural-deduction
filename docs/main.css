@@ -144,8 +144,8 @@ a.dropdown {
     color: #fff;
     text-align: center;
 
-    opacity:0;
-    transition:.3s opacity;
+    opacity: 0;
+    transition: .3s opacity;
 }
 
 .tooltip:after {
@@ -164,16 +164,21 @@ a.dropdown {
     border: 10px solid #000000;
     border-color: transparent black transparent transparent;
 
-    opacity:0;
-    transition:.3s opacity;
+    opacity: 0;
+    transition: .3s opacity;
 }
 
 .tooltip:hover:before, .tooltip:hover:after {
-    opacity:1;
+    opacity: 1;
 }
 
+/* Fix weird unwanted button styling on Safari */
 div[type='button'] {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
+}
+
+.rule-formula {
+    white-space: nowrap;
 }

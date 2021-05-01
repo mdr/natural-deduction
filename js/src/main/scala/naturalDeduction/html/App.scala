@@ -157,7 +157,7 @@ object App {
       modState(_.showImplicationElimForwardsFromAntecedentModal(derivationIndex)) >> showModal
 
     private def derivationCard(derivation: Derivation, derivationIndex: Int, formulaToDerivationIndices: Map[Formula, Seq[Int]]): VdomNode =
-      <.div(^.`class` := "card",
+      <.div(^.`class` := "card", ^.key := derivationIndex.toString,
         <.div(^.`class` := "card-header",
           s"${derivationIndex + 1}. ${derivation.sequent}",
           CardButtonBar.component(

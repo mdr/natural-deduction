@@ -109,6 +109,7 @@ class DerivationHtmlRenderer(props: DerivationProps) {
     val otherActionsPossible = !derivation.isAxiom || inlineableDerivationIndices.nonEmpty || dischargeableLabels.nonEmpty || canUndischargeAxiom(derivation)
     <.a(^.`class` := "dropdown link-secondary",
       <.div(
+        ^.className := "rule-formula",
         ^.`type` := "button",
         ^.id := "ruleActionMenuTrigger",
         CustomAttributes.dataToggle := "dropdown",
