@@ -1,13 +1,9 @@
 package naturalDeduction.html
 
-import japgolly.scalajs.react.component.builder.Lifecycle
-import japgolly.scalajs.react.{Callback, ScalaComponent}
 import japgolly.scalajs.react.vdom.all.VdomTag
 import japgolly.scalajs.react.vdom.html_<^._
-import naturalDeduction.html.LeftRuleLabel.render
+import japgolly.scalajs.react.{Callback, ScalaComponent}
 import naturalDeduction.html.TooltipUtils.activateTooltip
-
-import scala.scalajs.js.Dynamic.global
 
 case class MainButtonBarProps(
                                undoRedo: UndoRedo[_],
