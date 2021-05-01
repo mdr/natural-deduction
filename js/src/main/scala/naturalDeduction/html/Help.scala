@@ -36,6 +36,7 @@ object Help {
               ),
             ),
           ),
+          <.p("Then click a formula to select backwards or forwards rules to apply."),
         ),
       )
     )

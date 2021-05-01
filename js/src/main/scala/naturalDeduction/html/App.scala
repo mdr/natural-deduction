@@ -104,13 +104,9 @@ object App {
         ),
         <.div(^.`class` := "container",
           <.p(),
-          <.div(^.`class` := "btn-group", ^.role := "group",
-            <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", <.i(^.className := "fas fa-undo"), ^.onClick --> onUndoClicked, ^.disabled := !state.undoRedo.canUndo),
-            <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", <.i(^.className := "fas fa-redo"), ^.onClick --> onRedoClicked, ^.disabled := !state.undoRedo.canRedo),
-            <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", CustomAttributes.dataToggle := "collapse", CustomAttributes.dataTarget := "#help", <.i(^.className := "fas fa-question-circle")),
-          ),
-          Help.component(),
+          MainButtonBar.component(MainButtonBarProps(state.undoRedo, onUndoClicked, onRedoClicked)),
           <.p(),
+          Help.component(),
           <.p(),
           state.derivations.zipWithIndex.map { case (derivation, index) => derivationCard(derivation, index, state.formulaToDerivationIndices) }.mkTagMod(<.br()),
           <.br(),
@@ -201,12 +197,11 @@ object App {
       <.div(^.`class` := "card",
         <.div(^.`class` := "card-header",
           s"${derivationIndex + 1}. ${derivation.sequent}",
-          <.div(^.`class` := "btn-group float-right", ^.role := "group",
-            <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", <.i(^.className := "fas fa-clone"), ^.onClick --> onDuplicateDerivation(derivationIndex)),
-            <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", <.i(^.className := "fas fa-trash"), ^.onClick --> onDeleteDerivation(derivationIndex)),
-          ),
+          CardButtonBar.component(
+            CardButtonBarProps(
+              onDuplicateDerivation = onDuplicateDerivation(derivationIndex),
+              onDeleteDerivation = onDeleteDerivation(derivationIndex))),
         ),
-
         <.div(^.`class` := "card-body",
           DerivationComponent.component(
             html.DerivationProps(derivation,
