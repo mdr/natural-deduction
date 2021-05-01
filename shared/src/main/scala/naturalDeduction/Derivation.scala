@@ -3,65 +3,17 @@ package naturalDeduction
 import naturalDeduction.Derivation._
 import naturalDeduction.pretty.DerivationRenderer
 import Formula._
+import naturalDeduction.Labels.ALL_LABELS
 
 import scala.annotation.tailrec
-
-import upickle.default.{ReadWriter => RW, macroRW}
-
-object Sequent {
-
-  implicit class RichSet[T <: Formula](assumptions: Set[T]) {
-    def ⊢(conclusion: Formula): Sequent = Sequent(assumptions.toSet, conclusion)
-  }
-
-  implicit class RichFormula2(formula: Formula) {
-    def ⊢(conclusion: Formula): Sequent = Sequent(Set(formula), conclusion)
-  }
-
-  implicit class RichPair(pair: (Formula, Formula)) {
-    def ⊢(conclusion: Formula): Sequent = Sequent(Set(pair._1, pair._2), conclusion)
-  }
-
-  implicit class RichTriple(triple: (Formula, Formula, Formula)) {
-    def ⊢(conclusion: Formula): Sequent = Sequent(Set(triple._1, triple._2, triple._3), conclusion)
-  }
-
-}
-
-case class Sequent(assumptions: Set[Formula], conclusion: Formula) {
-  override def toString: String =
-    if (assumptions.isEmpty) s"⊢ $conclusion" else s"{${assumptions.mkString(", ")}} ⊢ $conclusion"
-}
-
-case class Assumptions(anonymousAssumptions: Set[Formula] = Set.empty, labelledAssumptions: Map[String, Formula] = Map.empty) {
-
-  def discharge(label: String): Assumptions = copy(labelledAssumptions = labelledAssumptions - label)
-
-  def discharge(label: Option[String]): Assumptions = label match {
-    case None => this
-    case Some(label) => discharge(label)
-  }
-
-  def ++(that: Assumptions): Assumptions = {
-    val commonLabels = this.labelledAssumptions.keySet intersect that.labelledAssumptions.keySet
-    for (label <- commonLabels) {
-      val thisFormula = this.labelledAssumptions(label)
-      val thatFormula = that.labelledAssumptions(label)
-      assert(thisFormula == thatFormula, s"Error combining assumptions, mismatch for label $label: $thisFormula vs $thatFormula")
-    }
-
-    Assumptions(this.anonymousAssumptions ++ that.anonymousAssumptions, this.labelledAssumptions ++ that.labelledAssumptions)
-  }
-
-  def allFormulae: Set[Formula] = anonymousAssumptions ++ labelledAssumptions.values.toSet
-
-}
+import upickle.default.{macroRW, ReadWriter => RW}
+import util.Utils.unicodeStrikeThrough
 
 sealed trait Derivation {
 
   def convertToAxiom: Axiom = Axiom(formula)
 
-  def dischargeAxiom(label: String): Derivation = this match {
+  def dischargeAxiom(label: Label): Derivation = this match {
     case axiom: Axiom => axiom.copy(label = Some(label))
   }
 
@@ -69,9 +21,9 @@ sealed trait Derivation {
     case axiom: Axiom => axiom.copy(label = None)
   }
 
-  def nextFreshLabel: String = (ALL_LABELS diff this.labels.toSeq).headOption.getOrElse("Out of labels!")
+  def nextFreshLabel: Label = (ALL_LABELS diff this.labels.toSeq).headOption.getOrElse("Out of labels!")
 
-  def labels: Set[String] = children.flatMap(_.labels).toSet
+  def labels: Set[Label] = children.flatMap(_.labels).toSet
 
   def formula: Formula
 
@@ -81,11 +33,11 @@ sealed trait Derivation {
 
   def children: Seq[Derivation]
 
-  def replaceChild(i: Int, newChild: Derivation): Derivation
+  def replaceChild(i: ChildIndex, newChild: Derivation): Derivation
 
   def isAxiom: Boolean = this.isInstanceOf[Axiom]
 
-  def bindingsForChild(childChoice: Int): Map[String, Formula] = this match {
+  def bindingsForChild(childChoice: ChildIndex): Map[Label, Formula] = this match {
     case raa@ReductioAdAbsurdum(_, Some(label), _) => Map(label -> raa.negation)
     case NegationIntroduction(statement, Some(label), _) => Map(label -> statement)
     case ImplicationIntroduction(antecedent, Some(label), _) => Map(label -> antecedent)
@@ -94,16 +46,16 @@ sealed trait Derivation {
     case _ => Map.empty
   }
 
-  def bindingsAtPath(path: DerivationPath): Map[String, Formula] = bindingsAtPath(path.childChoices)
+  def bindingsAtPath(path: DerivationPath): Map[Label, Formula] = bindingsAtPath(path.childChoices)
 
-  private def bindingsAtPath(childChoices: Seq[Int]): Map[String, Formula] =
+  private def bindingsAtPath(childChoices: Seq[ChildIndex]): Map[String, Formula] =
     childChoices match {
       case Seq() => Map.empty
       case Seq(firstChoice, remainingChoices@_*) => bindingsForChild(firstChoice) ++ children(firstChoice).bindingsAtPath(remainingChoices)
     }
 
   @tailrec
-  private def get(childChoices: Seq[Int]): Derivation = childChoices match {
+  private def get(childChoices: Seq[ChildIndex]): Derivation = childChoices match {
     case Seq() => this
     case Seq(firstChoice, remainingChoices@_*) => children(firstChoice).get(remainingChoices)
   }
@@ -112,7 +64,7 @@ sealed trait Derivation {
 
   def set(path: DerivationPath, replacement: Derivation): Derivation = set(path.childChoices, replacement)
 
-  private def set(childChoices: Seq[Int], replacement: Derivation): Derivation = childChoices match {
+  private def set(childChoices: Seq[ChildIndex], replacement: Derivation): Derivation = childChoices match {
     case Seq() => replacement
     case Seq(firstChoice, remainingChoices@_*) =>
       val newChild = children(firstChoice).set(remainingChoices, replacement)
@@ -128,12 +80,10 @@ sealed trait Derivation {
     """(?m)(\s+)$""".r.replaceAllIn(withStrikethrough, "")
   }
 
-  private def unicodeStrikeThrough(s: String): String = s.flatMap(c => s"$c\u0336")
-
-  def implicationIntro(formula: Formula, label: Option[String] = None): ImplicationIntroduction =
+  def implicationIntro(formula: Formula, label: Option[Label] = None): ImplicationIntroduction =
     ImplicationIntroduction(formula, label, this)
 
-  def implicationIntro(formula: Formula, label: String): ImplicationIntroduction =
+  def implicationIntro(formula: Formula, label: Label): ImplicationIntroduction =
     ImplicationIntroduction(formula, label, this)
 
   def implicationElim(that: Derivation): ImplicationElimination = ImplicationElimination(this, that)
@@ -150,15 +100,15 @@ sealed trait Derivation {
 
   def backwardsEquivalenceElim: BackwardsEquivalenceElimination = BackwardsEquivalenceElimination(this)
 
-  def negationIntro(formula: Formula, label: Option[String] = None): NegationIntroduction =
+  def negationIntro(formula: Formula, label: Option[Label] = None): NegationIntroduction =
     NegationIntroduction(formula, label, this)
 
-  def negationIntro(formula: Formula, label: String): NegationIntroduction =
+  def negationIntro(formula: Formula, label: Label): NegationIntroduction =
     NegationIntroduction(formula, label, this)
 
   def negationElim(that: Derivation): NegationElimination = NegationElimination(this, that)
 
-  def reductio(conclusion: Formula, label: String): ReductioAdAbsurdum =
+  def reductio(conclusion: Formula, label: Label): ReductioAdAbsurdum =
     ReductioAdAbsurdum(conclusion, label, this)
 
   def reductio(conclusion: Formula): ReductioAdAbsurdum =
@@ -186,8 +136,6 @@ object Derivation {
       RightDisjunctionIntroduction.rw,
       DisjunctionElimination.rw)
 
-  val ALL_LABELS: Seq[String] = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖㉗㉘㉙㉚㉛㉜㉝㉞㉟㊱㊲㊳㊴㊵㊶㊷㊸㊹㊺㊻㊼㊽㊾㊿".toSeq.map(_.toString)
-
   implicit class RichFormula(formula: Formula) {
     def axiom: Axiom = Axiom(formula)
   }
@@ -195,10 +143,10 @@ object Derivation {
   object Axiom {
     implicit val rw: RW[Axiom] = macroRW
 
-    def apply(formula: Formula, label: String): Axiom = Axiom(formula, Some(label))
+    def apply(formula: Formula, label: Label): Axiom = Axiom(formula, Some(label))
   }
 
-  case class Axiom(formula: Formula, label: Option[String] = None) extends Derivation {
+  case class Axiom(formula: Formula, label: Option[Label] = None) extends Derivation {
 
     override val undischargedAssumptions: Assumptions = label match {
       case None => Assumptions(anonymousAssumptions = Set(formula))
@@ -207,10 +155,10 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq.empty
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation =
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation =
       throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
 
-    override def labels: Set[String] = label.toSet
+    override def labels: Set[Label] = label.toSet
   }
 
   object ConjunctionIntroduction {
@@ -224,7 +172,7 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq(leftDerivation, rightDerivation)
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation = i match {
       case 0 => copy(leftDerivation = newChild)
       case 1 => copy(rightDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
@@ -245,7 +193,7 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq(conjunctionDerivation)
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation = i match {
       case 0 => copy(conjunctionDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
@@ -266,7 +214,7 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq(conjunctionDerivation)
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation = i match {
       case 0 => copy(conjunctionDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
@@ -295,12 +243,12 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq(consequentDerivation)
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation = i match {
       case 0 => copy(consequentDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
 
-    override def labels: Set[String] = label.toSet ++ children.flatMap(_.labels)
+    override def labels: Set[Label] = label.toSet ++ children.flatMap(_.labels)
 
   }
 
@@ -323,7 +271,7 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq(antecedentDerivation, implicationDerivation)
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation = i match {
       case 0 => copy(antecedentDerivation = newChild)
       case 1 => copy(implicationDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
@@ -348,7 +296,7 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq(forwardsDerivation, backwardsDerivation)
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation = i match {
       case 0 => copy(forwardsDerivation = newChild)
       case 1 => copy(backwardsDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
@@ -369,7 +317,7 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq(equivalenceDerivation)
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation = i match {
       case 0 => copy(equivalenceDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
@@ -389,7 +337,7 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq(equivalenceDerivation)
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation = i match {
       case 0 => copy(equivalenceDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
@@ -417,12 +365,12 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq(bottomDerivation)
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation = i match {
       case 0 => copy(bottomDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
 
-    override def labels: Set[String] = label.toSet ++ children.flatMap(_.labels)
+    override def labels: Set[Label] = label.toSet ++ children.flatMap(_.labels)
   }
 
   object NegationElimination {
@@ -440,7 +388,7 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq(positiveDerivation, negativeDerivation)
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation = i match {
       case 0 => copy(positiveDerivation = newChild)
       case 1 => copy(negativeDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
@@ -471,12 +419,12 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq(bottomDerivation)
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation = i match {
       case 0 => copy(bottomDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
 
-    override def labels: Set[String] = label.toSet ++ children.flatMap(_.labels)
+    override def labels: Set[Label] = label.toSet ++ children.flatMap(_.labels)
   }
 
   object LeftDisjunctionIntroduction {
@@ -491,7 +439,7 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq(leftDerivation)
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation = i match {
       case 0 => copy(leftDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
@@ -509,7 +457,7 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq(rightDerivation)
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation = i match {
       case 0 => copy(rightDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
@@ -546,25 +494,15 @@ object Derivation {
 
     override def children: Seq[Derivation] = Seq(disjunctionDerivation, leftDerivation, rightDerivation)
 
-    override def replaceChild(i: Int, newChild: Derivation): Derivation = i match {
+    override def replaceChild(i: ChildIndex, newChild: Derivation): Derivation = i match {
       case 0 => copy(disjunctionDerivation = newChild)
       case 1 => copy(leftDerivation = newChild)
       case 2 => copy(rightDerivation = newChild)
       case _ => throw new IllegalArgumentException(s"Cannot replace child: illegal child index $i for $this")
     }
 
-    override def labels: Set[String] = leftLabel.toSet ++ rightLabel.toSet ++ children.flatMap(_.labels)
+    override def labels: Set[Label] = leftLabel.toSet ++ rightLabel.toSet ++ children.flatMap(_.labels)
 
   }
 
-}
-
-object DerivationPath {
-  val empty: DerivationPath = DerivationPath(Seq.empty)
-}
-
-case class DerivationPath(childChoices: Seq[Int]) {
-  def isRoot: Boolean = childChoices.isEmpty
-
-  def choose(choice: Int): DerivationPath = copy(childChoices = childChoices :+ choice)
 }

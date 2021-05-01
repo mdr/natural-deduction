@@ -39,7 +39,6 @@ object MainButtonBar {
       .componentDidMount(activateTooltip)
       .build
 
-
   private val RedoButton =
     ScalaComponent.builder[MainButtonBarProps]("RedoButton")
       .render_P(props =>

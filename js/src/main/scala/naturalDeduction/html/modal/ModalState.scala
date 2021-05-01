@@ -3,7 +3,7 @@ package naturalDeduction.html.modal
 import naturalDeduction.Derivation._
 import naturalDeduction.Formula._
 import naturalDeduction._
-import naturalDeduction.html.State
+import naturalDeduction.html.{DerivationIndex, State}
 import naturalDeduction.html.modal.ConjunctionElimBackwardsModalState.conjunctionEliminationDerivation
 import naturalDeduction.parser.FormulaParser
 
@@ -29,10 +29,10 @@ object ConjunctionElimBackwardsModalState {
 
 }
 
-case class ConjunctionElimBackwardsModalState(derivationIndex: Int,
+case class ConjunctionElimBackwardsModalState(derivationIndex: DerivationIndex,
                                               path: DerivationPath,
                                               conclusion: Formula,
-                                              conjunctToPick: Int = 0,
+                                              conjunctToPick: ChildIndex = 0,
                                               formulaText: String = "") extends ModalState {
   def title: String = "∧-Elimination Backwards"
 
@@ -49,7 +49,7 @@ case class ConjunctionElimBackwardsModalState(derivationIndex: Int,
   }
 }
 
-case class ImplicationElimBackwardsModalState(derivationIndex: Int,
+case class ImplicationElimBackwardsModalState(derivationIndex: DerivationIndex,
                                               path: DerivationPath,
                                               consequent: Formula,
                                               formulaText: String = "") extends ModalState {
@@ -69,7 +69,7 @@ case class ImplicationElimBackwardsModalState(derivationIndex: Int,
 }
 
 
-case class ImplicationElimForwardsFromAntecedentModalState(derivationIndex: Int,
+case class ImplicationElimForwardsFromAntecedentModalState(derivationIndex: DerivationIndex,
                                                            antecedent: Formula,
                                                            formulaText: String = "") extends ModalState {
   def title: String = "→-Elimination Forwards"

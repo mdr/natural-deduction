@@ -29,14 +29,29 @@ object App {
           <.p(),
           Help.component(),
           <.p().when(state.derivations.nonEmpty),
-          state.derivations.zipWithIndex.map { case (derivation, index) => derivationCard(derivation, index, state.formulaToDerivationIndices) }.mkTagMod(<.br()),
+          state.derivations
+            .zipWithIndex.map { case (derivation, index) => derivationCard(derivation, index, state.formulaToDerivationIndices) }
+            .mkTagMod(<.br()),
           <.br().when(state.derivations.nonEmpty),
-          <.form(^.`class` := "form-row align-items-center",
+          <.form(
+            ^.`class` := "form-row align-items-center",
             ^.onSubmit ==> handleStartNewDerivation,
-            <.div(^.`class` := "col-auto",
-              <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Formula...", ^.onChange ==> onChangeNewDerivationFormula, ^.value := state.newFormulaText)),
-            <.div(^.`class` := "col-auto",
-              <.button(^.`type` := "submit", ^.`class` := "btn btn-secondary mb-2", "Start New Derivation", ^.disabled := !state.newFormulaIsValid),
+            <.div(
+              ^.`class` := "col-auto",
+              <.input(
+                ^.`class` := "form-control mb-2",
+                ^.`type` := "text",
+                ^.placeholder := "Formula...",
+                ^.onChange ==> onChangeNewDerivationFormula, ^.value := state.newFormulaText)
+            ),
+            <.div(
+              ^.`class` := "col-auto",
+              <.button(
+                ^.`class` := "btn btn-secondary mb-2",
+                ^.`type` := "submit",
+                "Start New Derivation",
+                ^.disabled := !state.newFormulaIsValid
+              ),
             ),
           ),
         )
@@ -66,6 +81,10 @@ object App {
           oldState.modalState.map(_.complete(oldState)).getOrElse(oldState).closeModal
         )
 
+    private val showModal: Callback = Callback {
+      global.$("#interactionModal").modal()
+    }
+
     private def onSwapConjuncts: Callback = modState(_.swapConjuncts)
 
     // App button handlers
@@ -85,18 +104,18 @@ object App {
 
     // Derivation card button handlers
 
-    private def onDeleteDerivation(derivationIndex: Int): Callback =
+    private def onDeleteDerivation(derivationIndex: DerivationIndex): Callback =
       modState(_.deleteDerivation(derivationIndex))
 
-    private def onDuplicateDerivation(derivationIndex: Int): Callback =
+    private def onDuplicateDerivation(derivationIndex: DerivationIndex): Callback =
       modState(_.duplicateDerivation(derivationIndex))
 
     // Derivation menu handlers
 
-    private def onRemoveDerivation(derivationIndex: Int)(path: DerivationPath): Callback =
+    private def onRemoveDerivation(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, _.convertToAxiom)))
 
-    private def onConjunctionIntroBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
+    private def onConjunctionIntroBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, conjunctionIntroBackwards)))
 
     private def conjunctionIntroBackwards(derivation: Derivation): Derivation = {
@@ -104,27 +123,27 @@ object App {
       ConjunctionIntroduction(Axiom(conjunction.conjunct1), Axiom(conjunction.conjunct2))
     }
 
-    private def onImplicationIntroBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
+    private def onImplicationIntroBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.transformDerivation(derivationIndex, implicationIntroBackwards(path)))
 
     private def implicationIntroBackwards(path: DerivationPath)(derivation: Derivation): Derivation =
       derivation.transform(path, implicationIntroBackwards(derivation.nextFreshLabel))
 
-    private def implicationIntroBackwards(nextFreshLabel: String)(derivation: Derivation): Derivation = {
+    private def implicationIntroBackwards(nextFreshLabel: Label)(derivation: Derivation): Derivation = {
       val implication = derivation.formula.asInstanceOf[Implication]
       ImplicationIntroduction(implication.antecedent, nextFreshLabel, Axiom(implication.consequent))
     }
 
-    private def onConjunctionElimForwards(derivationIndex: Int)(child: Int): Callback =
+    private def onConjunctionElimForwards(derivationIndex: DerivationIndex)(child: ChildIndex): Callback =
       modState(_.transformDerivation(derivationIndex, conjunctionElimForwards(child)))
 
-    private def conjunctionElimForwards(child: Int)(derivation: Derivation): Derivation =
+    private def conjunctionElimForwards(child: ChildIndex)(derivation: Derivation): Derivation =
       child match {
         case 0 => LeftConjunctionElimination(derivation)
         case 1 => RightConjunctionElimination(derivation)
       }
 
-    private def onImplicationElimForwardsFromImplication(derivationIndex: Int): Callback =
+    private def onImplicationElimForwardsFromImplication(derivationIndex: DerivationIndex): Callback =
       modState(_.transformDerivation(derivationIndex, implicationElimForwardsFromImplication))
 
     private def implicationElimForwardsFromImplication(derivation: Derivation): ImplicationElimination = {
@@ -132,31 +151,29 @@ object App {
       ImplicationElimination(Axiom(implication.antecedent), derivation)
     }
 
-    private def onInlineDerivation(derivationIndex: Int)(path: DerivationPath, derivationIndexToInline: Int): Callback =
+    private def onInlineDerivation(derivationIndex: DerivationIndex)(path: DerivationPath, derivationIndexToInline: DerivationIndex): Callback =
       modState(oldState =>
         oldState.transformDerivation(derivationIndex, _.set(path, oldState.derivations(derivationIndexToInline)))
       )
 
-    private def onDischargeAssumption(derivationIndex: Int)(path: DerivationPath, label: String): Callback =
+    private def onDischargeAssumption(derivationIndex: DerivationIndex)(path: DerivationPath, label: Label): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, _.dischargeAxiom(label))))
 
-    private def onUndischargeAssumption(derivationIndex: Int)(path: DerivationPath): Callback =
+    private def onUndischargeAssumption(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, _.undischargeAxiom)))
 
-    private val showModal: Callback = Callback {
-      global.$("#interactionModal").modal()
-    }
-
-    private def onConjunctionElimBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
+    private def onConjunctionElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.showConjunctionElimBackwardsModal(derivationIndex, path)) >> showModal
 
-    private def onImplicationElimBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
+    private def onImplicationElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.showImplicationElimBackwardsModal(derivationIndex, path)) >> showModal
 
-    private def onImplicationElimForwardsFromAntecedent(derivationIndex: Int): Callback =
+    private def onImplicationElimForwardsFromAntecedent(derivationIndex: DerivationIndex): Callback =
       modState(_.showImplicationElimForwardsFromAntecedentModal(derivationIndex)) >> showModal
 
-    private def derivationCard(derivation: Derivation, derivationIndex: Int, formulaToDerivationIndices: Map[Formula, Seq[Int]]): VdomNode =
+    private def derivationCard(derivation: Derivation,
+                               derivationIndex: DerivationIndex,
+                               formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]]): VdomNode =
       <.div(^.`class` := "card", ^.key := derivationIndex.toString,
         <.div(^.`class` := "card-header",
           s"${derivationIndex + 1}. ${derivation.sequent}",

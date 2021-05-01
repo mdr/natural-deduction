@@ -5,27 +5,24 @@ import japgolly.scalajs.react.vdom.TagMod
 import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation._
 import naturalDeduction.Formula.{Conjunction, Implication}
-import naturalDeduction.{Derivation, DerivationPath, Formula}
+import naturalDeduction.{ChildIndex, Derivation, DerivationPath, Formula, Label}
 
-case class ManipulationInfo(
-                             onRemoveDerivation: DerivationPath => Callback,
-                             onConjunctionIntroBackwards: DerivationPath => Callback,
-                             onConjunctionElimForwards: Int => Callback,
-                             onConjunctionElimBackwards: DerivationPath => Callback,
-                             onImplicationIntroBackwards: DerivationPath => Callback,
-                             onImplicationElimBackwards: DerivationPath => Callback,
-                             onImplicationElimForwardsFromAntecedent: Callback,
-                             onImplicationElimForwardsFromImplication: Callback,
-                             onInlineDerivation: (DerivationPath, Int) => Callback,
-                             onDischargeAssumption: (DerivationPath, String) => Callback,
-                             onUndischargeAssumption: DerivationPath => Callback,
-                             derivationIndex: Int,
-                             formulaToDerivationIndices: Map[Formula, Seq[Int]],
-                           )
+case class ManipulationInfo(onRemoveDerivation: DerivationPath => Callback,
+                            onConjunctionIntroBackwards: DerivationPath => Callback,
+                            onConjunctionElimForwards: ChildIndex => Callback,
+                            onConjunctionElimBackwards: DerivationPath => Callback,
+                            onImplicationIntroBackwards: DerivationPath => Callback,
+                            onImplicationElimBackwards: DerivationPath => Callback,
+                            onImplicationElimForwardsFromAntecedent: Callback,
+                            onImplicationElimForwardsFromImplication: Callback,
+                            onInlineDerivation: (DerivationPath, DerivationIndex) => Callback,
+                            onDischargeAssumption: (DerivationPath, String) => Callback,
+                            onUndischargeAssumption: DerivationPath => Callback,
+                            derivationIndex: DerivationIndex,
+                            formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]])
 
-case class DerivationProps(
-                            derivation: Derivation,
-                            manipulationInfo: Option[ManipulationInfo] = None)
+case class DerivationProps(derivation: Derivation,
+                           manipulationInfo: Option[ManipulationInfo] = None)
 
 object DerivationComponent {
 
@@ -41,7 +38,9 @@ object DerivationComponent {
 
 class DerivationHtmlRenderer(props: DerivationProps) {
 
-  def renderDerivation(derivation: Derivation, bindings: Map[String, Formula] = Map.empty, path: DerivationPath = DerivationPath.empty): VdomNode = derivation match {
+  def renderDerivation(derivation: Derivation,
+                       bindings: Map[String, Formula] = Map.empty,
+                       path: DerivationPath = DerivationPath.empty): VdomNode = derivation match {
     case Axiom(formula, label) =>
       val isDischarged = bindings.keySet.intersect(label.toSet).nonEmpty
       props.manipulationInfo match {
@@ -91,90 +90,14 @@ class DerivationHtmlRenderer(props: DerivationProps) {
         path = path)
   }
 
-  private def rule1(parent: Derivation, child: TagMod, rightLabel: String, leftLabel: Option[String] = None, path: DerivationPath): VdomNode =
+  private def rule1(parent: Derivation, child: TagMod, rightLabel: String, leftLabel: Option[Label] = None, path: DerivationPath): VdomNode =
     rule(parent, Seq(child), rightLabel, leftLabel, path)
 
-  private def rule2(parent: Derivation, child1: VdomNode, child2: VdomNode, rightLabel: String, leftLabel: Option[String] = None, path: DerivationPath): VdomNode =
+  private def rule2(parent: Derivation, child1: VdomNode, child2: VdomNode, rightLabel: Label, leftLabel: Option[Label] = None, path: DerivationPath): VdomNode =
     rule(parent, Seq(child1, child2), rightLabel, leftLabel, path)
 
-  private def rule3(parent: Derivation, child1: VdomNode, child2: VdomNode, child3: VdomNode, rightLabel: String, leftLabel: Option[String] = None, path: DerivationPath): VdomNode =
+  private def rule3(parent: Derivation, child1: VdomNode, child2: VdomNode, child3: VdomNode, rightLabel: Label, leftLabel: Option[Label] = None, path: DerivationPath): VdomNode =
     rule(parent, Seq(child1, child2, child3), rightLabel, leftLabel, path)
-
-  private def renderManipulatableFormula(derivation: Derivation, path: DerivationPath, manipulationInfo: ManipulationInfo, dischargeLabel: Option[String] = None): VdomNode = {
-    val inlineableDerivationIndices =
-      manipulationInfo.formulaToDerivationIndices.getOrElse(derivation.formula, Seq.empty).filter(_ => derivation.isAxiom).filter(i => i != manipulationInfo.derivationIndex).sorted
-    val dischargeableLabels = props.derivation.bindingsAtPath(path).groupMap(_._2)(_._1).getOrElse(derivation.formula, Seq.empty).filter(_ => derivation.isAxiom && !canUndischargeAxiom(derivation)).toSeq.sorted
-    val forwardsRulesPossible = path.isRoot
-    val backwardsRulesPossible = derivation.isAxiom
-    val otherActionsPossible = !derivation.isAxiom || inlineableDerivationIndices.nonEmpty || dischargeableLabels.nonEmpty || canUndischargeAxiom(derivation)
-    <.a(^.`class` := "dropdown link-secondary",
-      <.div(
-        ^.className := "rule-formula",
-        ^.`type` := "button",
-        ^.id := "ruleActionMenuTrigger",
-        CustomAttributes.dataToggle := "dropdown",
-        CustomAttributes.ariaHasPopup := "true",
-        CustomAttributes.ariaExpanded := "false",
-        dischargeLabel match {
-          case Some(label) => <.span(<.span(^.cls := "discharged-axiom", derivation.formula.toString), <.sup(label))
-          case None => derivation.formula.toString
-        }),
-      <.div(^.className := "dropdown-menu", CustomAttributes.ariaLabelledBy := "ruleActionMenuTrigger",
-        <.h6(^.className := "dropdown-header", "↓ Apply rule forwards")
-          .when(forwardsRulesPossible),
-        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick left)", ^.onClick --> manipulationInfo.onConjunctionElimForwards(0))
-          .when(canConjunctionElimForwards(derivation, path)),
-        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick right)", ^.onClick --> manipulationInfo.onConjunctionElimForwards(1))
-          .when(canConjunctionElimForwards(derivation, path)),
-        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as antecedent)...", ^.onClick --> manipulationInfo.onImplicationElimForwardsFromAntecedent)
-          .when(path.isRoot),
-        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as implication)", ^.onClick --> manipulationInfo.onImplicationElimForwardsFromImplication)
-          .when(path.isRoot && derivation.formula.isInstanceOf[Implication]),
-
-        <.div(^.`class` := "dropdown-divider")
-          .when(forwardsRulesPossible && backwardsRulesPossible),
-
-        <.h6(^.className := "dropdown-header", "↑ Apply rule backwards")
-          .when(backwardsRulesPossible),
-        <.div(^.className := "dropdown-item", ^.href := "#", "→-Introduction", ^.onClick --> manipulationInfo.onImplicationIntroBackwards(path))
-          .when(canImplicationIntroBackwards(derivation)),
-        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination...", ^.onClick --> manipulationInfo.onImplicationElimBackwards(path))
-          .when(derivation.isAxiom),
-        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Introduction", ^.onClick --> manipulationInfo.onConjunctionIntroBackwards(path))
-          .when(canConjunctionIntroBackwards(derivation)),
-        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination...", ^.onClick --> manipulationInfo.onConjunctionElimBackwards(path))
-          .when(derivation.isAxiom),
-
-        <.div(^.`class` := "dropdown-divider")
-          .when(otherActionsPossible && (forwardsRulesPossible || backwardsRulesPossible)),
-
-        <.h6(^.className := "dropdown-header", "Other")
-          .when(otherActionsPossible),
-        <.div(^.className := "dropdown-item", ^.href := "#", "Remove subderivation", ^.onClick --> manipulationInfo.onRemoveDerivation(path))
-          .when(!derivation.isAxiom),
-        inlineableDerivationIndices.toVdomArray(i =>
-          <.div(^.className := "dropdown-item", ^.href := "#", s"Inline derivation #${i + 1}", ^.onClick --> manipulationInfo.onInlineDerivation(path, i))
-        ),
-        dischargeableLabels.toVdomArray(label =>
-          <.div(^.className := "dropdown-item", ^.href := "#", s"Discharge assumption $label", ^.onClick --> manipulationInfo.onDischargeAssumption(path, label))),
-        <.div(^.className := "dropdown-item", ^.href := "#", s"Undischarge assumption", ^.onClick --> manipulationInfo.onUndischargeAssumption(path))
-          .when(canUndischargeAxiom(derivation))
-      )
-    )
-  }
-
-  private def canUndischargeAxiom(derivation: Derivation): Boolean = PartialFunction.cond(derivation) {
-    case Axiom(_, Some(_)) => true
-  }
-
-  private def canConjunctionElimForwards(derivation: Derivation, path: DerivationPath): Boolean =
-    path.isRoot && derivation.formula.isInstanceOf[Conjunction]
-
-  private def canConjunctionIntroBackwards(derivation: Derivation): Boolean =
-    derivation.isAxiom && derivation.formula.isInstanceOf[Conjunction]
-
-  private def canImplicationIntroBackwards(derivation: Derivation): Boolean =
-    derivation.isAxiom && derivation.formula.isInstanceOf[Implication]
 
   private def rule(parent: Derivation, children: Seq[TagMod], rightLabel: String, leftLabel: Option[String] = None, path: DerivationPath): VdomNode = {
     <.div(^.`class` := "rule",
@@ -201,6 +124,97 @@ class DerivationHtmlRenderer(props: DerivationProps) {
       )
     )
   }
+
+  private def renderManipulatableFormula(derivation: Derivation,
+                                         path: DerivationPath,
+                                         manipulationInfo: ManipulationInfo,
+                                         dischargeLabel: Option[Label] = None): VdomNode = {
+    import manipulationInfo._
+    val inlineableDerivationIndices: Seq[DerivationIndex] =
+      formulaToDerivationIndices
+        .getOrElse(derivation.formula, Seq.empty)
+        .filter(_ => derivation.isAxiom)
+        .filter(i => i != derivationIndex)
+        .sorted
+    val dischargeableLabels: Seq[String] =
+      props.derivation.bindingsAtPath(path)
+        .groupMap(_._2)(_._1)
+        .getOrElse(derivation.formula, Seq.empty)
+        .filter(_ => derivation.isAxiom && !canUndischargeAxiom(derivation))
+        .toSeq
+        .sorted
+    val forwardsRulesPossible = path.isRoot
+    val backwardsRulesPossible = derivation.isAxiom
+    val otherActionsPossible = !derivation.isAxiom || inlineableDerivationIndices.nonEmpty || dischargeableLabels.nonEmpty || canUndischargeAxiom(derivation)
+    <.a(^.`class` := "dropdown link-secondary",
+      <.div(
+        ^.className := "rule-formula",
+        ^.`type` := "button",
+        ^.id := "ruleActionMenuTrigger",
+        CustomAttributes.dataToggle := "dropdown",
+        CustomAttributes.ariaHasPopup := "true",
+        CustomAttributes.ariaExpanded := "false",
+        dischargeLabel match {
+          case Some(label) => <.span(<.span(^.cls := "discharged-axiom", derivation.formula.toString), <.sup(label))
+          case None => derivation.formula.toString
+        }),
+      <.div(^.className := "dropdown-menu", CustomAttributes.ariaLabelledBy := "ruleActionMenuTrigger",
+
+        <.h6(^.className := "dropdown-header", "↓ Apply rule forwards")
+          .when(forwardsRulesPossible),
+        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick left)", ^.onClick --> onConjunctionElimForwards(0))
+          .when(canConjunctionElimForwards(derivation, path)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick right)", ^.onClick --> onConjunctionElimForwards(1))
+          .when(canConjunctionElimForwards(derivation, path)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as antecedent)...", ^.onClick --> onImplicationElimForwardsFromAntecedent)
+          .when(path.isRoot),
+        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as implication)", ^.onClick --> onImplicationElimForwardsFromImplication)
+          .when(path.isRoot && derivation.formula.isInstanceOf[Implication]),
+
+        <.div(^.`class` := "dropdown-divider")
+          .when(forwardsRulesPossible && backwardsRulesPossible),
+
+        <.h6(^.className := "dropdown-header", "↑ Apply rule backwards")
+          .when(backwardsRulesPossible),
+        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Introduction", ^.onClick --> onConjunctionIntroBackwards(path))
+          .when(canConjunctionIntroBackwards(derivation)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination...", ^.onClick --> onConjunctionElimBackwards(path))
+          .when(derivation.isAxiom),
+        <.div(^.className := "dropdown-item", ^.href := "#", "→-Introduction", ^.onClick --> onImplicationIntroBackwards(path))
+          .when(canImplicationIntroBackwards(derivation)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination...", ^.onClick --> onImplicationElimBackwards(path))
+          .when(derivation.isAxiom),
+
+        <.div(^.`class` := "dropdown-divider")
+          .when(otherActionsPossible && (forwardsRulesPossible || backwardsRulesPossible)),
+
+        <.h6(^.className := "dropdown-header", "Other")
+          .when(otherActionsPossible),
+        <.div(^.className := "dropdown-item", ^.href := "#", "Remove subderivation", ^.onClick --> onRemoveDerivation(path))
+          .when(!derivation.isAxiom),
+        inlineableDerivationIndices.toVdomArray(i =>
+          <.div(^.className := "dropdown-item", ^.href := "#", s"Inline derivation #${i + 1}", ^.onClick --> onInlineDerivation(path, i))
+        ),
+        dischargeableLabels.toVdomArray(label =>
+          <.div(^.className := "dropdown-item", ^.href := "#", s"Discharge assumption $label", ^.onClick --> onDischargeAssumption(path, label))),
+        <.div(^.className := "dropdown-item", ^.href := "#", s"Undischarge assumption", ^.onClick --> onUndischargeAssumption(path))
+          .when(canUndischargeAxiom(derivation))
+      )
+    )
+  }
+
+  private def canUndischargeAxiom(derivation: Derivation): Boolean = PartialFunction.cond(derivation) {
+    case Axiom(_, Some(_)) => true
+  }
+
+  private def canConjunctionElimForwards(derivation: Derivation, path: DerivationPath): Boolean =
+    path.isRoot && derivation.formula.isInstanceOf[Conjunction]
+
+  private def canConjunctionIntroBackwards(derivation: Derivation): Boolean =
+    derivation.isAxiom && derivation.formula.isInstanceOf[Conjunction]
+
+  private def canImplicationIntroBackwards(derivation: Derivation): Boolean =
+    derivation.isAxiom && derivation.formula.isInstanceOf[Implication]
 
   private def getDischargableFormula(derivation: Derivation): Map[String, Formula] = derivation match {
     case ImplicationIntroduction(antecedent, Some(label), _) => Map(label -> antecedent)

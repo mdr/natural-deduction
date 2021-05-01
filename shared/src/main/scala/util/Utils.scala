@@ -7,4 +7,6 @@ object Utils {
 
   def rtrim(s: String): String = s.replaceAll("\\s+$", "")
 
+  def unicodeStrikeThrough(s: String): String = s.flatMap(c => s"$c\u0336")
+
 }
