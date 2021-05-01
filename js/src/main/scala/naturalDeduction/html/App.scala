@@ -1,10 +1,12 @@
-import ConjunctionElimBackwardsModalState.conjunctionEliminationDerivation
-import japgolly.scalajs.react._
+package naturalDeduction.html
+
 import japgolly.scalajs.react.vdom.html_<^._
+import japgolly.scalajs.react._
 import naturalDeduction.Derivation._
 import naturalDeduction.Formula.{Conjunction, Implication, PropositionalVariable}
-import naturalDeduction._
+import naturalDeduction.html.ConjunctionElimBackwardsModalState.conjunctionEliminationDerivation
 import naturalDeduction.parser.FormulaParser
+import naturalDeduction._
 
 import scala.scalajs.js.Dynamic.global
 
@@ -82,7 +84,7 @@ object App {
                   val derivation = ImplicationElimination(newFormula, consequent)
                   <.div(
                     <.div(^.`class` := "d-flex justify-content-center",
-                      DerivationComponent.component(DerivationProps(derivation))
+                      DerivationComponent.component(html.DerivationProps(derivation))
                     ),
                     <.br(),
                     <.div(^.className := "form-row align-items-center",
@@ -207,7 +209,7 @@ object App {
 
         <.div(^.`class` := "card-body",
           DerivationComponent.component(
-            DerivationProps(derivation,
+            html.DerivationProps(derivation,
               Some(ManipulationInfo(
                 onRemoveDerivation(derivationIndex),
                 onConjunctionIntroBackwards(derivationIndex),

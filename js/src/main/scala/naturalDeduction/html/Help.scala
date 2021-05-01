@@ -1,4 +1,6 @@
-import japgolly.scalajs.react._
+package naturalDeduction.html
+
+import japgolly.scalajs.react.ScalaComponent
 import japgolly.scalajs.react.vdom.html_<^._
 
 object Help {

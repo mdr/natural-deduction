@@ -1,5 +1,7 @@
+package naturalDeduction.html
+
 import naturalDeduction.Derivation
-import naturalDeduction.Derivation._
+import naturalDeduction.Derivation.{Axiom, DisjunctionElimination, ImplicationElimination, ImplicationIntroduction, LeftDisjunctionIntroduction, NegationElimination, ReductioAdAbsurdum, RightDisjunctionIntroduction}
 import naturalDeduction.Formula.PropositionalVariable
 
 object ExampleDerivations {

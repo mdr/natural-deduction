@@ -1,3 +1,5 @@
+package naturalDeduction.html
+
 import naturalDeduction.Derivation
 import org.scalajs.dom.window
 import upickle.default.{read, write}

@@ -1,4 +1,4 @@
-package naturalDeduction
+package naturalDeduction.html
 
 import japgolly.scalajs.react.vdom.html_<^.VdomAttr
 

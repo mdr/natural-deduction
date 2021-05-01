@@ -1,3 +1,4 @@
+import naturalDeduction.html.App
 import org.scalajs.dom.document
 
 object Main {

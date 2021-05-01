@@ -1,7 +1,9 @@
-import ConjunctionElimBackwardsModalState.conjunctionEliminationDerivation
+package naturalDeduction.html
+
 import naturalDeduction.Derivation._
 import naturalDeduction.Formula.Conjunction
 import naturalDeduction._
+import naturalDeduction.html.ConjunctionElimBackwardsModalState.conjunctionEliminationDerivation
 import naturalDeduction.parser.FormulaParser
 
 sealed trait ModalState {

@@ -1,6 +1,8 @@
+package naturalDeduction.html
+
 import naturalDeduction.Derivation.Axiom
-import naturalDeduction.{Derivation, DerivationPath, Formula}
 import naturalDeduction.parser.FormulaParser
+import naturalDeduction.{Derivation, DerivationPath, Formula}
 
 case class State(
                   newFormulaText: String = "",

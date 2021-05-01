@@ -1,3 +1,5 @@
+package naturalDeduction.html
+
 case class UndoRedo[T](undoStack: List[T] = List.empty, redoStack: List[T] = List.empty) {
   def canUndo: Boolean = undoStack.nonEmpty
 

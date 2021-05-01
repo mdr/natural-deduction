@@ -1,10 +1,11 @@
-package naturalDeduction
+package naturalDeduction.html
 
-import japgolly.scalajs.react.vdom.TagMod
-import naturalDeduction.Derivation._
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.TagMod
 import japgolly.scalajs.react.vdom.html_<^._
+import naturalDeduction.Derivation._
 import naturalDeduction.Formula.{Conjunction, Implication}
+import naturalDeduction.{Derivation, DerivationPath, Formula}
 
 case class ManipulationInfo(
                              onRemoveDerivation: DerivationPath => Callback,
