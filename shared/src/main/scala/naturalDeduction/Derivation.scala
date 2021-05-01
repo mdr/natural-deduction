@@ -59,6 +59,8 @@ case class Assumptions(anonymousAssumptions: Set[Formula] = Set.empty, labelledA
 
 sealed trait Derivation {
 
+  def convertToAxiom: Axiom = Axiom(derivation.formula)
+
   def dischargeAxiom(label: String): Derivation = this match {
     case axiom: Axiom => axiom.copy(label = Some(label))
   }

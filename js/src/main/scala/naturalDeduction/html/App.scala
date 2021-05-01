@@ -12,28 +12,6 @@ object App {
 
   class Backend($: BackendScope[Unit, State]) {
 
-    private def onConfirmModal: Callback =
-      Callback {
-        global.$("#interactionModal").modal("hide")
-      } >>
-        modState(oldState =>
-          oldState.modalState.map(_.complete(oldState)).getOrElse(oldState).closeModal
-        )
-
-    private def onSwapConjuncts: Callback =
-      modState(_.swapConjuncts)
-
-    private def onChangeModalFormula(newFormula: String): Callback =
-      modState(_.withModalFormula(newFormula))
-
-    private def onChangeNewFormula(e: ReactEventFromInput): Callback = {
-      val newValue = e.target.value
-      modState(_.copy(newFormulaText = newValue))
-    }
-
-    private def handleSubmitNewFormula(e: ReactEventFromInput): Callback =
-      e.preventDefaultCB >> modState(_.acceptNewFormulaAsNewDerivation)
-
     def render(state: State): VdomTag =
       <.div(^.`class` := "container-fluid p-0",
         <.div(^.className := "d-flex flex-column flex-md-row align-items-center py-3 mb-3 bg-white border-bottom box-shadow",
@@ -53,9 +31,9 @@ object App {
           state.derivations.zipWithIndex.map { case (derivation, index) => derivationCard(derivation, index, state.formulaToDerivationIndices) }.mkTagMod(<.br()),
           <.br().when(state.derivations.nonEmpty),
           <.form(^.`class` := "form-row align-items-center",
-            ^.onSubmit ==> handleSubmitNewFormula,
+            ^.onSubmit ==> handleStartNewDerivation,
             <.div(^.`class` := "col-auto",
-              <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Formula...", ^.onChange ==> onChangeNewFormula, ^.value := state.newFormulaText)),
+              <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Formula...", ^.onChange ==> onChangeNewDerivationFormula, ^.value := state.newFormulaText)),
             <.div(^.`class` := "col-auto",
               <.button(^.`type` := "submit", ^.`class` := "btn btn-secondary mb-2", "Start New Derivation", ^.disabled := !state.newFormulaIsValid),
             ),
@@ -63,16 +41,59 @@ object App {
         )
       )
 
+    // modState helper to handle URL hash sync
+
+    final def modState(mod: State => State): Callback =
+      $.modState(mod) >> syncUrlHash
+
+    private def syncUrlHash: Callback =
+      $.modState(state => {
+        UrlHashSync.writeToHash(state.derivations)
+        state
+      })
+
+    // Modal handlers
+
+    private def onChangeModalFormula(newFormula: String): Callback =
+      modState(_.withModalFormula(newFormula))
+
+    private def onConfirmModal: Callback =
+      Callback {
+        global.$("#interactionModal").modal("hide")
+      } >>
+        modState(oldState =>
+          oldState.modalState.map(_.complete(oldState)).getOrElse(oldState).closeModal
+        )
+
+    private def onSwapConjuncts: Callback = modState(_.swapConjuncts)
+
+    // App button handlers
+    private def onUndoClicked: Callback = modState(_.undo)
+
+    private def onRedoClicked: Callback = modState(_.redo)
+
+    // New derivation handlers
+
+    private def onChangeNewDerivationFormula(e: ReactEventFromInput): Callback = {
+      val newValue = e.target.value
+      modState(_.copy(newFormulaText = newValue))
+    }
+
+    private def handleStartNewDerivation(e: ReactEventFromInput): Callback =
+      e.preventDefaultCB >> modState(_.acceptNewFormulaAsNewDerivation)
+
+    // Derivation card button handlers
+
     private def onDeleteDerivation(derivationIndex: Int): Callback =
       modState(_.deleteDerivation(derivationIndex))
 
     private def onDuplicateDerivation(derivationIndex: Int): Callback =
       modState(_.duplicateDerivation(derivationIndex))
 
-    private def onRemoveDerivation(derivationIndex: Int)(path: DerivationPath): Callback =
-      modState(_.transformDerivation(derivationIndex, _.transform(path, convertToAxiom)))
+    // Derivation menu handlers
 
-    private def convertToAxiom(derivation: Derivation): Axiom = Axiom(derivation.formula)
+    private def onRemoveDerivation(derivationIndex: Int)(path: DerivationPath): Callback =
+      modState(_.transformDerivation(derivationIndex, _.transform(path, _.convertToAxiom)))
 
     private def onConjunctionIntroBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, conjunctionIntroBackwards)))
@@ -95,19 +116,6 @@ object App {
 
     private def onConjunctionElimForwards(derivationIndex: Int)(path: DerivationPath, child: Int): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, conjunctionElimForwards(child))))
-
-    private def onUndoClicked: Callback = modState(_.undo)
-
-    private def onRedoClicked: Callback = modState(_.redo)
-
-    private def syncUrlHash: Callback =
-      $.modState(state => {
-        UrlHashSync.writeToHash(state.derivations)
-        state
-      })
-
-    final def modState(mod: State => State): Callback =
-      $.modState(mod) >> syncUrlHash
 
     private def conjunctionElimForwards(child: Int)(derivation: Derivation): Derivation =
       child match {
@@ -149,7 +157,7 @@ object App {
         ),
         <.div(^.`class` := "card-body",
           DerivationComponent.component(
-            html.DerivationProps(derivation,
+            DerivationProps(derivation,
               Some(ManipulationInfo(
                 onRemoveDerivation(derivationIndex),
                 onConjunctionIntroBackwards(derivationIndex),
