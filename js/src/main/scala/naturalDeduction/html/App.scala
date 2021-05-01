@@ -115,8 +115,8 @@ object App {
       ImplicationIntroduction(implication.antecedent, nextFreshLabel, Axiom(implication.consequent))
     }
 
-    private def onConjunctionElimForwards(derivationIndex: Int)(path: DerivationPath, child: Int): Callback =
-      modState(_.transformDerivation(derivationIndex, _.transform(path, conjunctionElimForwards(child))))
+    private def onConjunctionElimForwards(derivationIndex: Int)(child: Int): Callback =
+      modState(_.transformDerivation(derivationIndex, conjunctionElimForwards(child)))
 
     private def conjunctionElimForwards(child: Int)(derivation: Derivation): Derivation =
       child match {

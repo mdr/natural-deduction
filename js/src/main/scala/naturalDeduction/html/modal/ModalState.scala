@@ -1,7 +1,7 @@
 package naturalDeduction.html.modal
 
 import naturalDeduction.Derivation._
-import naturalDeduction.Formula.{Conjunction, Implication}
+import naturalDeduction.Formula._
 import naturalDeduction._
 import naturalDeduction.html.State
 import naturalDeduction.html.modal.ConjunctionElimBackwardsModalState.conjunctionEliminationDerivation

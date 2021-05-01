@@ -10,7 +10,7 @@ import naturalDeduction.{Derivation, DerivationPath, Formula}
 case class ManipulationInfo(
                              onRemoveDerivation: DerivationPath => Callback,
                              onConjunctionIntroBackwards: DerivationPath => Callback,
-                             onConjunctionElimForwards: (DerivationPath, Int) => Callback,
+                             onConjunctionElimForwards: Int => Callback,
                              onConjunctionElimBackwards: DerivationPath => Callback,
                              onImplicationIntroBackwards: DerivationPath => Callback,
                              onImplicationElimBackwards: DerivationPath => Callback,
@@ -120,9 +120,9 @@ class DerivationHtmlRenderer(props: DerivationProps) {
       <.div(^.className := "dropdown-menu", CustomAttributes.ariaLabelledBy := "ruleActionMenuTrigger",
         <.h6(^.className := "dropdown-header", "↓ Apply rule forwards")
           .when(forwardsRulesPossible),
-        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick left)", ^.onClick --> manipulationInfo.onConjunctionElimForwards(path, 0))
+        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick left)", ^.onClick --> manipulationInfo.onConjunctionElimForwards(0))
           .when(canConjunctionElimForwards(derivation, path)),
-        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick right)", ^.onClick --> manipulationInfo.onConjunctionElimForwards(path, 1))
+        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick right)", ^.onClick --> manipulationInfo.onConjunctionElimForwards(1))
           .when(canConjunctionElimForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as antecedent)...", ^.onClick --> manipulationInfo.onImplicationElimForwardsFromAntecedent)
           .when(path.isRoot),
