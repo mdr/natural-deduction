@@ -37,10 +37,12 @@ object MainButtonBar {
           <.i(^.className := "fas fa-undo"),
           ^.onClick --> props.onUndoClicked,
           ^.disabled := !props.undoRedo.canUndo,
+          CustomAttributes.dataToggle := "tooltip",
           ^.title := "Undo",
         ))
       .componentDidMount(activateTooltip)
       .build
+
 
   private val RedoButton =
     ScalaComponent.builder[MainButtonBarProps]("RedoButton")

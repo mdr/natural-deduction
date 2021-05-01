@@ -9,7 +9,10 @@ object TooltipUtils {
 
   def activateTooltip(scope: Lifecycle.ComponentDidMount[_, _, _]): Callback =
     Callback {
-      global.$(scope.getDOMNode.asElement()).tooltip()
+      if (false) {
+        // Tooltips bugs galore...
+        global.$(scope.getDOMNode.asElement()).tooltip()
+      }
     }
 
 }

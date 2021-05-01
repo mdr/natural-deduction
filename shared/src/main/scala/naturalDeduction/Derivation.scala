@@ -63,6 +63,10 @@ sealed trait Derivation {
     case axiom: Axiom => axiom.copy(label = Some(label))
   }
 
+  def undischargeAxiom: Derivation = this match {
+    case axiom: Axiom => axiom.copy(label = None)
+  }
+
   def nextFreshLabel: String = (ALL_LABELS diff this.labels.toSeq).headOption.getOrElse("Out of labels!")
 
   def labels: Set[String] = children.flatMap(_.labels).toSet
@@ -79,23 +83,21 @@ sealed trait Derivation {
 
   def isAxiom: Boolean = this.isInstanceOf[Axiom]
 
+  def bindingsForChild(childChoice: Int): Map[String, Formula] = this match {
+    case raa@ReductioAdAbsurdum(_, Some(label), _) => Map(label -> raa.negation)
+    case NegationIntroduction(statement, Some(label), _) => Map(label -> statement)
+    case ImplicationIntroduction(antecedent, Some(label), _) => Map(label -> antecedent)
+    case de@DisjunctionElimination(_, Some(leftLabel), _, _, _) if childChoice == 1 => Map(leftLabel -> de.disjunction.disjunct1)
+    case de@DisjunctionElimination(_, _, _, Some(rightLabel), _) if childChoice == 2 => Map(rightLabel -> de.disjunction.disjunct2)
+    case _ => Map.empty
+  }
+
   def bindingsAtPath(path: DerivationPath): Map[String, Formula] = bindingsAtPath(path.childChoices)
 
   private def bindingsAtPath(childChoices: Seq[Int]): Map[String, Formula] =
     childChoices match {
       case Seq() => Map.empty
-      case Seq(firstChoice, remainingChoices@_*) => {
-        val childDerivation = children(firstChoice)
-        val bindingsHere: Map[String, Formula] = this match {
-          case raa@ReductioAdAbsurdum(_, Some(label), _) => Map(label -> raa.negation)
-          case NegationIntroduction(statement, Some(label), _) => Map(label -> statement)
-          case ImplicationIntroduction(antecedent, Some(label), _) => Map(label -> antecedent)
-          case de@DisjunctionElimination(_, Some(leftLabel), _, _, _) if firstChoice == 1 => Map(leftLabel -> de.disjunction.disjunct1)
-          case de@DisjunctionElimination(_, _, _, Some(rightLabel), _) if firstChoice == 2 => Map(rightLabel -> de.disjunction.disjunct2)
-          case _ => Map.empty
-        }
-        bindingsHere ++ childDerivation.bindingsAtPath(remainingChoices)
-      }
+      case Seq(firstChoice, remainingChoices@_*) => bindingsForChild(firstChoice) ++ children(firstChoice).bindingsAtPath(remainingChoices)
     }
 
   @tailrec
@@ -393,6 +395,7 @@ object Derivation {
 
   object NegationIntroduction {
     implicit val rw: RW[NegationIntroduction] = macroRW
+
     def apply(statement: Formula, bottomDerivation: Derivation): NegationIntroduction =
       NegationIntroduction(statement, None, bottomDerivation)
 
@@ -444,6 +447,7 @@ object Derivation {
 
   object ReductioAdAbsurdum {
     implicit val rw: RW[ReductioAdAbsurdum] = macroRW
+
     def apply(conclusion: Formula, bottomDerivation: Derivation): ReductioAdAbsurdum =
       ReductioAdAbsurdum(conclusion, None, bottomDerivation)
 
@@ -512,6 +516,7 @@ object Derivation {
   object DisjunctionElimination {
     implicit val rw: RW[DisjunctionElimination] = macroRW
   }
+
   case class DisjunctionElimination(disjunctionDerivation: Derivation,
                                     leftLabel: Option[String],
                                     leftDerivation: Derivation,

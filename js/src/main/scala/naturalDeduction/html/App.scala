@@ -88,7 +88,7 @@ object App {
                     ),
                     <.br(),
                     <.div(^.className := "form-row align-items-center",
-                      <.div(^.className := "col-9",
+                      <.div(^.className := "col-12",
                         <.label(^.className := "sr-only", ^.`for` := "inlineFormInput", "Name"),
                         <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Antecedent...", ^.onChange ==> onChangeModalFormula, ^.value := formulaText),
                       ),
@@ -107,7 +107,7 @@ object App {
           MainButtonBar.component(MainButtonBarProps(state.undoRedo, onUndoClicked, onRedoClicked)),
           <.p(),
           Help.component(),
-          <.p(),
+          <.p().when(state.derivations.nonEmpty),
           state.derivations.zipWithIndex.map { case (derivation, index) => derivationCard(derivation, index, state.formulaToDerivationIndices) }.mkTagMod(<.br()),
           <.br(),
           <.form(^.`class` := "form-row align-items-center",
@@ -181,6 +181,9 @@ object App {
     private def onDischargeAssumption(derivationIndex: Int)(path: DerivationPath, label: String): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, _.dischargeAxiom(label))))
 
+    private def onUndischargeAssumption(derivationIndex: Int)(path: DerivationPath): Callback =
+      modState(_.transformDerivation(derivationIndex, _.transform(path, _.undischargeAxiom)))
+
     private def onConjunctionElimBackwards(derivationIndex: Int)(path: DerivationPath): Callback =
       modState(_.showConjunctionElimBackwardsModalState(derivationIndex, path)) >>
         Callback {
@@ -214,6 +217,7 @@ object App {
                 onImplicationElimBackwards(derivationIndex),
                 onInlineDerivation(derivationIndex),
                 onDischargeAssumption(derivationIndex),
+                onUndischargeAssumption(derivationIndex),
                 derivationIndex,
                 formulaToDerivationIndices,
               ))))

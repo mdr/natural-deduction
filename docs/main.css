@@ -39,6 +39,10 @@ a.dropdown {
     color: #212529;
 }
 
+.rule-axiom {
+    display: inline-flex;
+}
+
 .rule {
     display: inline-flex;
     flex-direction: column;

@@ -16,6 +16,7 @@ case class ManipulationInfo(
                              onImplicationElimBackwards: DerivationPath => Callback,
                              onInlineDerivation: (DerivationPath, Int) => Callback,
                              onDischargeAssumption: (DerivationPath, String) => Callback,
+                             onUndischargeAssumption: DerivationPath => Callback,
                              derivationIndex: Int,
                              formulaToDerivationIndices: Map[Formula, Seq[Int]],
                            )
@@ -29,7 +30,7 @@ object DerivationComponent {
   val component = ScalaComponent.builder[DerivationProps]("DerivationComponent")
     .render_P(props => {
       val derivationRenderer = new DerivationHtmlRenderer(props)
-      derivationRenderer.renderDerivation(props.derivation, Set.empty, DerivationPath.empty)
+      derivationRenderer.renderDerivation(props.derivation)
     })
     .build
 
@@ -38,46 +39,51 @@ object DerivationComponent {
 
 class DerivationHtmlRenderer(props: DerivationProps) {
 
-  def renderDerivation(derivation: Derivation, labels: Set[String] = Set.empty, path: DerivationPath): VdomNode = derivation match {
+  def renderDerivation(derivation: Derivation, bindings: Map[String, Formula] = Map.empty, path: DerivationPath = DerivationPath.empty): VdomNode = derivation match {
     case Axiom(formula, label) =>
-      val isDischarged = labels.intersect(label.toSet).nonEmpty
+      val isDischarged = bindings.keySet.intersect(label.toSet).nonEmpty
       props.manipulationInfo match {
         case None => formula.toString
         case Some(manipulationInfo) =>
-          if (isDischarged) <.span(<.span(^.cls := "discharged-axiom", formula.toString), <.sup(label.get)) else renderManipulatableFormula(derivation, path, manipulationInfo)
+          <.div(^.className := "rule-axiom", // without this, dropdown menu for derivations that are just axioms don't position correctly...
+            if (isDischarged)
+              renderManipulatableFormula(derivation, path, manipulationInfo, label)
+            else
+              renderManipulatableFormula(derivation, path, manipulationInfo)
+          )
       }
     case ConjunctionIntroduction(leftDerivation, rightDerivation) =>
-      rule2(derivation, renderDerivation(leftDerivation, labels, path.choose(0)), renderDerivation(rightDerivation, labels, path.choose(1)), "∧I", path = path)
+      rule2(derivation, renderDerivation(leftDerivation, bindings, path.choose(0)), renderDerivation(rightDerivation, bindings, path.choose(1)), "∧I", path = path)
     case LeftConjunctionElimination(conjunctionDerivation) =>
-      rule1(derivation, renderDerivation(conjunctionDerivation, labels, path.choose(0)), "∧E", path = path)
+      rule1(derivation, renderDerivation(conjunctionDerivation, bindings, path.choose(0)), "∧E", path = path)
     case RightConjunctionElimination(conjunctionDerivation) =>
-      rule1(derivation, renderDerivation(conjunctionDerivation, labels, path.choose(0)), "∧E", path = path)
+      rule1(derivation, renderDerivation(conjunctionDerivation, bindings, path.choose(0)), "∧E", path = path)
     case ImplicationIntroduction(_, label, consequentDerivation) =>
-      rule1(derivation, renderDerivation(consequentDerivation, labels ++ label, path.choose(0)), "→I", label, path = path)
+      rule1(derivation, renderDerivation(consequentDerivation, bindings ++ derivation.bindingsForChild(0), path.choose(0)), "→I", label, path = path)
     case ImplicationElimination(antecedentDerivation, implicationDerivation) =>
-      rule2(derivation, renderDerivation(antecedentDerivation, labels, path.choose(0)), renderDerivation(implicationDerivation, labels, path.choose(1)), "→E", path = path)
+      rule2(derivation, renderDerivation(antecedentDerivation, bindings, path.choose(0)), renderDerivation(implicationDerivation, bindings, path.choose(1)), "→E", path = path)
     case EquivalenceIntroduction(forwardsDerivation, backwardsDerivation) =>
-      rule2(derivation, renderDerivation(forwardsDerivation, labels, path.choose(0)), renderDerivation(backwardsDerivation, labels, path.choose(1)), "↔I", path = path)
+      rule2(derivation, renderDerivation(forwardsDerivation, bindings, path.choose(0)), renderDerivation(backwardsDerivation, bindings, path.choose(1)), "↔I", path = path)
     case ForwardsEquivalenceElimination(equivalenceDerivation) =>
-      rule1(derivation, renderDerivation(equivalenceDerivation, labels, path.choose(0)), "↔E", path = path)
+      rule1(derivation, renderDerivation(equivalenceDerivation, bindings, path.choose(0)), "↔E", path = path)
     case BackwardsEquivalenceElimination(equivalenceDerivation) =>
-      rule1(derivation, renderDerivation(equivalenceDerivation, labels, path.choose(0)), "↔E", path = path)
+      rule1(derivation, renderDerivation(equivalenceDerivation, bindings, path.choose(0)), "↔E", path = path)
     case NegationIntroduction(_, label, bottomDerivation) =>
-      rule1(derivation, renderDerivation(bottomDerivation, labels ++ label, path.choose(0)), "¬I", label, path = path)
+      rule1(derivation, renderDerivation(bottomDerivation, derivation.bindingsForChild(0), path.choose(0)), "¬I", label, path = path)
     case NegationElimination(positiveDerivation, negativeDerivation) =>
-      rule2(derivation, renderDerivation(positiveDerivation, labels, path.choose(0)), renderDerivation(negativeDerivation, labels, path.choose(1)), "¬E", path = path)
+      rule2(derivation, renderDerivation(positiveDerivation, bindings, path.choose(0)), renderDerivation(negativeDerivation, bindings, path.choose(1)), "¬E", path = path)
     case ReductioAdAbsurdum(_, label, bottomDerivation) =>
-      rule1(derivation, renderDerivation(bottomDerivation, labels ++ label, path.choose(0)), "RAA", label, path = path)
+      rule1(derivation, renderDerivation(bottomDerivation, derivation.bindingsForChild(0), path.choose(0)), "RAA", label, path = path)
     case LeftDisjunctionIntroduction(leftDerivation, _) =>
-      rule1(derivation, renderDerivation(leftDerivation, labels, path.choose(0)), "∨I", path = path)
+      rule1(derivation, renderDerivation(leftDerivation, bindings, path.choose(0)), "∨I", path = path)
     case RightDisjunctionIntroduction(_, rightDerivation) =>
-      rule1(derivation, renderDerivation(rightDerivation, labels, path.choose(0)), "∨I", path = path)
+      rule1(derivation, renderDerivation(rightDerivation, bindings, path.choose(0)), "∨I", path = path)
     case DisjunctionElimination(disjunctionDerivation, leftLabel, leftDerivation, rightLabel, rightDerivation) =>
       rule3(
         derivation,
-        renderDerivation(disjunctionDerivation, labels, path.choose(0)),
-        renderDerivation(leftDerivation, labels ++ leftLabel, path.choose(1)),
-        renderDerivation(rightDerivation, labels ++ rightLabel, path.choose(2)),
+        renderDerivation(disjunctionDerivation, bindings, path.choose(0)),
+        renderDerivation(leftDerivation, derivation.bindingsForChild(1), path.choose(1)),
+        renderDerivation(rightDerivation, derivation.bindingsForChild(2), path.choose(2)),
         "∨E",
         (leftLabel.toSeq ++ rightLabel).mkString(" ") match { case "" => None; case s => Some(s) },
         path = path)
@@ -92,18 +98,13 @@ class DerivationHtmlRenderer(props: DerivationProps) {
   private def rule3(parent: Derivation, child1: VdomNode, child2: VdomNode, child3: VdomNode, rightLabel: String, leftLabel: Option[String] = None, path: DerivationPath): VdomNode =
     rule(parent, Seq(child1, child2, child3), rightLabel, leftLabel, path)
 
-  def intersperse[A](a: Seq[A], b: Seq[A]): Seq[A] = a match {
-    case Seq(first, rest@_*) => first +: intersperse(b, rest)
-    case _ => b
-  }
-
-  private def renderManipulatableFormula(derivation: Derivation, path: DerivationPath, manipulationInfo: ManipulationInfo): VdomNode = {
+  private def renderManipulatableFormula(derivation: Derivation, path: DerivationPath, manipulationInfo: ManipulationInfo, dischargeLabel: Option[String] = None): VdomNode = {
     val inlineableDerivationIndices =
       manipulationInfo.formulaToDerivationIndices.getOrElse(derivation.formula, Seq.empty).filter(_ => derivation.isAxiom).filter(i => i != manipulationInfo.derivationIndex).sorted
-    val dischargeableLabels = props.derivation.bindingsAtPath(path).groupMap(_._2)(_._1).getOrElse(derivation.formula, Seq.empty).filter(_ => derivation.isAxiom).toSeq.sorted
+    val dischargeableLabels = props.derivation.bindingsAtPath(path).groupMap(_._2)(_._1).getOrElse(derivation.formula, Seq.empty).filter(_ => derivation.isAxiom && !canUndischargeAxiom(derivation)).toSeq.sorted
     val forwardsRulesPossible = canConjunctionElimForwards(derivation, path)
     val backwardsRulesPossible = derivation.isAxiom
-    val otherActionsPossible = !derivation.isAxiom || inlineableDerivationIndices.nonEmpty || dischargeableLabels.nonEmpty
+    val otherActionsPossible = !derivation.isAxiom || inlineableDerivationIndices.nonEmpty || dischargeableLabels.nonEmpty || canUndischargeAxiom(derivation)
     <.a(^.`class` := "dropdown link-secondary",
       <.div(
         ^.`type` := "button",
@@ -111,7 +112,10 @@ class DerivationHtmlRenderer(props: DerivationProps) {
         CustomAttributes.dataToggle := "dropdown",
         CustomAttributes.ariaHasPopup := "true",
         CustomAttributes.ariaExpanded := "false",
-        derivation.formula.toString),
+        dischargeLabel match {
+          case Some(label) => <.span(<.span(^.cls := "discharged-axiom", derivation.formula.toString), <.sup(label))
+          case None => derivation.formula.toString
+        }),
       <.div(^.className := "dropdown-menu", CustomAttributes.ariaLabelledBy := "ruleActionMenuTrigger",
         <.h6(^.className := "dropdown-header", "↓ Apply rule forwards")
           .when(forwardsRulesPossible),
@@ -145,9 +149,15 @@ class DerivationHtmlRenderer(props: DerivationProps) {
           <.div(^.className := "dropdown-item", ^.href := "#", s"Inline derivation #${i + 1}", ^.onClick --> manipulationInfo.onInlineDerivation(path, i))
         ),
         dischargeableLabels.toVdomArray(label =>
-          <.div(^.className := "dropdown-item", ^.href := "#", s"Discharge assumption $label", ^.onClick --> manipulationInfo.onDischargeAssumption(path, label)))
+          <.div(^.className := "dropdown-item", ^.href := "#", s"Discharge assumption $label", ^.onClick --> manipulationInfo.onDischargeAssumption(path, label))),
+        <.div(^.className := "dropdown-item", ^.href := "#", s"Undischarge assumption", ^.onClick --> manipulationInfo.onUndischargeAssumption(path))
+          .when(canUndischargeAxiom(derivation))
       )
     )
+  }
+
+  private def canUndischargeAxiom(derivation: Derivation): Boolean = PartialFunction.cond(derivation) {
+    case Axiom(_, Some(_)) => true
   }
 
   private def canConjunctionElimForwards(derivation: Derivation, path: DerivationPath): Boolean =
