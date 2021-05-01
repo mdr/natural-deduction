@@ -36,47 +36,24 @@ object Modal {
             )
           ),
           <.div(^.className := "modal-body", modalState.map {
-            case ConjunctionElimBackwardsModalState(_, _, conclusion, conjunctToPick, formulaText) =>
-              val newFormulaOpt = FormulaParser.tryParseFormula(formulaText).toOption
-              val newFormula = newFormulaOpt.getOrElse(PropositionalVariable("?"))
-              val derivation = conjunctionEliminationDerivation(conclusion, newFormula, conjunctToPick)
-              <.div(
-                <.div(^.`class` := "d-flex justify-content-center",
-                  DerivationComponent.component(DerivationProps(derivation))
-                ),
-                <.br(),
-                <.div(^.className := "form-row align-items-center",
-                  <.div(^.className := "col-9",
-                    <.label(^.className := "sr-only", ^.`for` := "inlineFormInput", "Name"),
-                    <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Other conjunct...", ^.onChange ==> onChangeModalFormula, ^.value := formulaText),
-                  ),
-                  <.div(^.className := "col",
-                    <.button(^.`class` := "btn btn-outline-secondary mb-2", ^.`type` := "button", ^.onClick --> onSwapConjuncts,
-                      <.span(<.i(^.className := "fas fa-exchange-alt"), " Swap"),
-                    ),
-                  )
-                ),
-              )
-            case ImplicationElimBackwardsModalState(_, _, consequent, formulaText) =>
-              val newFormulaOpt = FormulaParser.tryParseFormula(formulaText).toOption
-              val newFormula = newFormulaOpt.getOrElse(PropositionalVariable("?"))
-              val derivation = ImplicationElimination(newFormula, consequent)
-              <.div(
-                <.div(^.`class` := "d-flex justify-content-center",
-                  DerivationComponent.component(html.DerivationProps(derivation))
-                ),
-                <.br(),
-                <.div(^.className := "form-row align-items-center",
-                  <.div(^.className := "col-12",
-                    <.label(^.className := "sr-only", ^.`for` := "inlineFormInput", "Name"),
-                    <.input(^.`class` := "form-control mb-2", ^.`type` := "text", ^.placeholder := "Antecedent...", ^.onChange ==> onChangeModalFormula, ^.value := formulaText),
-                  ),
-                ),
-              )
+            case state: ConjunctionElimBackwardsModalState =>
+              ConjunctionElimBackwardsModalBody.component(ConjunctionElimBackwardsModalBody.Props(state, props.onChangeModalFormula, onSwapConjuncts))
+            case state: ImplicationElimBackwardsModalState =>
+              ImplicationElimBackwardsModalBody.component(ImplicationElimBackwardsModalBody.Props(state, props.onChangeModalFormula))
           }),
           <.div(^.className := "modal-footer",
-            <.button(^.`type` := "button", ^.className := "btn btn-secondary", VdomAttr("data-dismiss") := "modal", "Close"),
-            <.button(^.`type` := "button", ^.className := "btn btn-primary", "Apply", ^.disabled := !modalState.exists(_.canComplete), ^.onClick --> onConfirmModal)
+            <.button(
+              ^.`type` := "button",
+              ^.className := "btn btn-secondary",
+              VdomAttr("data-dismiss") := "modal",
+              "Close"
+            ),
+            <.button(
+              ^.`type` := "button",
+              ^.className := "btn btn-primary", "Apply",
+              ^.disabled := !modalState.exists(_.canComplete),
+              ^.onClick --> onConfirmModal
+            )
           )
         )
       )
