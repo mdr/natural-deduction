@@ -34,7 +34,7 @@ object MainButtonBar {
         <.button(
           ^.`class` := "btn btn-outline-secondary",
           ^.`type` := "button",
-          <.i(^.className := "fas fa-undo"),
+          <.i(^.className := "fas fa-undo", ^.title := "Undo"),
           ^.onClick --> props.onUndoClicked,
           ^.disabled := !props.undoRedo.canUndo,
           CustomAttributes.dataToggle := "tooltip",
@@ -50,7 +50,7 @@ object MainButtonBar {
         <.button(
           ^.`class` := "btn btn-outline-secondary",
           ^.`type` := "button",
-          <.i(^.className := "fas fa-redo"),
+          <.i(^.className := "fas fa-redo", ^.title := "Redo"),
           ^.onClick --> props.onRedoClicked,
           ^.disabled := !props.undoRedo.canRedo,
           ^.title := "Redo",
@@ -64,7 +64,7 @@ object MainButtonBar {
         <.button(
           ^.`class` := "btn btn-outline-secondary",
           ^.`type` := "button",
-          <.i(^.className := "fas fa-question-circle"),
+          <.i(^.className := "fas fa-question-circle", ^.title := "Help"),
           CustomAttributes.dataToggle := "collapse",
           CustomAttributes.dataTarget := "#help",
           ^.title := "Help",

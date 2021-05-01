@@ -109,7 +109,7 @@ object App {
           Help.component(),
           <.p().when(state.derivations.nonEmpty),
           state.derivations.zipWithIndex.map { case (derivation, index) => derivationCard(derivation, index, state.formulaToDerivationIndices) }.mkTagMod(<.br()),
-          <.br(),
+          <.br().when(state.derivations.nonEmpty),
           <.form(^.`class` := "form-row align-items-center",
             ^.onSubmit ==> handleSubmitNewFormula,
             <.div(^.`class` := "col-auto",

@@ -28,7 +28,7 @@ object CardButtonBar {
         <.button(
           ^.`class` := "btn btn-outline-secondary",
           ^.`type` := "button",
-          <.i(^.className := "fas fa-clone"),
+          <.i(^.className := "fas fa-clone", ^.title := "Duplicate"),
           ^.onClick --> props.onDuplicateDerivation,
           ^.title := "Duplicate",
         )
@@ -42,7 +42,7 @@ object CardButtonBar {
         <.button(
           ^.`class` := "btn btn-outline-secondary",
           ^.`type` := "button",
-          <.i(^.className := "fas fa-trash"),
+          <.i(^.className := "fas fa-trash", ^.title := "Delete"),
           ^.onClick --> props.onDeleteDerivation,
           ^.title := "Delete",
         )
