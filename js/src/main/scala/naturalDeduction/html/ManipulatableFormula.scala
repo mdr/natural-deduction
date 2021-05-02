@@ -35,10 +35,11 @@ object ManipulatableFormula {
         .filter(_ => derivation.isAxiom && label.isEmpty)
         .toSeq
         .sorted
+    val canBetaReduce = derivation.isBetaRedex
     val forwardsRulesPossible = path.isRoot
     val backwardsRulesPossible = derivation.isAxiom
     val otherActionsPossible = !derivation.isAxiom || inlineableDerivationIndices.nonEmpty ||
-      dischargeableLabels.nonEmpty || canUndischargeAxiom(derivation)
+      dischargeableLabels.nonEmpty || canUndischargeAxiom(derivation) || canBetaReduce || !path.isRoot
     <.a(^.`class` := "dropdown link-secondary",
       <.div(
         ^.className := "rule-formula",
@@ -93,13 +94,17 @@ object ManipulatableFormula {
           .when(otherActionsPossible),
         <.div(^.className := "dropdown-item", ^.href := "#", "Remove subderivation", ^.onClick --> onRemoveDerivation(path))
           .when(!derivation.isAxiom),
+        <.div(^.className := "dropdown-item", ^.href := "#", "Extract subderivation", ^.onClick --> onExtractSubderivation(path))
+          .when(!path.isRoot),
         inlineableDerivationIndices.toVdomArray(i =>
           <.div(^.className := "dropdown-item", ^.href := "#", s"Inline derivation #${i + 1}", ^.onClick --> onInlineDerivation(path, i))
         ),
         dischargeableLabels.toVdomArray(label =>
           <.div(^.className := "dropdown-item", ^.href := "#", s"Discharge assumption $label", ^.onClick --> onDischargeAssumption(path, label))),
         <.div(^.className := "dropdown-item", ^.href := "#", s"Undischarge assumption", ^.onClick --> onUndischargeAssumption(path))
-          .when(canUndischargeAxiom(derivation))
+          .when(canUndischargeAxiom(derivation)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "β-reduce", ^.onClick --> onBetaReduce(path))
+          .when(canBetaReduce),
       )
     )
   }

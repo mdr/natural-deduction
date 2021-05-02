@@ -110,6 +110,9 @@ object App {
     private def onDuplicateDerivation(derivationIndex: DerivationIndex): Callback =
       modState(_.duplicateDerivation(derivationIndex))
 
+    private def onExtractSubderivation(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
+      modState(_.extractSubderivation(derivationIndex, path))
+
     // Derivation menu handlers
 
     private def onRemoveDerivation(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
@@ -155,6 +158,9 @@ object App {
       modState(oldState =>
         oldState.transformDerivation(derivationIndex, _.set(path, oldState.derivations(derivationIndexToInline)))
       )
+
+    private def onBetaReduce(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
+      modState(_.transformDerivation(derivationIndex, _.transform(path, _.betaReduce.get)))
 
     private def onDischargeAssumption(derivationIndex: DerivationIndex)(path: DerivationPath, label: Label): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, _.dischargeAxiom(label))))
@@ -205,6 +211,8 @@ object App {
                 onInlineDerivation(derivationIndex),
                 onDischargeAssumption(derivationIndex),
                 onUndischargeAssumption(derivationIndex),
+                onBetaReduce(derivationIndex),
+                onExtractSubderivation(derivationIndex),
                 derivationIndex,
                 formulaToDerivationIndices,
               ))))

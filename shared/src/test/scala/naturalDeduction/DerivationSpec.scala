@@ -111,7 +111,7 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
 
   "Exercise 2.4.3(b)" should "be provable" in {
     val derivation = Axiom(φ).implicationIntro(ψ).implicationIntro(φ)
-    derivation.sequent shouldEqual ((φ) ⊢ (φ → (ψ → φ)))
+    derivation.sequent shouldEqual (φ ⊢ (φ → (ψ → φ)))
   }
 
   "Exercise 2.4.3(c)" should "be provable" in {
@@ -222,6 +222,14 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
     derivation.bindingsAtPath(DerivationPath(Seq.empty)) shouldBe Map.empty
     derivation.bindingsAtPath(DerivationPath(Seq(0))) shouldBe Map("❶" -> φ)
     derivation.bindingsAtPath(DerivationPath(Seq(0, 0))) shouldBe Map("❶" -> φ)
+  }
+
+  "Substitution" should "work" in {
+    Axiom(φ, "❶").substitute("❶", χ.axiom) shouldEqual χ.axiom
+
+    ImplicationIntroduction(φ, "❶", Axiom(φ, "❶")).substitute("❶", χ.axiom) shouldEqual ImplicationIntroduction(φ, "❶", Axiom(φ, "❶"))
+
+    ImplicationIntroduction(φ, "①", Axiom(φ, "②")).substitute("②", Axiom(φ, "①")) shouldEqual ImplicationIntroduction(φ, "③", Axiom(φ, "①"))
   }
 
   // ❶ ❷ ❸ ❹ ❺ φ ψ χ Ø ⊢ ¬ ∨ ∧ → ↔

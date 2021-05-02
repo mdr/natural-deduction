@@ -1,15 +1,54 @@
 package naturalDeduction
 
 import naturalDeduction.Derivation._
+import naturalDeduction.Formula._
+import naturalDeduction.Labels.freshLabel
 import naturalDeduction.pretty.DerivationRenderer
-import Formula._
-import naturalDeduction.Labels.ALL_LABELS
-
-import scala.annotation.tailrec
 import upickle.default.{macroRW, ReadWriter => RW}
 import util.Utils.unicodeStrikeThrough
 
+import scala.PartialFunction.{cond, condOpt}
+import scala.annotation.tailrec
+
 sealed trait Derivation {
+
+  private object BetaRedex {
+    def unapply(derivation: Derivation): Option[(Derivation, Option[Label], Derivation)] = condOpt(derivation) {
+      case ImplicationElimination(antecedentDerivation, ImplicationIntroduction(_, label, consequentDerivation)) =>
+        (antecedentDerivation, label, consequentDerivation)
+    }
+  }
+
+  def isBetaRedex: Boolean = cond(this) { case BetaRedex(_, _, _) => true }
+
+  def betaReduce: Option[Derivation] = condOpt(this) {
+    case BetaRedex(antecedentDerivation, label, consequentDerivation) =>
+      label match {
+        case Some(label) => consequentDerivation.substitute(label, antecedentDerivation)
+        case None => consequentDerivation
+      }
+  }
+
+  def substitute(label: Label, replacement: Derivation): Derivation = this match {
+    case Axiom(_, Some(`label`)) => replacement
+    case _ =>
+      children.indices.foldLeft(this) { case (derivation, childChoice) =>
+        val childBindingLabels: Set[Label] = bindingsForChild(childChoice).keySet
+        // if childBindingLabel is free in replacement, we need to first relabel with a label fresh both
+        // in derivation and in replacement
+        if (childBindingLabels contains label)
+          derivation
+        else {
+          val isFreeInReplacement = (childBindingLabels intersect replacement.undischargedAssumptions.labelledAssumptions.keySet).nonEmpty
+          if (isFreeInReplacement) {
+            val newLabel = freshLabel(derivation.labels ++ replacement.labels)
+            derivation.relabel(childChoice, newLabel).transformChild(childChoice, _.substitute(label, replacement))
+          } else {
+            derivation.transformChild(childChoice, _.substitute(label, replacement))
+          }
+        }
+      }
+  }
 
   def convertToAxiom: Axiom = Axiom(formula)
 
@@ -21,7 +60,7 @@ sealed trait Derivation {
     case axiom: Axiom => axiom.copy(label = None)
   }
 
-  def nextFreshLabel: Label = (ALL_LABELS diff this.labels.toSeq).headOption.getOrElse("Out of labels!")
+  def nextFreshLabel: Label = freshLabel(this.labels)
 
   def labels: Set[Label] = children.flatMap(_.labels).toSet
 
@@ -33,9 +72,26 @@ sealed trait Derivation {
 
   def children: Seq[Derivation]
 
+  def getChild(i: ChildIndex): Derivation = children(i)
+
   def replaceChild(i: ChildIndex, newChild: Derivation): Derivation
 
+  def transformChild(i: ChildIndex, f: Derivation => Derivation): Derivation = replaceChild(i, f(getChild(i)))
+
   def isAxiom: Boolean = this.isInstanceOf[Axiom]
+
+  def relabel(childChoice: ChildIndex, newLabel: Label): Derivation = {
+    val (oldLabel, formula) = bindingsForChild(childChoice).headOption.get
+    setChildLabel(childChoice, newLabel).transformChild(childChoice, _.substitute(oldLabel, Axiom(formula, newLabel)))
+  }
+
+  private def setChildLabel(childChoice: ChildIndex, newLabel: Label): Derivation = this match {
+    case d: ImplicationIntroduction => d.copy(label = Some(newLabel))
+    case d: ReductioAdAbsurdum => d.copy(label = Some(newLabel))
+    case d: NegationIntroduction => d.copy(label = Some(newLabel))
+    case d: DisjunctionElimination if childChoice == 1 => d.copy(leftLabel = Some(newLabel))
+    case d: DisjunctionElimination if childChoice == 2 => d.copy(rightLabel = Some(newLabel))
+  }
 
   def bindingsForChild(childChoice: ChildIndex): Map[Label, Formula] = this match {
     case raa@ReductioAdAbsurdum(_, Some(label), _) => Map(label -> raa.negation)
@@ -75,9 +131,13 @@ sealed trait Derivation {
 
   override def toString: String = {
     val rendered = DerivationRenderer.renderDerivation(this).toStringNormal
-    return rendered
-    val withStrikethrough = "-(.+?)-".r.replaceAllIn(rendered, result => " " + unicodeStrikeThrough(result.group(1)) + " ")
-    """(?m)(\s+)$""".r.replaceAllIn(withStrikethrough, "")
+    val useStrikethrough = false
+    if (useStrikethrough) {
+      val withStrikethrough = "-(.+?)-".r.replaceAllIn(rendered, result => " " + unicodeStrikeThrough(result.group(1)) + " ")
+      """(?m)(\s+)$""".r.replaceAllIn(withStrikethrough, "")
+    } else {
+      rendered
+    }
   }
 
   def implicationIntro(formula: Formula, label: Option[Label] = None): ImplicationIntroduction =
@@ -166,7 +226,9 @@ object Derivation {
   }
 
   case class ConjunctionIntroduction(leftDerivation: Derivation, rightDerivation: Derivation) extends Derivation {
-    override def undischargedAssumptions: Assumptions = leftDerivation.undischargedAssumptions ++ rightDerivation.undischargedAssumptions
+
+    override def undischargedAssumptions: Assumptions =
+      leftDerivation.undischargedAssumptions ++ rightDerivation.undischargedAssumptions
 
     override def formula: Formula = leftDerivation.formula ∧ rightDerivation.formula
 
@@ -270,7 +332,8 @@ object Derivation {
 
     override def formula: Formula = implication.consequent
 
-    override def undischargedAssumptions: Assumptions = antecedentDerivation.undischargedAssumptions ++ implicationDerivation.undischargedAssumptions
+    override def undischargedAssumptions: Assumptions =
+      antecedentDerivation.undischargedAssumptions ++ implicationDerivation.undischargedAssumptions
 
     override def children: Seq[Derivation] = Seq(antecedentDerivation, implicationDerivation)
 
@@ -295,7 +358,8 @@ object Derivation {
 
     override def formula: Formula = formula1 ↔ formula2
 
-    override def undischargedAssumptions: Assumptions = forwardsDerivation.undischargedAssumptions ++ backwardsDerivation.undischargedAssumptions
+    override def undischargedAssumptions: Assumptions =
+      forwardsDerivation.undischargedAssumptions ++ backwardsDerivation.undischargedAssumptions
 
     override def children: Seq[Derivation] = Seq(forwardsDerivation, backwardsDerivation)
 

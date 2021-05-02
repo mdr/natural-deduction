@@ -19,6 +19,8 @@ case class ManipulationInfo(onRemoveDerivation: DerivationPath => Callback,
                             onInlineDerivation: (DerivationPath, DerivationIndex) => Callback,
                             onDischargeAssumption: (DerivationPath, String) => Callback,
                             onUndischargeAssumption: DerivationPath => Callback,
+                            onBetaReduce: DerivationPath => Callback,
+                            onExtractSubderivation: DerivationPath => Callback,
                             derivationIndex: DerivationIndex,
                             formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]])
 

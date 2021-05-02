@@ -20,10 +20,20 @@ case class State(
       copy(
         derivations = derivations.patch(derivationIndex, Seq.empty, 1)))
 
-  def duplicateDerivation(derivationIndex: DerivationIndex): State =
+  def duplicateDerivation(derivationIndex: DerivationIndex): State = {
+    val derivation = derivations(derivationIndex)
     withUndo(
       copy(
-        derivations = derivations.patch(derivationIndex, Seq(derivations(derivationIndex), derivations(derivationIndex)), 1)))
+        derivations = derivations.patch(derivationIndex, Seq(derivation, derivation), 1)))
+  }
+
+  def extractSubderivation(derivationIndex: DerivationIndex, path: DerivationPath): State = {
+    val derivation = derivations(derivationIndex)
+    val subDerivation = derivation.get(path)
+    withUndo(
+      copy(
+        derivations = derivations.patch(derivationIndex, Seq(derivation, subDerivation), 1)))
+  }
 
   def withUndo(newState: State): State = newState.copy(undoRedo = undoRedo.push(derivations))
 

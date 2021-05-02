@@ -5,6 +5,7 @@ ThisBuild / scalaVersion := "2.13.5"
 lazy val root = project.in(file(".")).
   aggregate(proj.js, proj.jvm).
   settings(
+    name := "natural-deduction",
     publish := {},
     publishLocal := {},
   )
@@ -21,11 +22,11 @@ lazy val proj = crossProject(JSPlatform, JVMPlatform).in(file(".")).
   jvmSettings().
   jsConfigure(_.enablePlugins(ScalaJSBundlerPlugin)).
   jsSettings(
-    npmDependencies in Compile ++= Seq(
+    Compile / npmDependencies ++= Seq(
       "react" -> "17.0.2",
       "react-dom" -> "17.0.2"),
     scalaJSUseMainModuleInitializer := true,
-    mainClass in Compile := Some("Main"),
+    Compile / mainClass := Some("Main"),
     scalacOptions := Seq("-unchecked", "-deprecation"),
     libraryDependencies += "com.github.japgolly.scalajs-react" %%% "core" % "1.7.7",
     libraryDependencies += "com.github.japgolly.scalajs-react" %%% "extra" % "1.7.7"
