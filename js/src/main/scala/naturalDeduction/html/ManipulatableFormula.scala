@@ -24,14 +24,14 @@ object ManipulatableFormula {
     import manipulationInfo._
     val inlineableDerivationIndices: Seq[DerivationIndex] =
       formulaToDerivationIndices
-        .getOrElse(derivation.formula, Seq.empty)
+        .getOrElse(derivation.conclusion, Seq.empty)
         .filter(_ => derivation.isAxiom)
         .filter(i => i != derivationIndex)
         .sorted
     val dischargeableLabels: Seq[String] =
       bindings
         .groupMap(_._2)(_._1)
-        .getOrElse(derivation.formula, Seq.empty)
+        .getOrElse(derivation.conclusion, Seq.empty)
         .filter(_ => derivation.isAxiom && label.isEmpty)
         .toSeq
         .sorted
@@ -51,7 +51,7 @@ object ManipulatableFormula {
         <.span(
           <.span(
             (^.cls := "discharged-axiom").when(isDischarged),
-            derivation.formula.toString
+            derivation.conclusion.toString
           ),
           label.toTagMod(l => <.sup(l))
         ),
@@ -85,7 +85,7 @@ object ManipulatableFormula {
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as antecedent)...", ^.onClick --> onImplicationElimForwardsFromAntecedent)
           .when(path.isRoot),
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as implication)", ^.onClick --> onImplicationElimForwardsFromImplication)
-          .when(path.isRoot && derivation.formula.isInstanceOf[Implication]),
+          .when(path.isRoot && derivation.conclusion.isInstanceOf[Implication]),
 
         <.div(^.`class` := "dropdown-divider")
           .when(otherActionsPossible && (forwardsRulesPossible || backwardsRulesPossible)),
@@ -114,12 +114,12 @@ object ManipulatableFormula {
   }
 
   private def canConjunctionElimForwards(derivation: Derivation, path: DerivationPath): Boolean =
-    path.isRoot && derivation.formula.isInstanceOf[Conjunction]
+    path.isRoot && derivation.conclusion.isInstanceOf[Conjunction]
 
   private def canConjunctionIntroBackwards(derivation: Derivation): Boolean =
-    derivation.isAxiom && derivation.formula.isInstanceOf[Conjunction]
+    derivation.isAxiom && derivation.conclusion.isInstanceOf[Conjunction]
 
   private def canImplicationIntroBackwards(derivation: Derivation): Boolean =
-    derivation.isAxiom && derivation.formula.isInstanceOf[Implication]
+    derivation.isAxiom && derivation.conclusion.isInstanceOf[Implication]
 
 }

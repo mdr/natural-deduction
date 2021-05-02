@@ -48,7 +48,7 @@ object DerivationRenderer {
   }
 
   private def renderSingleChild(parent: Derivation, childRegion: RaggedTextRegion, ruleName: String, label: Option[Label] = None): RaggedTextRegion = {
-    val formulaString = parent.formula.toString
+    val formulaString = parent.conclusion.toString
     val firstChildLine = childRegion.lines.head
     val firstChildLineOffset = firstChildLine.offset // beta
     val ruleLineWidth = formulaString.length max firstChildLine.text.length
@@ -66,7 +66,7 @@ object DerivationRenderer {
 
   private def renderTwoChildren(parent: Derivation, child1Region: RaggedTextRegion, child2Region: RaggedTextRegion, ruleName: String): RaggedTextRegion = {
     val minHorizSpacing = 3
-    val formulaString = parent.formula.toString
+    val formulaString = parent.conclusion.toString
     val lengthOfChildLineWhenClosestPacked = {
       val childrenRegion = child1Region.pasteHorizontal(child2Region, minHorizSpacing)
       val firstChildLine = childrenRegion.lines.head
@@ -92,7 +92,7 @@ object DerivationRenderer {
                                   ruleName: String,
                                   label: Option[Label] = None): RaggedTextRegion = {
     val minHorizSpacing = 3
-    val formulaString = parent.formula.toString
+    val formulaString = parent.conclusion.toString
     val lengthOfChildLineWhenClosestPacked = {
       val childrenRegion = child1Region
         .pasteHorizontal(child2Region, minHorizSpacing)

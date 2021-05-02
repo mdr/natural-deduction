@@ -122,7 +122,7 @@ object App {
       modState(_.transformDerivation(derivationIndex, _.transform(path, conjunctionIntroBackwards)))
 
     private def conjunctionIntroBackwards(derivation: Derivation): Derivation = {
-      val conjunction = derivation.formula.asInstanceOf[Conjunction]
+      val conjunction = derivation.conclusion.asInstanceOf[Conjunction]
       ConjunctionIntroduction(Axiom(conjunction.conjunct1), Axiom(conjunction.conjunct2))
     }
 
@@ -133,7 +133,7 @@ object App {
       derivation.transform(path, implicationIntroBackwards(derivation.nextFreshLabel))
 
     private def implicationIntroBackwards(nextFreshLabel: Label)(derivation: Derivation): Derivation = {
-      val implication = derivation.formula.asInstanceOf[Implication]
+      val implication = derivation.conclusion.asInstanceOf[Implication]
       ImplicationIntroduction(implication.antecedent, nextFreshLabel, Axiom(implication.consequent))
     }
 
@@ -150,7 +150,7 @@ object App {
       modState(_.transformDerivation(derivationIndex, implicationElimForwardsFromImplication))
 
     private def implicationElimForwardsFromImplication(derivation: Derivation): ImplicationElimination = {
-      val implication = derivation.formula.asInstanceOf[Implication]
+      val implication = derivation.conclusion.asInstanceOf[Implication]
       ImplicationElimination(Axiom(implication.antecedent), derivation)
     }
 

@@ -152,7 +152,7 @@ class DerivationHtmlRenderer(props: DerivationProps) {
         <.div(^.`class` := "rule-bottom-main",
           props.manipulationInfo match {
             case None =>
-              <.span(parent.formula.toString)
+              <.span(parent.conclusion.toString)
             case Some(manipulationInfo) =>
               ManipulatableFormula.component(ManipulatableFormula.Props(parent, path, manipulationInfo))
           }

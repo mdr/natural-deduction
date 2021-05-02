@@ -13,7 +13,7 @@ case class State(
                 ) {
 
   lazy val formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]] =
-    derivations.zipWithIndex.groupMap(_._1.formula)(_._2)
+    derivations.zipWithIndex.groupMap(_._1.conclusion)(_._2)
 
   def deleteDerivation(derivationIndex: DerivationIndex): State =
     withUndo(
@@ -99,7 +99,7 @@ case class State(
   }
 
   private def derivationFormula(derivationIndex: DerivationIndex, path: DerivationPath = DerivationPath.empty): Formula =
-    getDerivation(derivationIndex).get(path).formula
+    getDerivation(derivationIndex).get(path).conclusion
 
 
 }

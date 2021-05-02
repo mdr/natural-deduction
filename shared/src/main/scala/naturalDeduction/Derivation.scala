@@ -50,7 +50,7 @@ sealed trait Derivation {
       }
   }
 
-  def convertToAxiom: Axiom = Axiom(formula)
+  def convertToAxiom: Axiom = Axiom(conclusion)
 
   def dischargeAxiom(label: Label): Derivation = this match {
     case axiom: Axiom => axiom.copy(label = Some(label))
@@ -64,11 +64,11 @@ sealed trait Derivation {
 
   def labels: Set[Label] = children.flatMap(_.labels).toSet
 
-  def formula: Formula
+  def conclusion: Formula
 
   def undischargedAssumptions: Assumptions
 
-  def sequent: Sequent = Sequent(undischargedAssumptions.allFormulae, formula)
+  def sequent: Sequent = Sequent(undischargedAssumptions.allFormulae, conclusion)
 
   def children: Seq[Derivation]
 
@@ -206,11 +206,11 @@ object Derivation {
     def apply(formula: Formula, label: Label): Axiom = Axiom(formula, Some(label))
   }
 
-  case class Axiom(formula: Formula, label: Option[Label] = None) extends Derivation {
+  case class Axiom(conclusion: Formula, label: Option[Label] = None) extends Derivation {
 
     override val undischargedAssumptions: Assumptions = label match {
-      case None => Assumptions(anonymousAssumptions = Set(formula))
-      case Some(label) => Assumptions(labelledAssumptions = Map(label -> formula))
+      case None => Assumptions(anonymousAssumptions = Set(conclusion))
+      case Some(label) => Assumptions(labelledAssumptions = Map(label -> conclusion))
     }
 
     override def children: Seq[Derivation] = Seq.empty
@@ -230,7 +230,7 @@ object Derivation {
     override def undischargedAssumptions: Assumptions =
       leftDerivation.undischargedAssumptions ++ rightDerivation.undischargedAssumptions
 
-    override def formula: Formula = leftDerivation.formula ∧ rightDerivation.formula
+    override def conclusion: Formula = leftDerivation.conclusion ∧ rightDerivation.conclusion
 
     override def children: Seq[Derivation] = Seq(leftDerivation, rightDerivation)
 
@@ -246,12 +246,12 @@ object Derivation {
   }
 
   case class LeftConjunctionElimination(conjunctionDerivation: Derivation) extends Derivation {
-    assert(conjunctionDerivation.formula.isInstanceOf[Conjunction])
-    val conjunction: Conjunction = conjunctionDerivation.formula.asInstanceOf[Conjunction]
+    assert(conjunctionDerivation.conclusion.isInstanceOf[Conjunction])
+    val conjunction: Conjunction = conjunctionDerivation.conclusion.asInstanceOf[Conjunction]
 
     override def undischargedAssumptions: Assumptions = conjunctionDerivation.undischargedAssumptions
 
-    override def formula: Formula = conjunction.conjunct1
+    override def conclusion: Formula = conjunction.conjunct1
 
     override def children: Seq[Derivation] = Seq(conjunctionDerivation)
 
@@ -267,12 +267,12 @@ object Derivation {
 
   case class RightConjunctionElimination(conjunctionDerivation: Derivation) extends Derivation {
 
-    assert(conjunctionDerivation.formula.isInstanceOf[Conjunction])
-    val conjunction: Conjunction = conjunctionDerivation.formula.asInstanceOf[Conjunction]
+    assert(conjunctionDerivation.conclusion.isInstanceOf[Conjunction])
+    val conjunction: Conjunction = conjunctionDerivation.conclusion.asInstanceOf[Conjunction]
 
     override def undischargedAssumptions: Assumptions = conjunctionDerivation.undischargedAssumptions
 
-    override def formula: Formula = conjunction.conjunct2
+    override def conclusion: Formula = conjunction.conjunct2
 
     override def children: Seq[Derivation] = Seq(conjunctionDerivation)
 
@@ -302,7 +302,7 @@ object Derivation {
       assumption <- consequentDerivation.undischargedAssumptions.labelledAssumptions.get(label)
     } assert(assumption == antecedent, s"Expected assumption $assumption to equal $antecedent for label $label")
 
-    override def formula: Formula = antecedent → consequentDerivation.formula
+    override def conclusion: Formula = antecedent → consequentDerivation.conclusion
 
     override def undischargedAssumptions: Assumptions = consequentDerivation.undischargedAssumptions.discharge(label)
 
@@ -326,11 +326,11 @@ object Derivation {
 
   case class ImplicationElimination(antecedentDerivation: Derivation, implicationDerivation: Derivation) extends Derivation {
 
-    assert(implicationDerivation.formula.isInstanceOf[Implication], s"Expected implicationDerivation to prove an Implication, but instead it proved ${implicationDerivation.formula}")
-    val implication: Implication = implicationDerivation.formula.asInstanceOf[Implication]
-    assert(antecedentDerivation.formula == implication.antecedent, s"Mismatched antecedent formulae: ${antecedentDerivation.formula} vs ${implication.antecedent}")
+    assert(implicationDerivation.conclusion.isInstanceOf[Implication], s"Expected implicationDerivation to prove an Implication, but instead it proved ${implicationDerivation.conclusion}")
+    val implication: Implication = implicationDerivation.conclusion.asInstanceOf[Implication]
+    assert(antecedentDerivation.conclusion == implication.antecedent, s"Mismatched antecedent formulae: ${antecedentDerivation.conclusion} vs ${implication.antecedent}")
 
-    override def formula: Formula = implication.consequent
+    override def conclusion: Formula = implication.consequent
 
     override def undischargedAssumptions: Assumptions =
       antecedentDerivation.undischargedAssumptions ++ implicationDerivation.undischargedAssumptions
@@ -350,13 +350,13 @@ object Derivation {
 
   case class EquivalenceIntroduction(forwardsDerivation: Derivation, backwardsDerivation: Derivation) extends Derivation {
 
-    assert(forwardsDerivation.formula.isInstanceOf[Implication])
-    assert(backwardsDerivation.formula.isInstanceOf[Implication])
-    val formula1: Formula = forwardsDerivation.formula.asInstanceOf[Implication].antecedent
-    val formula2: Formula = forwardsDerivation.formula.asInstanceOf[Implication].consequent
-    assert(backwardsDerivation.formula == (formula2 → formula1))
+    assert(forwardsDerivation.conclusion.isInstanceOf[Implication])
+    assert(backwardsDerivation.conclusion.isInstanceOf[Implication])
+    val formula1: Formula = forwardsDerivation.conclusion.asInstanceOf[Implication].antecedent
+    val formula2: Formula = forwardsDerivation.conclusion.asInstanceOf[Implication].consequent
+    assert(backwardsDerivation.conclusion == (formula2 → formula1))
 
-    override def formula: Formula = formula1 ↔ formula2
+    override def conclusion: Formula = formula1 ↔ formula2
 
     override def undischargedAssumptions: Assumptions =
       forwardsDerivation.undischargedAssumptions ++ backwardsDerivation.undischargedAssumptions
@@ -375,12 +375,12 @@ object Derivation {
   }
 
   case class ForwardsEquivalenceElimination(equivalenceDerivation: Derivation) extends Derivation {
-    assert(equivalenceDerivation.formula.isInstanceOf[Equivalence])
-    val equivalance: Equivalence = equivalenceDerivation.formula.asInstanceOf[Equivalence]
+    assert(equivalenceDerivation.conclusion.isInstanceOf[Equivalence])
+    val equivalance: Equivalence = equivalenceDerivation.conclusion.asInstanceOf[Equivalence]
 
     override def undischargedAssumptions: Assumptions = equivalenceDerivation.undischargedAssumptions
 
-    override def formula: Formula = equivalance.forwardsImplication
+    override def conclusion: Formula = equivalance.forwardsImplication
 
     override def children: Seq[Derivation] = Seq(equivalenceDerivation)
 
@@ -395,12 +395,12 @@ object Derivation {
   }
 
   case class BackwardsEquivalenceElimination(equivalenceDerivation: Derivation) extends Derivation {
-    assert(equivalenceDerivation.formula.isInstanceOf[Equivalence])
-    val equivalance: Equivalence = equivalenceDerivation.formula.asInstanceOf[Equivalence]
+    assert(equivalenceDerivation.conclusion.isInstanceOf[Equivalence])
+    val equivalance: Equivalence = equivalenceDerivation.conclusion.asInstanceOf[Equivalence]
 
     override def undischargedAssumptions: Assumptions = equivalenceDerivation.undischargedAssumptions
 
-    override def formula: Formula = equivalance.backwardsImplication
+    override def conclusion: Formula = equivalance.backwardsImplication
 
     override def children: Seq[Derivation] = Seq(equivalenceDerivation)
 
@@ -426,7 +426,7 @@ object Derivation {
       assumption <- bottomDerivation.undischargedAssumptions.labelledAssumptions.get(label)
     } assert(assumption == statement, s"Expected assumption $assumption to equal $statement for label $label")
 
-    override def formula: Formula = Negation(statement)
+    override def conclusion: Formula = Negation(statement)
 
     override def undischargedAssumptions: Assumptions = bottomDerivation.undischargedAssumptions.discharge(label)
 
@@ -445,10 +445,10 @@ object Derivation {
   }
 
   case class NegationElimination(positiveDerivation: Derivation, negativeDerivation: Derivation) extends Derivation {
-    assert(negativeDerivation.formula.isInstanceOf[Negation], s"Negative derivation must prove a negation, but was $negativeDerivation")
-    assert(negativeDerivation.formula.asInstanceOf[Negation].formula == positiveDerivation.formula)
+    assert(negativeDerivation.conclusion.isInstanceOf[Negation], s"Negative derivation must prove a negation, but was $negativeDerivation")
+    assert(negativeDerivation.conclusion.asInstanceOf[Negation].formula == positiveDerivation.conclusion)
 
-    override def formula: Formula = ⊥
+    override def conclusion: Formula = ⊥
 
     override def undischargedAssumptions: Assumptions =
       positiveDerivation.undischargedAssumptions ++ negativeDerivation.undischargedAssumptions
@@ -473,14 +473,12 @@ object Derivation {
 
   }
 
-  case class ReductioAdAbsurdum(conclusion: Formula, label: Option[Label], bottomDerivation: Derivation) extends Derivation {
+  case class ReductioAdAbsurdum(override val conclusion: Formula, label: Option[Label], bottomDerivation: Derivation) extends Derivation {
     val negation: Negation = conclusion.not
     for {
       label <- label
       assumption <- bottomDerivation.undischargedAssumptions.labelledAssumptions.get(label)
     } assert(assumption == negation, s"Expected assumption $assumption to equal $negation for label $label")
-
-    override def formula: Formula = conclusion
 
     override def undischargedAssumptions: Assumptions = bottomDerivation.undischargedAssumptions.discharge(label)
 
@@ -500,7 +498,7 @@ object Derivation {
 
   case class LeftDisjunctionIntroduction(leftDerivation: Derivation, right: Formula) extends Derivation {
 
-    override def formula: Formula = leftDerivation.formula ∨ right
+    override def conclusion: Formula = leftDerivation.conclusion ∨ right
 
     override def undischargedAssumptions: Assumptions = leftDerivation.undischargedAssumptions
 
@@ -518,7 +516,7 @@ object Derivation {
 
   case class RightDisjunctionIntroduction(left: Formula, rightDerivation: Derivation) extends Derivation {
 
-    override def formula: Formula = left ∨ rightDerivation.formula
+    override def conclusion: Formula = left ∨ rightDerivation.conclusion
 
     override def undischargedAssumptions: Assumptions = rightDerivation.undischargedAssumptions
 
@@ -540,9 +538,9 @@ object Derivation {
                                     rightLabel: Option[String],
                                     rightDerivation: Derivation) extends Derivation {
 
-    assert(leftDerivation.formula == rightDerivation.formula)
-    assert(disjunctionDerivation.formula.isInstanceOf[Disjunction])
-    val disjunction: Disjunction = disjunctionDerivation.formula.asInstanceOf[Disjunction]
+    assert(leftDerivation.conclusion == rightDerivation.conclusion)
+    assert(disjunctionDerivation.conclusion.isInstanceOf[Disjunction])
+    val disjunction: Disjunction = disjunctionDerivation.conclusion.asInstanceOf[Disjunction]
     for {
       label <- leftLabel
       assumption <- leftDerivation.undischargedAssumptions.labelledAssumptions.get(label)
@@ -552,7 +550,7 @@ object Derivation {
       assumption <- rightDerivation.undischargedAssumptions.labelledAssumptions.get(label)
     } assert(assumption == disjunction.disjunct2, s"Expected assumption $assumption to equal ${disjunction.disjunct2} for label $label")
 
-    override def formula: Formula = leftDerivation.formula
+    override def conclusion: Formula = leftDerivation.conclusion
 
     override def undischargedAssumptions: Assumptions =
       disjunctionDerivation.undischargedAssumptions ++
