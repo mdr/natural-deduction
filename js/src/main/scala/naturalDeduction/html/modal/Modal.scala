@@ -41,12 +41,18 @@ object Modal {
       case state: ConjunctionElimBackwardsModalState =>
         ConjunctionElimBackwardsModalBody.component(
           ConjunctionElimBackwardsModalBody.Props(state, onChangeModalFormula, onSwapConjuncts))
+      case state: ConjunctionIntroForwardsModalState =>
+        ConjunctionIntroForwardsModalBody.component(
+          ConjunctionIntroForwardsModalBody.Props(state, onChangeModalFormula, onSwapConjuncts))
       case state: ImplicationElimBackwardsModalState =>
         ImplicationElimBackwardsModalBody.component(
           ImplicationElimBackwardsModalBody.Props(state, onChangeModalFormula))
       case state: ImplicationElimForwardsFromAntecedentModalState =>
         ImplicationElimForwardsFromAntecedentModalBody.component(
           ImplicationElimForwardsFromAntecedentModalBody.Props(state, onChangeModalFormula))
+      case state: ImplicationIntroForwardsModalState =>
+        ImplicationIntroForwardsModalBody.component(
+          ImplicationIntroForwardsModalBody.Props(state, onChangeModalFormula))
     })
   }
 

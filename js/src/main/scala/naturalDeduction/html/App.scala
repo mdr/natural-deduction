@@ -165,11 +165,17 @@ object App {
     private def onConjunctionElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.showConjunctionElimBackwardsModal(derivationIndex, path)) >> showModal
 
+    private def onConjunctionIntroForwards(derivationIndex: DerivationIndex): Callback =
+      modState(_.showConjunctionIntroForwardsModal(derivationIndex)) >> showModal
+
     private def onImplicationElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.showImplicationElimBackwardsModal(derivationIndex, path)) >> showModal
 
     private def onImplicationElimForwardsFromAntecedent(derivationIndex: DerivationIndex): Callback =
       modState(_.showImplicationElimForwardsFromAntecedentModal(derivationIndex)) >> showModal
+
+    private def onImplicationIntroForwards(derivationIndex: DerivationIndex): Callback =
+      modState(_.showImplicationIntroForwardsModal(derivationIndex)) >> showModal
 
     private def derivationCard(derivation: Derivation,
                                derivationIndex: DerivationIndex,
@@ -190,7 +196,9 @@ object App {
                 onConjunctionIntroBackwards(derivationIndex),
                 onConjunctionElimForwards(derivationIndex),
                 onConjunctionElimBackwards(derivationIndex),
+                onConjunctionIntroForwards(derivationIndex),
                 onImplicationIntroBackwards(derivationIndex),
+                onImplicationIntroForwards(derivationIndex),
                 onImplicationElimBackwards(derivationIndex),
                 onImplicationElimForwardsFromAntecedent(derivationIndex),
                 onImplicationElimForwardsFromImplication(derivationIndex),

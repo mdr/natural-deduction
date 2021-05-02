@@ -4,10 +4,8 @@ import japgolly.scalajs.react.vdom.VdomNode
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{Callback, ScalaComponent}
 import naturalDeduction.Derivation.ImplicationElimination
-import naturalDeduction.Formula.PropositionalVariable
 import naturalDeduction.html.ReactUtils.getTargetValueThen
 import naturalDeduction.html.{DerivationComponent, DerivationProps}
-import naturalDeduction.parser.FormulaParser
 
 object ImplicationElimForwardsFromAntecedentModalBody {
 
@@ -24,8 +22,7 @@ object ImplicationElimForwardsFromAntecedentModalBody {
     import props._
     val ImplicationElimForwardsFromAntecedentModalState(_, antecedent, formulaText) = modalState
     val onChangeModalFormula = getTargetValueThen(props.onChangeModalFormula)
-    val newFormulaOpt = FormulaParser.tryParseFormula(formulaText).toOption
-    val consequent = newFormulaOpt.getOrElse(PropositionalVariable("?"))
+    val consequent = modalState.formula
     val derivation = ImplicationElimination(antecedent, consequent)
     <.div(
       <.div(^.`class` := "d-flex justify-content-center",

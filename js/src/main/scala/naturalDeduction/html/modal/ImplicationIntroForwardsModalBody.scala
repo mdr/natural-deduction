@@ -3,14 +3,16 @@ package naturalDeduction.html.modal
 import japgolly.scalajs.react.vdom.VdomNode
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{Callback, ScalaComponent}
-import naturalDeduction.Derivation.ImplicationElimination
+import naturalDeduction.Derivation.{ImplicationElimination, ImplicationIntroduction}
+import naturalDeduction.Formula.PropositionalVariable
 import naturalDeduction.html.ReactUtils.getTargetValueThen
 import naturalDeduction.html.{DerivationComponent, DerivationProps}
+import naturalDeduction.parser.FormulaParser
 
-object ImplicationElimBackwardsModalBody {
+object ImplicationIntroForwardsModalBody {
 
   case class Props(
-                    modalState: ImplicationElimBackwardsModalState,
+                    modalState: ImplicationIntroForwardsModalState,
                     onChangeModalFormula: String => Callback,
                   )
 
@@ -20,9 +22,10 @@ object ImplicationElimBackwardsModalBody {
 
   private def render(props: Props): VdomNode = {
     import props._
-    val ImplicationElimBackwardsModalState(_, _, consequent, formulaText) = modalState
+    val ImplicationIntroForwardsModalState(_, consequent, formulaText) = modalState
     val onChangeModalFormula = getTargetValueThen(props.onChangeModalFormula)
-    val derivation = ImplicationElimination(modalState.formula, consequent)
+    val antecedent = modalState.formula
+    val derivation = ImplicationIntroduction(antecedent, consequent)
     <.div(
       <.div(^.`class` := "d-flex justify-content-center",
         DerivationComponent.component(DerivationProps(derivation))

@@ -11,7 +11,9 @@ case class ManipulationInfo(onRemoveDerivation: DerivationPath => Callback,
                             onConjunctionIntroBackwards: DerivationPath => Callback,
                             onConjunctionElimForwards: ChildIndex => Callback,
                             onConjunctionElimBackwards: DerivationPath => Callback,
+                            onConjunctionIntroForwards: Callback,
                             onImplicationIntroBackwards: DerivationPath => Callback,
+                            onImplicationIntroForwards: Callback,
                             onImplicationElimBackwards: DerivationPath => Callback,
                             onImplicationElimForwardsFromAntecedent: Callback,
                             onImplicationElimForwardsFromImplication: Callback,
@@ -176,10 +178,14 @@ class DerivationHtmlRenderer(props: DerivationProps) {
 
         <.h6(^.className := "dropdown-header", "↓ Apply rule forwards")
           .when(forwardsRulesPossible),
+        <.div(^.className := "dropdown-item", ^.href := "#", "∧-Introduction...", ^.onClick --> onConjunctionIntroForwards)
+          .when(path.isRoot),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick left)", ^.onClick --> onConjunctionElimForwards(0))
           .when(canConjunctionElimForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick right)", ^.onClick --> onConjunctionElimForwards(1))
           .when(canConjunctionElimForwards(derivation, path)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "→-Introduction...", ^.onClick --> onImplicationIntroForwards)
+          .when(path.isRoot),
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as antecedent)...", ^.onClick --> onImplicationElimForwardsFromAntecedent)
           .when(path.isRoot),
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as implication)", ^.onClick --> onImplicationElimForwardsFromImplication)

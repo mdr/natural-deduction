@@ -223,6 +223,9 @@ object Derivation {
   object ImplicationIntroduction {
     implicit val rw: RW[ImplicationIntroduction] = macroRW
 
+    def apply(antecedent: Formula, consequent: Formula): ImplicationIntroduction =
+      ImplicationIntroduction(antecedent, None, consequent.axiom)
+
     def apply(antecedent: Formula, consequentDerivation: Derivation): ImplicationIntroduction =
       ImplicationIntroduction(antecedent, None, consequentDerivation)
 
