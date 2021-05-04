@@ -56,3 +56,10 @@ object Formula {
 
 
 }
+
+sealed trait EquivalenceDirection
+
+object EquivalenceDirection {
+  case object Forwards extends EquivalenceDirection
+  case object Backwards extends EquivalenceDirection
+}

@@ -3,7 +3,7 @@ package naturalDeduction.html
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation._
-import naturalDeduction.Formula.{Conjunction, Implication}
+import naturalDeduction.Formula.{Conjunction, Equivalence, Implication}
 import naturalDeduction._
 import naturalDeduction.html.modal.{Modal, ModalProps}
 
@@ -126,18 +126,6 @@ object App {
     private def onConjunctionElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.showConjunctionElimBackwardsModal(derivationIndex, path)) >> showModal
 
-    private def onConjunctionIntroForwards(derivationIndex: DerivationIndex): Callback =
-      modState(_.showConjunctionIntroForwardsModal(derivationIndex)) >> showModal
-
-    private def onConjunctionElimForwards(derivationIndex: DerivationIndex)(child: ChildIndex): Callback =
-      modState(_.transformDerivation(derivationIndex, conjunctionElimForwards(child)))
-
-    private def conjunctionElimForwards(child: ChildIndex)(derivation: Derivation): Derivation =
-      child match {
-        case 0 => LeftConjunctionElimination(derivation)
-        case 1 => RightConjunctionElimination(derivation)
-      }
-
     private def onImplicationIntroBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.transformDerivation(derivationIndex, implicationIntroBackwards(path)))
 
@@ -152,6 +140,40 @@ object App {
     private def onImplicationElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.showImplicationElimBackwardsModal(derivationIndex, path)) >> showModal
 
+    private def onEquivalenceIntroBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
+      modState(_.transformDerivation(derivationIndex, _.transform(path, equivalenceIntroBackwards)))
+
+    private def equivalenceIntroBackwards(derivation: Derivation): Derivation = {
+      val equivalence = derivation.conclusion.asInstanceOf[Equivalence]
+      EquivalenceIntroduction(equivalence.forwardsImplication.axiom, equivalence.backwardsImplication.axiom)
+    }
+
+    private def onEquivalenceElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath, direction: EquivalenceDirection): Callback =
+      modState(_.transformDerivation(derivationIndex, _.transform(path, equivalenceElimBackwards(direction))))
+
+    private def equivalenceElimBackwards(direction: EquivalenceDirection)(derivation: Derivation): Derivation = {
+      val implication = derivation.conclusion.asInstanceOf[Implication]
+      direction match {
+        case EquivalenceDirection.Forwards => ForwardsEquivalenceElimination(Axiom(implication.antecedent ↔ implication.consequent))
+        case EquivalenceDirection.Backwards => BackwardsEquivalenceElimination(Axiom(implication.consequent ↔ implication.antecedent))
+      }
+    }
+
+    private def onConjunctionIntroForwards(derivationIndex: DerivationIndex): Callback =
+      modState(_.showConjunctionIntroForwardsModal(derivationIndex)) >> showModal
+
+    private def onConjunctionElimForwards(derivationIndex: DerivationIndex)(child: ChildIndex): Callback =
+      modState(_.transformDerivation(derivationIndex, conjunctionElimForwards(child)))
+
+    private def conjunctionElimForwards(child: ChildIndex)(derivation: Derivation): Derivation =
+      child match {
+        case 0 => LeftConjunctionElimination(derivation)
+        case 1 => RightConjunctionElimination(derivation)
+      }
+
+    private def onImplicationIntroForwards(derivationIndex: DerivationIndex): Callback =
+      modState(_.showImplicationIntroForwardsModal(derivationIndex)) >> showModal
+
     private def onImplicationElimForwardsFromImplication(derivationIndex: DerivationIndex): Callback =
       modState(_.transformDerivation(derivationIndex, implicationElimForwardsFromImplication))
 
@@ -163,8 +185,26 @@ object App {
     private def onImplicationElimForwardsFromAntecedent(derivationIndex: DerivationIndex): Callback =
       modState(_.showImplicationElimForwardsFromAntecedentModal(derivationIndex)) >> showModal
 
-    private def onImplicationIntroForwards(derivationIndex: DerivationIndex): Callback =
-      modState(_.showImplicationIntroForwardsModal(derivationIndex)) >> showModal
+
+    private def onEquivalenceIntroForwards(derivationIndex: DerivationIndex)(direction: EquivalenceDirection): Callback =
+      modState(_.transformDerivation(derivationIndex, equivalenceIntroForwards(direction)))
+
+    private def equivalenceIntroForwards(direction: EquivalenceDirection)(derivation: Derivation): Derivation = {
+      val implication = derivation.conclusion.asInstanceOf[Implication]
+      direction match {
+        case EquivalenceDirection.Forwards => EquivalenceIntroduction(derivation, (implication.consequent → implication.antecedent).axiom)
+        case EquivalenceDirection.Backwards => EquivalenceIntroduction((implication.consequent → implication.antecedent).axiom, derivation)
+      }
+    }
+
+    private def onEquivalenceElimForwards(derivationIndex: DerivationIndex)(direction: EquivalenceDirection): Callback =
+      modState(_.transformDerivation(derivationIndex, equivalenceElimForwards(direction)))
+
+    private def equivalenceElimForwards(direction: EquivalenceDirection)(derivation: Derivation): Derivation =
+      direction match {
+        case EquivalenceDirection.Forwards => ForwardsEquivalenceElimination(derivation)
+        case EquivalenceDirection.Backwards => BackwardsEquivalenceElimination(derivation)
+      }
 
     private def onInlineDerivation(derivationIndex: DerivationIndex)(path: DerivationPath, derivationIndexToInline: DerivationIndex): Callback =
       modState(oldState =>
@@ -202,15 +242,19 @@ object App {
                 onConjunctionElimBackwards(derivationIndex),
                 onImplicationIntroBackwards(derivationIndex),
                 onImplicationElimBackwards(derivationIndex),
+                onEquivalenceIntroBackwards(derivationIndex),
+                onEquivalenceElimBackwards(derivationIndex),
                 onConjunctionIntroForwards(derivationIndex),
                 onConjunctionElimForwards(derivationIndex),
                 onImplicationIntroForwards(derivationIndex),
                 onImplicationElimForwardsFromAntecedent(derivationIndex),
                 onImplicationElimForwardsFromImplication(derivationIndex),
+                onEquivalenceIntroForwards(derivationIndex),
+                onEquivalenceElimForwards(derivationIndex),
                 onRemoveDerivation(derivationIndex),
                 onInlineDerivation(derivationIndex),
                 onDischargeAssumption(derivationIndex),
-                onUndischargeAssumption(derivationIndex), 
+                onUndischargeAssumption(derivationIndex),
                 onBetaReduce(derivationIndex),
                 onExtractSubderivation(derivationIndex),
                 derivationIndex,

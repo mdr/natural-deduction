@@ -3,8 +3,8 @@ package naturalDeduction.html
 import japgolly.scalajs.react.ScalaComponent
 import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation.Axiom
-import naturalDeduction.Formula.{Conjunction, Implication}
-import naturalDeduction.{Derivation, DerivationPath, Formula, Label}
+import naturalDeduction.Formula.{Conjunction, Equivalence, Implication}
+import naturalDeduction.{Derivation, DerivationPath, EquivalenceDirection, Formula, Label}
 
 object ManipulatableFormula {
 
@@ -68,6 +68,12 @@ object ManipulatableFormula {
           .when(canImplicationIntroBackwards(derivation)),
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination...", ^.onClick --> onImplicationElimBackwards(path))
           .when(derivation.isAxiom),
+        <.div(^.className := "dropdown-item", ^.href := "#", "↔-Introduction", ^.onClick --> onEquivalenceIntroBackwards(path))
+          .when(canEquivalenceIntroBackwards(derivation)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "↔-Introduction (pick forwards)", ^.onClick --> onEquivalenceElimBackwards(path, EquivalenceDirection.Forwards))
+          .when(canEquivalenceElimBackwards(derivation)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "↔-Introduction (pick backwards)", ^.onClick --> onEquivalenceElimBackwards(path, EquivalenceDirection.Backwards))
+          .when(canEquivalenceElimBackwards(derivation)),
 
         <.div(^.`class` := "dropdown-divider")
           .when(backwardsRulesPossible && forwardsRulesPossible),
@@ -86,6 +92,14 @@ object ManipulatableFormula {
           .when(path.isRoot),
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as implication)", ^.onClick --> onImplicationElimForwardsFromImplication)
           .when(path.isRoot && derivation.conclusion.isInstanceOf[Implication]),
+        <.div(^.className := "dropdown-item", ^.href := "#", "↔-Introduction (as forward implication)", ^.onClick --> onEquivalenceIntroForwards(EquivalenceDirection.Forwards))
+          .when(canEquivalenceIntroForwards(derivation, path)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "↔-Introduction (as backwards implication)", ^.onClick --> onEquivalenceIntroForwards(EquivalenceDirection.Backwards))
+          .when(canEquivalenceIntroForwards(derivation, path)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "↔-Elimination (pick forwards)", ^.onClick --> onEquivalenceElimForwards(EquivalenceDirection.Forwards))
+          .when(canEquivalenceElimForwards(derivation, path)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "↔-Elimination (pick backwards)", ^.onClick --> onEquivalenceElimForwards(EquivalenceDirection.Backwards))
+          .when(canEquivalenceElimForwards(derivation, path)),
 
         <.div(^.`class` := "dropdown-divider")
           .when(otherActionsPossible && (forwardsRulesPossible || backwardsRulesPossible)),
@@ -116,8 +130,20 @@ object ManipulatableFormula {
   private def canConjunctionElimForwards(derivation: Derivation, path: DerivationPath): Boolean =
     path.isRoot && derivation.conclusion.isInstanceOf[Conjunction]
 
+  private def canEquivalenceIntroForwards(derivation: Derivation, path: DerivationPath): Boolean =
+    path.isRoot && derivation.conclusion.isInstanceOf[Implication]
+
+  private def canEquivalenceElimForwards(derivation: Derivation, path: DerivationPath): Boolean =
+    path.isRoot && derivation.conclusion.isInstanceOf[Equivalence]
+
   private def canConjunctionIntroBackwards(derivation: Derivation): Boolean =
     derivation.isAxiom && derivation.conclusion.isInstanceOf[Conjunction]
+
+  private def canEquivalenceIntroBackwards(derivation: Derivation): Boolean =
+    derivation.isAxiom && derivation.conclusion.isInstanceOf[Equivalence]
+
+  private def canEquivalenceElimBackwards(derivation: Derivation): Boolean =
+    derivation.isAxiom && derivation.conclusion.isInstanceOf[Implication]
 
   private def canImplicationIntroBackwards(derivation: Derivation): Boolean =
     derivation.isAxiom && derivation.conclusion.isInstanceOf[Implication]
