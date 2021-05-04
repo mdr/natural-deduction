@@ -115,9 +115,6 @@ object App {
 
     // Derivation menu handlers
 
-    private def onRemoveDerivation(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
-      modState(_.transformDerivation(derivationIndex, _.transform(path, _.convertToAxiom)))
-
     private def onConjunctionIntroBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, conjunctionIntroBackwards)))
 
@@ -125,6 +122,21 @@ object App {
       val conjunction = derivation.conclusion.asInstanceOf[Conjunction]
       ConjunctionIntroduction(Axiom(conjunction.conjunct1), Axiom(conjunction.conjunct2))
     }
+
+    private def onConjunctionElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
+      modState(_.showConjunctionElimBackwardsModal(derivationIndex, path)) >> showModal
+
+    private def onConjunctionIntroForwards(derivationIndex: DerivationIndex): Callback =
+      modState(_.showConjunctionIntroForwardsModal(derivationIndex)) >> showModal
+
+    private def onConjunctionElimForwards(derivationIndex: DerivationIndex)(child: ChildIndex): Callback =
+      modState(_.transformDerivation(derivationIndex, conjunctionElimForwards(child)))
+
+    private def conjunctionElimForwards(child: ChildIndex)(derivation: Derivation): Derivation =
+      child match {
+        case 0 => LeftConjunctionElimination(derivation)
+        case 1 => RightConjunctionElimination(derivation)
+      }
 
     private def onImplicationIntroBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.transformDerivation(derivationIndex, implicationIntroBackwards(path)))
@@ -137,14 +149,8 @@ object App {
       ImplicationIntroduction(implication.antecedent, nextFreshLabel, Axiom(implication.consequent))
     }
 
-    private def onConjunctionElimForwards(derivationIndex: DerivationIndex)(child: ChildIndex): Callback =
-      modState(_.transformDerivation(derivationIndex, conjunctionElimForwards(child)))
-
-    private def conjunctionElimForwards(child: ChildIndex)(derivation: Derivation): Derivation =
-      child match {
-        case 0 => LeftConjunctionElimination(derivation)
-        case 1 => RightConjunctionElimination(derivation)
-      }
+    private def onImplicationElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
+      modState(_.showImplicationElimBackwardsModal(derivationIndex, path)) >> showModal
 
     private def onImplicationElimForwardsFromImplication(derivationIndex: DerivationIndex): Callback =
       modState(_.transformDerivation(derivationIndex, implicationElimForwardsFromImplication))
@@ -154,10 +160,19 @@ object App {
       ImplicationElimination(Axiom(implication.antecedent), derivation)
     }
 
+    private def onImplicationElimForwardsFromAntecedent(derivationIndex: DerivationIndex): Callback =
+      modState(_.showImplicationElimForwardsFromAntecedentModal(derivationIndex)) >> showModal
+
+    private def onImplicationIntroForwards(derivationIndex: DerivationIndex): Callback =
+      modState(_.showImplicationIntroForwardsModal(derivationIndex)) >> showModal
+
     private def onInlineDerivation(derivationIndex: DerivationIndex)(path: DerivationPath, derivationIndexToInline: DerivationIndex): Callback =
       modState(oldState =>
         oldState.transformDerivation(derivationIndex, _.set(path, oldState.derivations(derivationIndexToInline)))
       )
+
+    private def onRemoveDerivation(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
+      modState(_.transformDerivation(derivationIndex, _.transform(path, _.convertToAxiom)))
 
     private def onBetaReduce(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, _.betaReduce.get)))
@@ -167,21 +182,6 @@ object App {
 
     private def onUndischargeAssumption(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, _.undischargeAxiom)))
-
-    private def onConjunctionElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
-      modState(_.showConjunctionElimBackwardsModal(derivationIndex, path)) >> showModal
-
-    private def onConjunctionIntroForwards(derivationIndex: DerivationIndex): Callback =
-      modState(_.showConjunctionIntroForwardsModal(derivationIndex)) >> showModal
-
-    private def onImplicationElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
-      modState(_.showImplicationElimBackwardsModal(derivationIndex, path)) >> showModal
-
-    private def onImplicationElimForwardsFromAntecedent(derivationIndex: DerivationIndex): Callback =
-      modState(_.showImplicationElimForwardsFromAntecedentModal(derivationIndex)) >> showModal
-
-    private def onImplicationIntroForwards(derivationIndex: DerivationIndex): Callback =
-      modState(_.showImplicationIntroForwardsModal(derivationIndex)) >> showModal
 
     private def derivationCard(derivation: Derivation,
                                derivationIndex: DerivationIndex,
