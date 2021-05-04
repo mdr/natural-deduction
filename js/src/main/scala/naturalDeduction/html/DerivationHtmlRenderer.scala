@@ -6,16 +6,16 @@ import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation._
 import naturalDeduction._
 
-case class ManipulationInfo(onRemoveDerivation: DerivationPath => Callback,
-                            onConjunctionIntroBackwards: DerivationPath => Callback,
-                            onConjunctionElimForwards: ChildIndex => Callback,
+case class ManipulationInfo(onConjunctionIntroBackwards: DerivationPath => Callback,
                             onConjunctionElimBackwards: DerivationPath => Callback,
-                            onConjunctionIntroForwards: Callback,
                             onImplicationIntroBackwards: DerivationPath => Callback,
-                            onImplicationIntroForwards: Callback,
                             onImplicationElimBackwards: DerivationPath => Callback,
+                            onConjunctionIntroForwards: Callback,
+                            onConjunctionElimForwards: ChildIndex => Callback,
+                            onImplicationIntroForwards: Callback,
                             onImplicationElimForwardsFromAntecedent: Callback,
                             onImplicationElimForwardsFromImplication: Callback,
+                            onRemoveDerivation: DerivationPath => Callback,
                             onInlineDerivation: (DerivationPath, DerivationIndex) => Callback,
                             onDischargeAssumption: (DerivationPath, String) => Callback,
                             onUndischargeAssumption: DerivationPath => Callback,

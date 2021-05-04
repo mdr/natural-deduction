@@ -198,24 +198,23 @@ object App {
           DerivationComponent.component(
             DerivationProps(derivation,
               Some(ManipulationInfo(
-                onRemoveDerivation(derivationIndex),
                 onConjunctionIntroBackwards(derivationIndex),
-                onConjunctionElimForwards(derivationIndex),
                 onConjunctionElimBackwards(derivationIndex),
-                onConjunctionIntroForwards(derivationIndex),
                 onImplicationIntroBackwards(derivationIndex),
-                onImplicationIntroForwards(derivationIndex),
                 onImplicationElimBackwards(derivationIndex),
+                onConjunctionIntroForwards(derivationIndex),
+                onConjunctionElimForwards(derivationIndex),
+                onImplicationIntroForwards(derivationIndex),
                 onImplicationElimForwardsFromAntecedent(derivationIndex),
                 onImplicationElimForwardsFromImplication(derivationIndex),
+                onRemoveDerivation(derivationIndex),
                 onInlineDerivation(derivationIndex),
                 onDischargeAssumption(derivationIndex),
-                onUndischargeAssumption(derivationIndex),
+                onUndischargeAssumption(derivationIndex), 
                 onBetaReduce(derivationIndex),
                 onExtractSubderivation(derivationIndex),
                 derivationIndex,
-                formulaToDerivationIndices,
-              ))))
+                formulaToDerivationIndices))))
         )
       )
 
