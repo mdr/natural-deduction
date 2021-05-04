@@ -21,5 +21,5 @@ class FormulaParserSpec extends AnyFlatSpec with Matchers {
     FormulaParser.parseFormula("φ ∧ φ → φ ↔ φ ∧ φ → φ") shouldEqual (((φ ∧ φ) → φ) ↔ ((φ ∧ φ) → φ))
     FormulaParser.parseFormula("φ∧φ→φ↔φ∧φ→φ") shouldEqual (((φ ∧ φ) → φ) ↔ ((φ ∧ φ) → φ))
   }
-  // ❶ ❷ ❸ ❹ ❺ φ ψ χ Ø ⊢ ¬ ∨ ∧ → ↔
+  // ❶ ❷ ❸ ❹ ❺ φ ψ χ Ø ⊢ ¬ ∨ ∧ → ↔ ⊥
 }

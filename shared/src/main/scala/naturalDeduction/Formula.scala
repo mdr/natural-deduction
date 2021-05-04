@@ -8,6 +8,18 @@ sealed trait Formula {
 
   import Formula._
 
+  def replaceEquivalences: Formula = this match {
+    case Bottom | PropositionalVariable(_) => this
+    case Equivalence(formula1, formula2) =>
+      val replacedFormula1 = formula1.replaceEquivalences
+      val replacedFormula2 = formula2.replaceEquivalences
+      (replacedFormula1 → replacedFormula2) ∧ (replacedFormula2 → replacedFormula1)
+    case Conjunction(conjunct1, conjunct2) => conjunct1.replaceEquivalences ∧ conjunct2.replaceEquivalences
+    case Disjunction(disjunct1, disjunct2) => disjunct1.replaceEquivalences ∨ disjunct2.replaceEquivalences
+    case Implication(antecedent, consequent) => antecedent.replaceEquivalences → consequent.replaceEquivalences
+    case Negation(formula) => formula.replaceEquivalences.not
+  }
+
   def ∧(that: Formula): Conjunction = Conjunction(this, that)
 
   def ∨(that: Formula): Disjunction = Disjunction(this, that)
@@ -27,7 +39,7 @@ object Formula {
   implicit val formulaReadWrite: ReadWriter[Formula] =
     readwriter[String].bimap[Formula](_.toString, FormulaParser.parseFormula)
 
-  val ⊥ = Bottom
+  val ⊥ : Bottom.type = Bottom
 
   case object Bottom extends Formula {
   }

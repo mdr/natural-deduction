@@ -1,7 +1,8 @@
 package naturalDeduction.html
 
-import naturalDeduction.Derivation.Axiom
-import naturalDeduction.html.modal.{ConjunctionElimBackwardsModalState, ConjunctionIntroForwardsModalState, ImplicationElimBackwardsModalState, ImplicationElimForwardsFromAntecedentModalState, ImplicationIntroForwardsModalState, ModalState}
+import ljt.LJTTheoremProver
+import naturalDeduction.Derivation.{Axiom, RichFormula}
+import naturalDeduction.html.modal._
 import naturalDeduction.parser.FormulaParser
 import naturalDeduction.{Derivation, DerivationPath, Formula}
 
@@ -47,13 +48,22 @@ case class State(
     copy(derivations = newDerivations, undoRedo = newUndoRedo)
   }
 
-  def newFormulaIsValid: Boolean = FormulaParser.tryParseFormula(newFormulaText).isRight
+  def newFormulaIsValid: Boolean =
+    FormulaParser.tryParseFormula(newFormulaText).isRight ||
+      FormulaParser.tryParseSequent(newFormulaText).isRight
 
-  def acceptNewFormulaAsNewDerivation: State =
+  def acceptNewFormulaAsNewDerivation: State = {
+    val newDerivation: Derivation =
+      FormulaParser.tryParseSequent(newFormulaText) match {
+        case Right(sequent) => LJTTheoremProver.prove(sequent) getOrElse sequent.conclusion.axiom
+        case Left(_) => Axiom(FormulaParser.parseFormula(newFormulaText))
+      }
+    acceptNewDerivation(newDerivation)
+  }
+
+  private def acceptNewDerivation(derivation: Derivation): State =
     withUndo(
-      copy(
-        derivations = derivations :+ Axiom(FormulaParser.parseFormula(newFormulaText)),
-        newFormulaText = ""))
+      copy(derivations = derivations :+ derivation, newFormulaText = ""))
 
   def getDerivation(i: DerivationIndex): Derivation = derivations(i)
 
@@ -100,6 +110,5 @@ case class State(
 
   private def derivationFormula(derivationIndex: DerivationIndex, path: DerivationPath = DerivationPath.empty): Formula =
     getDerivation(derivationIndex).get(path).conclusion
-
 
 }

@@ -35,7 +35,7 @@ object App {
           <.br().when(state.derivations.nonEmpty),
           <.form(
             ^.`class` := "form-row align-items-center",
-            ^.onSubmit ==> handleStartNewDerivation,
+            ^.onSubmit ==> onStartNewDerivation,
             <.div(
               ^.`class` := "col-auto",
               <.input(
@@ -99,7 +99,7 @@ object App {
       modState(_.copy(newFormulaText = newValue))
     }
 
-    private def handleStartNewDerivation(e: ReactEventFromInput): Callback =
+    private def onStartNewDerivation(e: ReactEventFromInput): Callback =
       e.preventDefaultCB >> modState(_.acceptNewFormulaAsNewDerivation)
 
     // Derivation card button handlers

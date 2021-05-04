@@ -12,6 +12,14 @@ import scala.annotation.tailrec
 
 sealed trait Derivation {
 
+  def everywhere(pf: PartialFunction[Derivation, Derivation]): Derivation = {
+    def f(derivation: Derivation): Derivation = pf.lift(derivation).getOrElse(derivation)
+    f(children.indices.foldLeft(this) { case (derivation, childChoice) => derivation.transformChild(childChoice, _.everywhere(pf)) })
+  }
+
+  def proves(sequent: Sequent): Boolean =
+    conclusion == sequent.conclusion && undischargedAssumptions.allFormulae.subsetOf(sequent.assumptions)
+
   private object BetaRedex {
     def unapply(derivation: Derivation): Option[(Derivation, Option[Label], Derivation)] = condOpt(derivation) {
       case ImplicationElimination(antecedentDerivation, ImplicationIntroduction(_, label, consequentDerivation)) =>
@@ -29,23 +37,49 @@ sealed trait Derivation {
       }
   }
 
-  def substitute(label: Label, replacement: Derivation): Derivation = this match {
-    case Axiom(_, Some(`label`)) => replacement
+  /**
+   * Replace any unbound axioms matching the given formula with replacement
+   */
+  def substitute(formula: Formula, replacement: Derivation): Derivation = _substitute(formula, replacement, Set.empty)
+
+  def _substitute(formula: Formula, replacement: Derivation, boundLabels: Set[Label]): Derivation = this match {
+    case Axiom(`formula`, label) if label.toSet.intersect(boundLabels).isEmpty => replacement
     case _ =>
       children.indices.foldLeft(this) { case (derivation, childChoice) =>
         val childBindingLabels: Set[Label] = bindingsForChild(childChoice).keySet
         // if childBindingLabel is free in replacement, we need to first relabel with a label fresh both
         // in derivation and in replacement
+        val isFreeInReplacement = (childBindingLabels intersect replacement.undischargedAssumptions.labelledAssumptions.keySet).nonEmpty
+        val updatedDerivation =
+          if (isFreeInReplacement) {
+            val newLabel = freshLabel(derivation.labels ++ replacement.labels)
+            derivation.relabel(childChoice, newLabel)
+          } else {
+            derivation
+          }
+        updatedDerivation.transformChild(childChoice, _._substitute(formula, replacement, boundLabels ++ childBindingLabels))
+      }
+  }
+
+  def substitute(label: Label, replacement: Derivation): Derivation = this match {
+    case Axiom(_, Some(`label`)) => replacement
+    case _ =>
+      children.indices.foldLeft(this) { case (derivation, childChoice) =>
+        val childBindingLabels: Set[Label] = bindingsForChild(childChoice).keySet
         if (childBindingLabels contains label)
           derivation
         else {
+          // if childBindingLabel is free in replacement, we need to first relabel with a label fresh both
+          // in derivation and in replacement
           val isFreeInReplacement = (childBindingLabels intersect replacement.undischargedAssumptions.labelledAssumptions.keySet).nonEmpty
-          if (isFreeInReplacement) {
-            val newLabel = freshLabel(derivation.labels ++ replacement.labels)
-            derivation.relabel(childChoice, newLabel).transformChild(childChoice, _.substitute(label, replacement))
-          } else {
-            derivation.transformChild(childChoice, _.substitute(label, replacement))
-          }
+          val updatedDerivation =
+            if (isFreeInReplacement) {
+              val newLabel = freshLabel(derivation.labels ++ replacement.labels)
+              derivation.relabel(childChoice, newLabel)
+            } else {
+              derivation
+            }
+          updatedDerivation.transformChild(childChoice, _.substitute(label, replacement))
         }
       }
   }
@@ -62,6 +96,7 @@ sealed trait Derivation {
 
   def nextFreshLabel: Label = freshLabel(this.labels)
 
+  /* Labels that occur (either binding occurrences or usage occurrences) in this or any subderivation */
   def labels: Set[Label] = children.flatMap(_.labels).toSet
 
   def conclusion: Formula

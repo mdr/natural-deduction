@@ -232,5 +232,11 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
     ImplicationIntroduction(φ, "①", Axiom(φ, "②")).substitute("②", Axiom(φ, "①")) shouldEqual ImplicationIntroduction(φ, "③", Axiom(φ, "①"))
   }
 
-  // ❶ ❷ ❸ ❹ ❺ φ ψ χ Ø ⊢ ¬ ∨ ∧ → ↔
+  "Substitution" should "still work" in {
+    Axiom(φ).substitute(φ, χ.axiom) shouldEqual χ.axiom
+    Axiom(φ).substitute(φ, Axiom(φ, "❶")) shouldEqual Axiom(φ, "❶")
+    ConjunctionIntroduction(Axiom(φ), Axiom(φ)).substitute(φ, Axiom(φ, "❶")) shouldEqual ConjunctionIntroduction(Axiom(φ, "❶"), Axiom(φ, "❶"))
+  }
+
+  // ❶ ❷ ❸ ❹ ❺ φ ψ χ Ø ⊢ ¬ ∨ ∧ → ↔ ⊥
 }
