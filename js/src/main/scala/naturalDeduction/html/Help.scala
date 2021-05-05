@@ -4,6 +4,8 @@ import japgolly.scalajs.react.ScalaComponent
 import japgolly.scalajs.react.vdom.html_<^._
 
 object Help {
+
+  //noinspection TypeAnnotation
   val component =
     ScalaComponent.static("Help")(
       <.div(^.className := "card collapse", ^.id := "help",
@@ -29,6 +31,14 @@ object Help {
               <.tr(
                 <.td("↔"),
                 <.td(<.code("<->")),
+              ),
+              <.tr(
+                <.td("⊥"),
+                <.td(<.code("_|_"), " or ", <.code("false")),
+              ),
+              <.tr(
+                <.td("⊢"),
+                <.td(<.code("|-")),
               ),
               <.tr(
                 <.td("θ φ ψ χ"),

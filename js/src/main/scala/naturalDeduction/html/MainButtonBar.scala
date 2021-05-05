@@ -13,6 +13,7 @@ case class MainButtonBarProps(
 
 object MainButtonBar {
 
+  //noinspection TypeAnnotation
   val component = ScalaComponent.builder[MainButtonBarProps]
     .render_P(render)
     .build

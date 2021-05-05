@@ -8,6 +8,7 @@ import naturalDeduction.{Derivation, DerivationPath, EquivalenceDirection, Formu
 
 object ManipulatableFormula {
 
+  //noinspection TypeAnnotation
   val component = ScalaComponent.builder[Props]("ManipulatableFormula")
     .render_P(render)
     .build
@@ -111,10 +112,10 @@ object ManipulatableFormula {
         <.div(^.className := "dropdown-item", ^.href := "#", "Extract subderivation", ^.onClick --> onExtractSubderivation(path))
           .when(!path.isRoot),
         inlineableDerivationIndices.toVdomArray(i =>
-          <.div(^.className := "dropdown-item", ^.href := "#", s"Inline derivation #${i + 1}", ^.onClick --> onInlineDerivation(path, i))
+          <.div(^.className := "dropdown-item", ^.key := i, ^.href := "#", s"Inline derivation #${i + 1}", ^.onClick --> onInlineDerivation(path, i))
         ),
         dischargeableLabels.toVdomArray(label =>
-          <.div(^.className := "dropdown-item", ^.href := "#", s"Discharge assumption $label", ^.onClick --> onDischargeAssumption(path, label))),
+          <.div(^.className := "dropdown-item", ^.key := label, ^.href := "#", s"Discharge assumption $label", ^.onClick --> onDischargeAssumption(path, label))),
         <.div(^.className := "dropdown-item", ^.href := "#", s"Undischarge assumption", ^.onClick --> onUndischargeAssumption(path))
           .when(canUndischargeAxiom(derivation)),
         <.div(^.className := "dropdown-item", ^.href := "#", "β-reduce", ^.onClick --> onBetaReduce(path))

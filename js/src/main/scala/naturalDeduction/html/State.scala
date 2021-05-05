@@ -4,7 +4,7 @@ import ljt.LJTTheoremProver
 import naturalDeduction.Derivation.{Axiom, RichFormula}
 import naturalDeduction.html.modal._
 import naturalDeduction.parser.FormulaParser
-import naturalDeduction.{Derivation, DerivationPath, Formula}
+import naturalDeduction.{Derivation, DerivationPath, EquivalenceDirection, Formula}
 
 case class State(
                   newFormulaText: String = "",
@@ -38,15 +38,21 @@ case class State(
 
   def withUndo(newState: State): State = newState.copy(undoRedo = undoRedo.push(derivations))
 
-  def undo: State = {
-    val (newDerivations, newUndoRedo) = undoRedo.undo(derivations)
-    copy(derivations = newDerivations, undoRedo = newUndoRedo)
-  }
+  def undo: State =
+    if (undoRedo.canUndo) {
+      val (newDerivations, newUndoRedo) = undoRedo.undo(derivations)
+      copy(derivations = newDerivations, undoRedo = newUndoRedo)
+    } else {
+      this
+    }
 
-  def redo: State = {
-    val (newDerivations, newUndoRedo) = undoRedo.redo(derivations)
-    copy(derivations = newDerivations, undoRedo = newUndoRedo)
-  }
+  def redo: State =
+    if (undoRedo.canRedo) {
+      val (newDerivations, newUndoRedo) = undoRedo.redo(derivations)
+      copy(derivations = newDerivations, undoRedo = newUndoRedo)
+    } else {
+      this
+    }
 
   def newFormulaIsValid: Boolean =
     FormulaParser.tryParseFormula(newFormulaText).isRight ||
@@ -65,6 +71,8 @@ case class State(
     withUndo(
       copy(derivations = derivations :+ derivation, newFormulaText = ""))
 
+  // Manipulate derivation
+
   def getDerivation(i: DerivationIndex): Derivation = derivations(i)
 
   def setDerivation(i: DerivationIndex, derivation: Derivation): State =
@@ -72,6 +80,21 @@ case class State(
 
   def transformDerivation(i: DerivationIndex, f: Derivation => Derivation): State =
     withUndo(setDerivation(i, f(getDerivation(i))))
+
+  def conjunctionIntroBackwards(derivationIndex: DerivationIndex, path: DerivationPath): State =
+    transformDerivation(derivationIndex, _.transform(path, _.conjunctionIntroBackwards))
+
+  def equivalenceIntroBackwards(derivationIndex: DerivationIndex, path: DerivationPath): State =
+    transformDerivation(derivationIndex, _.transform(path, _.equivalenceIntroBackwards))
+
+  def equivalenceElimBackwards(derivationIndex: DerivationIndex, path: DerivationPath, direction: EquivalenceDirection): State =
+    transformDerivation(derivationIndex, _.transform(path, _.equivalenceElimBackwards(direction)))
+
+  def implicationIntroBackwards(derivationIndex: DerivationIndex, path: DerivationPath): State =
+    transformDerivation(derivationIndex, implicationIntroBackwards(path))
+
+  private def implicationIntroBackwards(path: DerivationPath)(derivation: Derivation): Derivation =
+    derivation.transform(path, _.implicationIntroBackwards(derivation.nextFreshLabel))
 
   // Modal
 

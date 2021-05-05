@@ -15,7 +15,7 @@ object ConjunctionElimBackwardsModalBody {
                     onSwapConjuncts: Callback,
                   )
 
-
+  //noinspection TypeAnnotation
   val component = ScalaComponent.builder[Props]
     .render_P(render)
     .build

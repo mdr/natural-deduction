@@ -9,11 +9,10 @@ import naturalDeduction.html.{DerivationComponent, DerivationProps}
 
 object ImplicationElimForwardsFromAntecedentModalBody {
 
-  case class Props(
-                    modalState: ImplicationElimForwardsFromAntecedentModalState,
-                    onChangeModalFormula: String => Callback,
-                  )
+  case class Props(modalState: ImplicationElimForwardsFromAntecedentModalState,
+                   onChangeModalFormula: String => Callback)
 
+  //noinspection TypeAnnotation
   val component = ScalaComponent.builder[Props]
     .render_P(render)
     .build

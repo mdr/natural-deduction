@@ -33,6 +33,7 @@ case class DerivationProps(derivation: Derivation,
 
 object DerivationComponent {
 
+  //noinspection TypeAnnotation
   val component = ScalaComponent.builder[DerivationProps]("DerivationComponent")
     .render_P(props => {
       val derivationRenderer = new DerivationHtmlRenderer(props)

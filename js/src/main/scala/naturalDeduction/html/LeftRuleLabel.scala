@@ -10,6 +10,7 @@ case class LeftRuleLabelProps(label: Label, labelToFormula: Map[Label, Formula])
 
 object LeftRuleLabel {
 
+  //noinspection TypeAnnotation
   val component =
     ScalaComponent.builder[LeftRuleLabelProps]("LeftRuleLabel")
       .render_P(render)

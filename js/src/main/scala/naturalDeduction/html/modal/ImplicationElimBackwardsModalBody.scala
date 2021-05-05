@@ -14,6 +14,7 @@ object ImplicationElimBackwardsModalBody {
                     onChangeModalFormula: String => Callback,
                   )
 
+  //noinspection TypeAnnotation
   val component = ScalaComponent.builder[Props]
     .render_P(render)
     .build

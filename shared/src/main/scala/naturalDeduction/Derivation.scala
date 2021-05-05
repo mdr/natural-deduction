@@ -12,8 +12,32 @@ import scala.annotation.tailrec
 
 sealed trait Derivation {
 
+  def conjunctionIntroBackwards: Derivation = {
+    val Conjunction(conjunct1, conjunct2) = conclusion
+    ConjunctionIntroduction(conjunct1.axiom, conjunct2.axiom)
+  }
+
+  def implicationIntroBackwards(label: Label): Derivation = {
+    val Implication(antecedent, consequent) = conclusion
+    ImplicationIntroduction(antecedent, label, Axiom(consequent))
+  }
+
+  def equivalenceIntroBackwards: Derivation = {
+    val Equivalence(forwardsImplication, backwardsImplication) = conclusion
+    EquivalenceIntroduction(forwardsImplication.axiom, backwardsImplication.axiom)
+  }
+
+  def equivalenceElimBackwards(direction: EquivalenceDirection): Derivation = {
+    val Implication(antecedent, consequent) = conclusion
+    direction match {
+      case EquivalenceDirection.Forwards => ForwardsEquivalenceElimination(Axiom(antecedent ↔ consequent))
+      case EquivalenceDirection.Backwards => BackwardsEquivalenceElimination(Axiom(consequent ↔ antecedent))
+    }
+  }
+
   def everywhere(pf: PartialFunction[Derivation, Derivation]): Derivation = {
     def f(derivation: Derivation): Derivation = pf.lift(derivation).getOrElse(derivation)
+
     f(children.indices.foldLeft(this) { case (derivation, childChoice) => derivation.transformChild(childChoice, _.everywhere(pf)) })
   }
 

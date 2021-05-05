@@ -13,6 +13,7 @@ case class ModalProps(
 
 object Modal {
 
+  //noinspection TypeAnnotation
   val component = ScalaComponent.builder[ModalProps]
     .render_P(render)
     .build

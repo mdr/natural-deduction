@@ -12,6 +12,7 @@ case class CardButtonBarProps(
 
 object CardButtonBar {
 
+  //noinspection TypeAnnotation
   val component = ScalaComponent.builder[CardButtonBarProps]
     .render_P(render)
     .build

@@ -3,11 +3,13 @@ package naturalDeduction.html
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation._
-import naturalDeduction.Formula.{Conjunction, Equivalence, Implication}
+import naturalDeduction.Formula.Implication
 import naturalDeduction._
 import naturalDeduction.html.modal.{Modal, ModalProps}
+import signatures.Mousetrap
 
 import scala.scalajs.js.Dynamic.global
+import scala.scalajs.js.JSConverters._
 
 object App {
 
@@ -25,7 +27,7 @@ object App {
         Modal.component(ModalProps(state.modalState, onChangeModalFormula, onSwapConjuncts, onConfirmModal)),
         <.div(^.`class` := "container",
           <.p(),
-          MainButtonBar.component(MainButtonBarProps(state.undoRedo, onUndoClicked, onRedoClicked)),
+          MainButtonBar.component(MainButtonBarProps(state.undoRedo, onUndo, onRedo)),
           <.p(),
           Help.component(),
           <.p().when(state.derivations.nonEmpty),
@@ -57,16 +59,14 @@ object App {
         )
       )
 
-    // modState helper to handle URL hash sync
-
-    final def modState(mod: State => State): Callback =
-      $.modState(mod) >> syncUrlHash
+    /**
+     * Modify state and handle URL hash sync
+     */
+    def modState(mod: State => State): Callback =
+      $.modState(mod, syncUrlHash)
 
     private def syncUrlHash: Callback =
-      $.modState(state => {
-        UrlHashSync.writeToHash(state.derivations)
-        state
-      })
+      $.state.map(state => UrlHashSync.writeToHash(state.derivations))
 
     // Modal handlers
 
@@ -88,9 +88,9 @@ object App {
     private def onSwapConjuncts: Callback = modState(_.swapConjuncts)
 
     // App button handlers
-    private def onUndoClicked: Callback = modState(_.undo)
+    def onUndo: Callback = modState(_.undo)
 
-    private def onRedoClicked: Callback = modState(_.redo)
+    def onRedo: Callback = modState(_.redo)
 
     // New derivation handlers
 
@@ -116,48 +116,22 @@ object App {
     // Derivation menu handlers
 
     private def onConjunctionIntroBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
-      modState(_.transformDerivation(derivationIndex, _.transform(path, conjunctionIntroBackwards)))
-
-    private def conjunctionIntroBackwards(derivation: Derivation): Derivation = {
-      val conjunction = derivation.conclusion.asInstanceOf[Conjunction]
-      ConjunctionIntroduction(Axiom(conjunction.conjunct1), Axiom(conjunction.conjunct2))
-    }
+      modState(_.conjunctionIntroBackwards(derivationIndex, path))
 
     private def onConjunctionElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.showConjunctionElimBackwardsModal(derivationIndex, path)) >> showModal
 
     private def onImplicationIntroBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
-      modState(_.transformDerivation(derivationIndex, implicationIntroBackwards(path)))
-
-    private def implicationIntroBackwards(path: DerivationPath)(derivation: Derivation): Derivation =
-      derivation.transform(path, implicationIntroBackwards(derivation.nextFreshLabel))
-
-    private def implicationIntroBackwards(nextFreshLabel: Label)(derivation: Derivation): Derivation = {
-      val implication = derivation.conclusion.asInstanceOf[Implication]
-      ImplicationIntroduction(implication.antecedent, nextFreshLabel, Axiom(implication.consequent))
-    }
+      modState(_.implicationIntroBackwards(derivationIndex, path))
 
     private def onImplicationElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.showImplicationElimBackwardsModal(derivationIndex, path)) >> showModal
 
     private def onEquivalenceIntroBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
-      modState(_.transformDerivation(derivationIndex, _.transform(path, equivalenceIntroBackwards)))
-
-    private def equivalenceIntroBackwards(derivation: Derivation): Derivation = {
-      val equivalence = derivation.conclusion.asInstanceOf[Equivalence]
-      EquivalenceIntroduction(equivalence.forwardsImplication.axiom, equivalence.backwardsImplication.axiom)
-    }
+      modState(_.equivalenceIntroBackwards(derivationIndex, path))
 
     private def onEquivalenceElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath, direction: EquivalenceDirection): Callback =
-      modState(_.transformDerivation(derivationIndex, _.transform(path, equivalenceElimBackwards(direction))))
-
-    private def equivalenceElimBackwards(direction: EquivalenceDirection)(derivation: Derivation): Derivation = {
-      val implication = derivation.conclusion.asInstanceOf[Implication]
-      direction match {
-        case EquivalenceDirection.Forwards => ForwardsEquivalenceElimination(Axiom(implication.antecedent ↔ implication.consequent))
-        case EquivalenceDirection.Backwards => BackwardsEquivalenceElimination(Axiom(implication.consequent ↔ implication.antecedent))
-      }
-    }
+      modState(_.equivalenceElimBackwards(derivationIndex, path, direction))
 
     private def onConjunctionIntroForwards(derivationIndex: DerivationIndex): Callback =
       modState(_.showConjunctionIntroForwardsModal(derivationIndex)) >> showModal
@@ -184,7 +158,6 @@ object App {
 
     private def onImplicationElimForwardsFromAntecedent(derivationIndex: DerivationIndex): Callback =
       modState(_.showImplicationElimForwardsFromAntecedentModal(derivationIndex)) >> showModal
-
 
     private def onEquivalenceIntroForwards(derivationIndex: DerivationIndex)(direction: EquivalenceDirection): Callback =
       modState(_.transformDerivation(derivationIndex, equivalenceIntroForwards(direction)))
@@ -226,7 +199,7 @@ object App {
     private def derivationCard(derivation: Derivation,
                                derivationIndex: DerivationIndex,
                                formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]]): VdomNode =
-      <.div(^.`class` := "card", ^.key := derivationIndex.toString,
+      <.div(^.`class` := "card", ^.key := derivationIndex,
         <.div(^.`class` := "card-header",
           s"${derivationIndex + 1}. ${derivation.sequent}",
           CardButtonBar.component(
@@ -264,9 +237,14 @@ object App {
 
   }
 
+  //noinspection TypeAnnotation
   val app = ScalaComponent.builder[Unit]("App")
     .initialState(State(derivations = UrlHashSync.readFromHash))
     .renderBackend[Backend]
+    .componentDidMount(scope => Callback {
+      Mousetrap.bind(Seq("command+z", "ctrl+z").toJSArray, _ => scope.backend.onUndo.runNow())
+      Mousetrap.bind(Seq("command+shift+z", "ctrl+y").toJSArray, _ => scope.backend.onRedo.runNow())
+    })
     .build
 
 }
