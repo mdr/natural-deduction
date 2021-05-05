@@ -1,6 +1,6 @@
 package ljt
 
-import naturalDeduction.Derivation.{ConjunctionIntroduction, DisjunctionElimination, ImplicationElimination, ImplicationIntroduction, LeftConjunctionElimination, LeftDisjunctionIntroduction, ReductioAdAbsurdum, RichFormula, RightConjunctionElimination, RightDisjunctionIntroduction}
+import naturalDeduction.Derivation.{BackwardsEquivalenceElimination, ConjunctionIntroduction, DisjunctionElimination, EquivalenceIntroduction, ForwardsEquivalenceElimination, ImplicationElimination, ImplicationIntroduction, LeftConjunctionElimination, LeftDisjunctionIntroduction, ReductioAdAbsurdum, RichFormula, RightConjunctionElimination, RightDisjunctionIntroduction}
 import naturalDeduction.Formula.{PropositionalVariable, ⊥}
 import naturalDeduction.{Derivation, Formula, Sequent}
 import naturalDeduction.Labels.freshLabel
@@ -83,6 +83,23 @@ object LJTDerivation {
         .substitute(conjunct2, RightConjunctionElimination((conjunct1 ∧ conjunct2).axiom))
   }
 
+  case class EquivalenceLeft(formula1: Formula,
+                             formula2: Formula,
+                             Γ: Multiset[Formula],
+                             override val conclusion: Formula,
+                             childDerivation: LJTDerivation
+                            ) extends LJTDerivation {
+    assert(childDerivation.conclusion == conclusion)
+    assert(childDerivation.assumptions == (Γ + (formula1 → formula2) + (formula2 → formula1)))
+
+    override val sequent: LJTSequent = LJTSequent(Γ + (formula1 ↔ formula2), conclusion)
+
+    override def naturalDeductionDerivation: Derivation =
+      childDerivation.naturalDeductionDerivation
+        .substitute(formula1 → formula2, ForwardsEquivalenceElimination((formula1 ↔ formula2).axiom))
+        .substitute(formula2 → formula1, BackwardsEquivalenceElimination((formula1 ↔ formula2).axiom))
+  }
+
   case class ConjunctionRight(conjunct1: Formula,
                               conjunct2: Formula,
                               Γ: Multiset[Formula],
@@ -98,6 +115,25 @@ object LJTDerivation {
 
     override def naturalDeductionDerivation: Derivation =
       ConjunctionIntroduction(
+        childDerivation1.naturalDeductionDerivation,
+        childDerivation2.naturalDeductionDerivation)
+  }
+
+  case class EquivalenceRight(formula1: Formula,
+                              formula2: Formula,
+                              Γ: Multiset[Formula],
+                              childDerivation1: LJTDerivation,
+                              childDerivation2: LJTDerivation
+                             ) extends LJTDerivation {
+    assert(childDerivation1.conclusion == (formula1 → formula2))
+    assert(childDerivation2.conclusion == (formula2 → formula1))
+    assert(childDerivation1.assumptions == Γ)
+    assert(childDerivation2.assumptions == Γ)
+
+    override val sequent: LJTSequent = LJTSequent(Γ, formula1 ↔ formula2)
+
+    override def naturalDeductionDerivation: Derivation =
+      EquivalenceIntroduction(
         childDerivation1.naturalDeductionDerivation,
         childDerivation2.naturalDeductionDerivation)
   }
@@ -217,6 +253,33 @@ object LJTDerivation {
                 Derivation.Axiom(c, label1),
                 Derivation.Axiom(d, label2)),
               (c ∧ d → b).axiom
+            ))))
+    }
+  }
+
+  case class ImplicationLeft2b(c: Formula,
+                               d: Formula,
+                               b: Formula,
+                               Γ: Multiset[Formula],
+                               override val conclusion: Formula,
+                               childDerivation: LJTDerivation) extends LJTDerivation {
+    assert(childDerivation.conclusion == conclusion)
+    assert(childDerivation.assumptions == Γ + ((c → d) → ((d → c) → b)))
+
+    override val sequent: LJTSequent = LJTSequent(Γ + ((c ↔ d) → b), conclusion)
+
+    override def naturalDeductionDerivation: Derivation = {
+      val natDerivation = childDerivation.naturalDeductionDerivation
+      val label1 = freshLabel(natDerivation.labels)
+      val label2 = freshLabel(natDerivation.labels + label1)
+      natDerivation.substitute((c → d) → ((d → c) → b),
+        ImplicationIntroduction(c → d, label1,
+          ImplicationIntroduction(d → c, label2,
+            ImplicationElimination(
+              EquivalenceIntroduction(
+                Derivation.Axiom(c → d, label1),
+                Derivation.Axiom(d → c, label2)),
+              ((c ↔ d) → b).axiom
             ))))
     }
   }

@@ -46,13 +46,11 @@ class LJTTheoremProverSpec extends AnyFlatSpec with Matchers {
     checkCanProve((φ, φ ↔ ψ) ⊢ ψ)
     checkCanProve(Ø ⊢ (φ ↔ φ))
     checkCanProve((φ ↔ ψ, ψ ↔ χ) ⊢ (φ ↔ χ))
-    checkCanSemiProve(Ø ⊢ (((φ ↔ ψ) ↔ χ) → (φ → (ψ ↔ χ)))) // 2.5.1.(d) (corrected)
-    checkCanSemiProve(φ ↔ (ψ ↔ ψ) ⊢ φ) // 2.5.1.(e)
+    checkCanProve(φ ↔ (ψ ↔ ψ) ⊢ φ) // 2.5.1.(e)
+    checkCanProve(Ø ⊢ (((φ ↔ ψ) ↔ χ) → (φ → (ψ ↔ χ)))) // 2.5.1.(d) (corrected)
   }
 
   it should "be able to prove this one weird little theorem" in {
-    //    checkCanProve(((ψ ↔ ψ) → φ) ⊢ φ) // hard to fix equiv rewrite
-
   }
 
   // ❶ ❷ ❸ ❹ ❺ φ ψ χ Ø ⊢ ¬ ∨ ∧ → ↔ ⊥

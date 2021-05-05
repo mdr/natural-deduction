@@ -1,32 +1,29 @@
 package ljt
 
 import ljt.LJTDerivation._
-import naturalDeduction.Formula.{Conjunction, Disjunction, Implication, PropositionalVariable, ⊥}
+import naturalDeduction.Formula.{Conjunction, Disjunction, Equivalence, Implication, PropositionalVariable, ⊥}
 import naturalDeduction.{Derivation, Formula, Sequent}
 
 import scala.PartialFunction.condOpt
 
 object LJTTheoremProver {
 
-  def prove(sequent: Sequent): Option[Derivation] = {
-    val expandedSequent = replaceEquivalences(sequent)
-    prove(LJTSequent(expandedSequent)).map(derivation => ProofFixer.fix(sequent, derivation.naturalDeductionDerivation))
-  }
-
-  private def replaceEquivalences(sequent: Sequent): Sequent =
-    Sequent(sequent.assumptions.map(_.replaceEquivalences), sequent.conclusion.replaceEquivalences)
+  def prove(sequent: Sequent): Option[Derivation] = prove(LJTSequent(sequent)).map(_.naturalDeductionDerivation)
 
   def prove(sequent: LJTSequent): Option[LJTDerivation] = {
     val proof = proveAxiom(sequent) orElse
       proveBottomLeft(sequent) orElse
       proveConjunctionRight(sequent) orElse
+      proveEquivalenceRight(sequent) orElse
       proveDisjunctionRight1(sequent) orElse
       proveDisjunctionRight2(sequent) orElse
       proveImplicationRight(sequent) orElse
       proveConjunctionLeft(sequent) orElse
+      proveEquivalenceLeft(sequent) orElse
       proveDisjunctionLeft(sequent) orElse
       proveImplicationLeft1(sequent) orElse
       proveImplicationLeft2(sequent) orElse
+      proveImplicationLeft2b(sequent) orElse
       proveImplicationLeft3(sequent) orElse
       proveImplicationLeft4(sequent)
     proof.foreach(p => assert(p.sequent == sequent))
@@ -64,6 +61,17 @@ object LJTTheoremProver {
         } yield ConjunctionRight(conjunct1, conjunct2, sequent.assumptions, childDerivation1, childDerivation2)
     }
 
+  private def proveEquivalenceRight(sequent: LJTSequent): Option[LJTDerivation] =
+    condOptFlatten(sequent.conclusion) {
+      case Equivalence(formula1, formula2) =>
+        val childSequent1 = LJTSequent(sequent.assumptions, formula1 → formula2)
+        val childSequent2 = LJTSequent(sequent.assumptions, formula2 → formula1)
+        for {
+          childDerivation1 <- prove(childSequent1)
+          childDerivation2 <- prove(childSequent2)
+        } yield EquivalenceRight(formula1, formula2, sequent.assumptions, childDerivation1, childDerivation2)
+    }
+
   private def proveDisjunctionRight1(sequent: LJTSequent): Option[LJTDerivation] =
     condOptFlatten(sequent.conclusion) {
       case Disjunction(disjunct1, disjunct2) =>
@@ -86,10 +94,25 @@ object LJTTheoremProver {
     val matchingAssumptions = sequent.assumptions.keySet.collect { case conjunction: Conjunction => conjunction }.to(LazyList)
 
     def proveForAssumption(assumption: Conjunction): Option[LJTDerivation] = {
-      val childSequent = LJTSequent(sequent.assumptions - assumption + assumption.conjunct1 + assumption.conjunct2, sequent.conclusion)
+      val baseAssumptions = sequent.assumptions - assumption
+      val childSequent = LJTSequent(baseAssumptions + assumption.conjunct1 + assumption.conjunct2, sequent.conclusion)
       for {
         childDerivation <- prove(childSequent)
-      } yield ConjunctionLeft(assumption.conjunct1, assumption.conjunct2, sequent.assumptions - assumption, sequent.conclusion, childDerivation)
+      } yield ConjunctionLeft(assumption.conjunct1, assumption.conjunct2, baseAssumptions, sequent.conclusion, childDerivation)
+    }
+
+    matchingAssumptions.flatMap(proveForAssumption).headOption
+  }
+
+  private def proveEquivalenceLeft(sequent: LJTSequent): Option[LJTDerivation] = {
+    val matchingAssumptions = sequent.assumptions.keySet.collect { case equivalence: Equivalence => equivalence }.to(LazyList)
+
+    def proveForAssumption(assumption: Equivalence): Option[LJTDerivation] = {
+      val baseAssumptions = sequent.assumptions - assumption
+      val childSequent = LJTSequent(baseAssumptions + assumption.forwardsImplication + assumption.backwardsImplication, sequent.conclusion)
+      for {
+        childDerivation <- prove(childSequent)
+      } yield EquivalenceLeft(assumption.formula1, assumption.formula2, baseAssumptions, sequent.conclusion, childDerivation)
     }
 
     matchingAssumptions.flatMap(proveForAssumption).headOption
@@ -99,12 +122,13 @@ object LJTTheoremProver {
     val matchingAssumptions = sequent.assumptions.keySet.collect { case disjunction: Disjunction => disjunction }.to(LazyList)
 
     def proveForAssumption(assumption: Disjunction): Option[LJTDerivation] = {
-      val childSequent1 = LJTSequent(sequent.assumptions - assumption + assumption.disjunct1, sequent.conclusion)
-      val childSequent2 = LJTSequent(sequent.assumptions - assumption + assumption.disjunct2, sequent.conclusion)
+      val baseAssumptions = sequent.assumptions - assumption
+      val childSequent1 = LJTSequent(baseAssumptions + assumption.disjunct1, sequent.conclusion)
+      val childSequent2 = LJTSequent(baseAssumptions + assumption.disjunct2, sequent.conclusion)
       for {
         childDerivation1 <- prove(childSequent1)
         childDerivation2 <- prove(childSequent2)
-      } yield DisjunctionLeft(assumption.disjunct1, assumption.disjunct2, sequent.assumptions - assumption, sequent.conclusion, childDerivation1, childDerivation2)
+      } yield DisjunctionLeft(assumption.disjunct1, assumption.disjunct2, baseAssumptions, sequent.conclusion, childDerivation1, childDerivation2)
     }
 
     matchingAssumptions.flatMap(proveForAssumption).headOption
@@ -145,6 +169,7 @@ object LJTTheoremProver {
         .keySet
         .collect { case implication@ImplicationLeftAssumption2(_, _, _) => implication }
         .to(LazyList)
+
     def proveForAssumption(assumption: Formula): Option[LJTDerivation] = {
       val ImplicationLeftAssumption2(c, d, b) = assumption
       val baseAssumptions = sequent.assumptions - (c ∧ d → b)
@@ -152,6 +177,33 @@ object LJTTheoremProver {
       for {
         childDerivation <- prove(childSequent)
       } yield ImplicationLeft2(c, d, b, baseAssumptions, sequent.conclusion, childDerivation)
+    }
+
+    matchingAssumptions.flatMap(proveForAssumption).headOption
+  }
+
+  object ImplicationLeftAssumption2b {
+
+    def unapply(formula: Formula): Option[(Formula, Formula, Formula)] = condOpt(formula) {
+      case Implication(Equivalence(c, d), b) => (c, d, b)
+    }
+
+  }
+
+  private def proveImplicationLeft2b(sequent: LJTSequent): Option[LJTDerivation] = {
+    val matchingAssumptions =
+      sequent.assumptions
+        .keySet
+        .collect { case implication@ImplicationLeftAssumption2b(_, _, _) => implication }
+        .to(LazyList)
+
+    def proveForAssumption(assumption: Formula): Option[LJTDerivation] = {
+      val ImplicationLeftAssumption2b(c, d, b) = assumption
+      val baseAssumptions = sequent.assumptions - ((c ↔ d) → b)
+      val childSequent = LJTSequent(baseAssumptions + ((c → d) → ((d → c) → b)), sequent.conclusion)
+      for {
+        childDerivation <- prove(childSequent)
+      } yield ImplicationLeft2b(c, d, b, baseAssumptions, sequent.conclusion, childDerivation)
     }
 
     matchingAssumptions.flatMap(proveForAssumption).headOption
@@ -198,6 +250,7 @@ object LJTTheoremProver {
         .keySet
         .collect { case implication@ImplicationLeftAssumption4(_, _, _) => implication }
         .to(LazyList)
+
     def proveForAssumption(assumption: Formula): Option[LJTDerivation] = {
       val ImplicationLeftAssumption4(c, d, b) = assumption
       val baseAssumptions = sequent.assumptions - ((c → d) → b)
