@@ -1,14 +1,31 @@
 package ljt
 
 import ljt.LJTDerivation._
-import naturalDeduction.Formula.{Conjunction, Disjunction, Equivalence, Implication, PropositionalVariable, ⊥}
+import naturalDeduction.Derivation.{NegationElimination, ReductioAdAbsurdum}
+import naturalDeduction.Formula.{Conjunction, Disjunction, Equivalence, Implication, Negation, PropositionalVariable, ⊥}
+import naturalDeduction.Labels.freshLabel
 import naturalDeduction.{Derivation, Formula, Sequent}
 
 import scala.PartialFunction.condOpt
 
 object LJTTheoremProver {
 
-  def prove(sequent: Sequent): Option[Derivation] = prove(LJTSequent(sequent)).map(_.naturalDeductionDerivation)
+  def prove(sequent: Sequent): Option[Derivation] = proveViaLJT(sequent) orElse proveViaDoubleNegation(sequent)
+
+  private def proveViaLJT(sequent: Sequent): Option[Derivation] =
+    prove(LJTSequent(sequent)).map(_.naturalDeductionDerivation)
+
+  def proveViaDoubleNegation(sequent: Sequent): Option[Derivation] =
+    proveViaLJT(sequent.copy(conclusion = sequent.conclusion.not.not)).map(doubleNegationElim)
+
+  private def doubleNegationElim(childDerivation: Derivation): Derivation = {
+    val label = freshLabel(childDerivation.labels)
+    val Negation(Negation(formula)) = childDerivation.conclusion
+    ReductioAdAbsurdum(formula, label,
+      NegationElimination(
+        Derivation.Axiom(formula.not, label),
+        childDerivation))
+  }
 
   def prove(sequent: LJTSequent): Option[LJTDerivation] = {
     val proof = proveAxiom(sequent) orElse
@@ -18,9 +35,11 @@ object LJTTheoremProver {
       proveDisjunctionRight1(sequent) orElse
       proveDisjunctionRight2(sequent) orElse
       proveImplicationRight(sequent) orElse
+      proveNegationRight(sequent) orElse
       proveConjunctionLeft(sequent) orElse
       proveEquivalenceLeft(sequent) orElse
       proveDisjunctionLeft(sequent) orElse
+      proveNegationLeft(sequent) orElse
       proveImplicationLeft1(sequent) orElse
       proveImplicationLeft2(sequent) orElse
       proveImplicationLeft2b(sequent) orElse
@@ -90,6 +109,15 @@ object LJTTheoremProver {
         } yield DisjunctionRight2(disjunct1, disjunct2, sequent.assumptions, childDerivation)
     }
 
+  private def proveNegationRight(sequent: LJTSequent): Option[LJTDerivation] =
+    condOptFlatten(sequent.conclusion) {
+      case Negation(formula) =>
+        val childSequent = LJTSequent(sequent.assumptions, formula → ⊥)
+        for {
+          childDerivation <- prove(childSequent)
+        } yield NegationRight(formula, sequent.assumptions, childDerivation)
+    }
+
   private def proveConjunctionLeft(sequent: LJTSequent): Option[LJTDerivation] = {
     val matchingAssumptions = sequent.assumptions.keySet.collect { case conjunction: Conjunction => conjunction }.to(LazyList)
 
@@ -134,6 +162,20 @@ object LJTTheoremProver {
     matchingAssumptions.flatMap(proveForAssumption).headOption
   }
 
+  private def proveNegationLeft(sequent: LJTSequent): Option[LJTDerivation] = {
+    val matchingAssumptions = sequent.assumptions.keySet.collect { case negation: Negation => negation }.to(LazyList)
+
+    def proveForAssumption(assumption: Negation): Option[LJTDerivation] = {
+      val baseAssumptions = sequent.assumptions - assumption
+      val childSequent = LJTSequent(baseAssumptions + (assumption.formula → ⊥), sequent.conclusion)
+      for {
+        childDerivation <- prove(childSequent)
+      } yield NegationLeft(assumption.formula, baseAssumptions, sequent.conclusion, childDerivation)
+    }
+
+    matchingAssumptions.flatMap(proveForAssumption).headOption
+  }
+
   private def proveImplicationLeft1(sequent: LJTSequent): Option[LJTDerivation] = {
     val matchingAssumptions =
       sequent.assumptions
@@ -143,7 +185,7 @@ object LJTTheoremProver {
         .to(LazyList)
 
     def proveForAssumption(assumption: Implication): Option[LJTDerivation] = {
-      import assumption.{consequent, antecedent}
+      import assumption.{antecedent, consequent}
       val baseAssumptions = sequent.assumptions - (antecedent → consequent) - antecedent
       val childSequent = LJTSequent(baseAssumptions + antecedent + consequent, sequent.conclusion)
       for {

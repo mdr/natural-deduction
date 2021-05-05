@@ -1,6 +1,6 @@
 package ljt
 
-import naturalDeduction.Derivation.{BackwardsEquivalenceElimination, ConjunctionIntroduction, DisjunctionElimination, EquivalenceIntroduction, ForwardsEquivalenceElimination, ImplicationElimination, ImplicationIntroduction, LeftConjunctionElimination, LeftDisjunctionIntroduction, ReductioAdAbsurdum, RichFormula, RightConjunctionElimination, RightDisjunctionIntroduction}
+import naturalDeduction.Derivation.{BackwardsEquivalenceElimination, ConjunctionIntroduction, DisjunctionElimination, EquivalenceIntroduction, ForwardsEquivalenceElimination, ImplicationElimination, ImplicationIntroduction, LeftConjunctionElimination, LeftDisjunctionIntroduction, NegationElimination, NegationIntroduction, ReductioAdAbsurdum, RichFormula, RightConjunctionElimination, RightDisjunctionIntroduction}
 import naturalDeduction.Formula.{PropositionalVariable, ⊥}
 import naturalDeduction.{Derivation, Formula, Sequent}
 import naturalDeduction.Labels.freshLabel
@@ -81,6 +81,28 @@ object LJTDerivation {
       childDerivation.naturalDeductionDerivation
         .substitute(conjunct1, LeftConjunctionElimination((conjunct1 ∧ conjunct2).axiom))
         .substitute(conjunct2, RightConjunctionElimination((conjunct1 ∧ conjunct2).axiom))
+  }
+
+  case class NegationLeft(formula: Formula,
+                          Γ: Multiset[Formula],
+                          override val conclusion: Formula,
+                          childDerivation: LJTDerivation
+                         ) extends LJTDerivation {
+    assert(childDerivation.conclusion == conclusion)
+    assert(childDerivation.assumptions == Γ + (formula → ⊥))
+
+    override val sequent: LJTSequent = LJTSequent(Γ + formula.not, conclusion)
+
+    override def naturalDeductionDerivation: Derivation = {
+      val natDerivation = childDerivation.naturalDeductionDerivation
+      val label = freshLabel(natDerivation.labels)
+      childDerivation.naturalDeductionDerivation
+        .substitute(formula → ⊥,
+          ImplicationIntroduction(formula, label,
+            NegationElimination(
+              Derivation.Axiom(formula, label),
+              formula.not.axiom)))
+    }
   }
 
   case class EquivalenceLeft(formula1: Formula,
@@ -194,6 +216,26 @@ object LJTDerivation {
 
     override def naturalDeductionDerivation: Derivation =
       RightDisjunctionIntroduction(disjunct1, childDerivation.naturalDeductionDerivation)
+  }
+
+  case class NegationRight(
+                            formula: Formula,
+                            Γ: Multiset[Formula],
+                            childDerivation: LJTDerivation
+                          ) extends LJTDerivation {
+    assert(childDerivation.conclusion == (formula → ⊥))
+    assert(childDerivation.assumptions == Γ)
+
+    override val sequent: LJTSequent = LJTSequent(Γ, formula.not)
+
+    override def naturalDeductionDerivation: Derivation = {
+      val natDerivation = childDerivation.naturalDeductionDerivation
+      val label = freshLabel(natDerivation.labels)
+      NegationIntroduction(formula, label,
+        ImplicationElimination(
+          Derivation.Axiom(formula, label),
+          childDerivation.naturalDeductionDerivation))
+    }
   }
 
   case class ImplicationRight(

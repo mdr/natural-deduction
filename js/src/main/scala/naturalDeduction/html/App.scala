@@ -37,11 +37,11 @@ object App {
             ^.`class` := "form-row align-items-center",
             ^.onSubmit ==> onStartNewDerivation,
             <.div(
-              ^.`class` := "col-auto",
+              ^.`class` := "col-6",
               <.input(
                 ^.`class` := "form-control mb-2",
                 ^.`type` := "text",
-                ^.placeholder := "Formula...",
+                ^.placeholder := "Formula or sequent...",
                 ^.onChange ==> onChangeNewDerivationFormula, ^.value := state.newFormulaText)
             ),
             <.div(
