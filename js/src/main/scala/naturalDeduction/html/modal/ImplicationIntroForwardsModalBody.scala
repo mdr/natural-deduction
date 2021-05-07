@@ -5,7 +5,6 @@ import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{Callback, ScalaComponent}
 import naturalDeduction.Derivation.ImplicationIntroduction
 import naturalDeduction.html.DerivationComponent
-import naturalDeduction.html.ReactUtils.getTargetValueThen
 
 object ImplicationIntroForwardsModalBody {
 
@@ -23,8 +22,7 @@ object ImplicationIntroForwardsModalBody {
 
   private def render(props: Props): VdomNode = {
     import props._
-    val ImplicationIntroForwardsModalState(_, consequent, formulaText) = modalState
-    val onChangeModalFormula = getTargetValueThen(props.onChangeModalFormula)
+    val ImplicationIntroForwardsModalState(_, consequent, _) = modalState
     val antecedent = modalState.formula
     val derivation = ImplicationIntroduction(antecedent, consequent)
     <.div(
@@ -32,18 +30,7 @@ object ImplicationIntroForwardsModalBody {
         DerivationComponent.Props(derivation).make
       ),
       <.br(),
-      <.div(^.className := "form-row align-items-center",
-        <.div(^.className := "col-12",
-          <.label(^.className := "sr-only", ^.`for` := "inlineFormInput", "Name"),
-          <.input(
-            ^.`class` := "form-control mb-2",
-            ^.`type` := "text",
-            ^.placeholder := "Antecedent...",
-            ^.onChange ==> onChangeModalFormula,
-            ^.value := formulaText
-          ),
-        ),
-      ),
+      FormulaFormRow.Props(modalState.formulaText, onChangeModalFormula, "Antecedent").make,
     )
   }
 
