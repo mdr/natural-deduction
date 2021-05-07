@@ -4,15 +4,17 @@ import japgolly.scalajs.react.vdom.VdomNode
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{Callback, ScalaComponent}
 import naturalDeduction.Derivation.RichFormula
+import naturalDeduction.html.DerivationComponent
 import naturalDeduction.html.ReactUtils.getTargetValueThen
 import naturalDeduction.html.modal.ConjunctionIntroForwardsModalState.conjunctionIntroductionDerivation
-import naturalDeduction.html.{DerivationComponent, DerivationProps}
 
 object ConjunctionIntroForwardsModalBody {
 
   case class Props(modalState: ConjunctionIntroForwardsModalState,
                    onChangeModalFormula: String => Callback,
-                   onSwapConjuncts: Callback)
+                   onSwapConjuncts: Callback) {
+    def make: VdomNode = component(this)
+  }
 
   //noinspection TypeAnnotation
   val component = ScalaComponent.builder[Props]
@@ -26,7 +28,7 @@ object ConjunctionIntroForwardsModalBody {
     val derivation = conjunctionIntroductionDerivation(existingConjunct.axiom, modalState.formula, conjunctToPick)
     <.div(
       <.div(^.`class` := "d-flex justify-content-center",
-        DerivationComponent.component(DerivationProps(derivation))
+        DerivationComponent.Props(derivation).make
       ),
       <.br(),
       <.div(^.className := "form-row align-items-center",

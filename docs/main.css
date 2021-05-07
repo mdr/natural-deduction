@@ -15,6 +15,11 @@ html {
     font-size: 1rem;
 }
 
+/*.derivation {*/
+/*    overflow-x: scroll;*/
+/*    overflow-y: visible;*/
+/*}*/
+
 .discharged-axiom {
     position: relative;
 }

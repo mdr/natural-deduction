@@ -122,6 +122,23 @@ case class ImplicationElimForwardsFromAntecedentModalState(derivationIndex: Deri
 
 }
 
+case class NegationElimBackwardsModalState(derivationIndex: DerivationIndex,
+                                           path: DerivationPath,
+                                           formulaText: String = "") extends ModalState {
+  def title: String = "¬-Elimination Backwards"
+
+  def withModalFormula(newText: String): ModalState = copy(formulaText = newText)
+
+  override def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
+
+  override def complete(state: State): State =
+    state.transformDerivation(derivationIndex, _.set(path, {
+      val formula = FormulaParser.parseFormula(formulaText)
+      NegationElimination(formula.axiom, formula.not.axiom)
+    }))
+
+}
+
 case class ImplicationIntroForwardsModalState(derivationIndex: DerivationIndex,
                                               consequent: Formula,
                                               formulaText: String = "") extends ModalState {

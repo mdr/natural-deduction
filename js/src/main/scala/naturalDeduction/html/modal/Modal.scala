@@ -4,25 +4,29 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.VdomNode
 import japgolly.scalajs.react.vdom.html_<^._
 
-case class ModalProps(
-                       modalState: Option[ModalState],
-                       onChangeModalFormula: String => Callback,
-                       onSwapConjuncts: Callback,
-                       onConfirmModal: Callback,
-                     )
-
 object Modal {
 
+  case class Props(
+                         modalState: Option[ModalState],
+                         onChangeModalFormula: String => Callback,
+                         onSwapConjuncts: Callback,
+                         onConfirmModal: Callback,
+                       ){
+    def make: VdomNode = component(this)
+  }
+
+  val Id = "interactionModal"
+
   //noinspection TypeAnnotation
-  val component = ScalaComponent.builder[ModalProps]
+  val component = ScalaComponent.builder[Props]
     .render_P(render)
     .build
 
-  private def render(props: ModalProps): VdomNode = {
+  private def render(props: Props): VdomNode = {
     import props._
     <.div(
       ^.className := "modal fade",
-      ^.id := "interactionModal",
+      ^.id := Id,
       ^.tabIndex := -1,
       ^.role := "dialog",
       VdomAttr("aria-labelledby") := "interactionModalLabel", VdomAttr("aria-hidden") := "true",
@@ -36,27 +40,6 @@ object Modal {
     )
   }
 
-  private def modalBody(props: ModalProps) = {
-    import props._
-    <.div(^.className := "modal-body", modalState.map {
-      case state: ConjunctionElimBackwardsModalState =>
-        ConjunctionElimBackwardsModalBody.component(
-          ConjunctionElimBackwardsModalBody.Props(state, onChangeModalFormula, onSwapConjuncts))
-      case state: ConjunctionIntroForwardsModalState =>
-        ConjunctionIntroForwardsModalBody.component(
-          ConjunctionIntroForwardsModalBody.Props(state, onChangeModalFormula, onSwapConjuncts))
-      case state: ImplicationElimBackwardsModalState =>
-        ImplicationElimBackwardsModalBody.component(
-          ImplicationElimBackwardsModalBody.Props(state, onChangeModalFormula))
-      case state: ImplicationElimForwardsFromAntecedentModalState =>
-        ImplicationElimForwardsFromAntecedentModalBody.component(
-          ImplicationElimForwardsFromAntecedentModalBody.Props(state, onChangeModalFormula))
-      case state: ImplicationIntroForwardsModalState =>
-        ImplicationIntroForwardsModalBody.component(
-          ImplicationIntroForwardsModalBody.Props(state, onChangeModalFormula))
-    })
-  }
-
   private def modalHeader(modalState: Option[ModalState]): VdomNode = {
     val title = modalState.map(_.title).getOrElse("<>")
     <.div(^.className := "modal-header",
@@ -65,6 +48,24 @@ object Modal {
         <.span(VdomAttr("aria-hidden") := "true", "×")
       )
     )
+  }
+
+  private def modalBody(props: Props): VdomNode = {
+    import props._
+    <.div(^.className := "modal-body", modalState.map {
+      case state: ConjunctionElimBackwardsModalState =>
+        ConjunctionElimBackwardsModalBody.Props(state, onChangeModalFormula, onSwapConjuncts).make
+      case state: ConjunctionIntroForwardsModalState =>
+        ConjunctionIntroForwardsModalBody.Props(state, onChangeModalFormula, onSwapConjuncts).make
+      case state: ImplicationElimBackwardsModalState =>
+        ImplicationElimBackwardsModalBody.Props(state, onChangeModalFormula).make
+      case state: ImplicationElimForwardsFromAntecedentModalState =>
+        ImplicationElimForwardsFromAntecedentModalBody.Props(state, onChangeModalFormula).make
+      case state: ImplicationIntroForwardsModalState =>
+        ImplicationIntroForwardsModalBody.Props(state, onChangeModalFormula).make
+      case state: NegationElimBackwardsModalState =>
+        NegationElimBackwardsModalBody.Props(state, onChangeModalFormula).make
+    })
   }
 
   private def modalFooter(canConfirm: Boolean, onConfirmModal: Callback): VdomNode = {

@@ -12,17 +12,17 @@ import scala.annotation.tailrec
 
 sealed trait Derivation {
 
-  def conjunctionIntroBackwards: Derivation = {
+  def conjunctionIntroBackwards: ConjunctionIntroduction = {
     val Conjunction(conjunct1, conjunct2) = conclusion
     ConjunctionIntroduction(conjunct1.axiom, conjunct2.axiom)
   }
 
-  def implicationIntroBackwards(label: Label): Derivation = {
+  def implicationIntroBackwards(label: Label): ImplicationIntroduction = {
     val Implication(antecedent, consequent) = conclusion
     ImplicationIntroduction(antecedent, label, Axiom(consequent))
   }
 
-  def equivalenceIntroBackwards: Derivation = {
+  def equivalenceIntroBackwards: EquivalenceIntroduction = {
     val Equivalence(forwardsImplication, backwardsImplication) = conclusion
     EquivalenceIntroduction(forwardsImplication.axiom, backwardsImplication.axiom)
   }
@@ -34,6 +34,31 @@ sealed trait Derivation {
       case EquivalenceDirection.Backwards => BackwardsEquivalenceElimination(Axiom(consequent ↔ antecedent))
     }
   }
+
+  def conjunctionElimForwards(child: ChildIndex): Derivation =
+    child match {
+      case 0 => LeftConjunctionElimination(this)
+      case 1 => RightConjunctionElimination(this)
+    }
+
+  def implicationElimForwardsFromImplication: ImplicationElimination = {
+    val Implication(antecedent, _) = conclusion
+    ImplicationElimination(Axiom(antecedent), this)
+  }
+
+  def equivalenceIntroForwards(direction: EquivalenceDirection): EquivalenceIntroduction = {
+    val Implication(antecedent, consequent) = conclusion
+    direction match {
+      case EquivalenceDirection.Forwards => EquivalenceIntroduction(this, (consequent → antecedent).axiom)
+      case EquivalenceDirection.Backwards => EquivalenceIntroduction((consequent → antecedent).axiom, this)
+    }
+  }
+
+  def equivalenceElimForwards(direction: EquivalenceDirection): Derivation =
+    direction match {
+      case EquivalenceDirection.Forwards => ForwardsEquivalenceElimination(this)
+      case EquivalenceDirection.Backwards => BackwardsEquivalenceElimination(this)
+    }
 
   def everywhere(pf: PartialFunction[Derivation, Derivation]): Derivation = {
     def f(derivation: Derivation): Derivation = pf.lift(derivation).getOrElse(derivation)
@@ -110,12 +135,14 @@ sealed trait Derivation {
 
   def convertToAxiom: Axiom = Axiom(conclusion)
 
-  def dischargeAxiom(label: Label): Derivation = this match {
-    case axiom: Axiom => axiom.copy(label = Some(label))
+  def dischargeAxiom(label: Label): Axiom = {
+    val Axiom(formula, _) = this
+    Axiom(formula, label = Some(label))
   }
 
-  def undischargeAxiom: Derivation = this match {
-    case axiom: Axiom => axiom.copy(label = None)
+  def undischargeAxiom: Axiom = {
+    val Axiom(formula, _) = this
+    Axiom(formula, label = None)
   }
 
   def nextFreshLabel: Label = freshLabel(this.labels)
@@ -150,6 +177,7 @@ sealed trait Derivation {
     case d: NegationIntroduction => d.copy(label = Some(newLabel))
     case d: DisjunctionElimination if childChoice == 1 => d.copy(leftLabel = Some(newLabel))
     case d: DisjunctionElimination if childChoice == 2 => d.copy(rightLabel = Some(newLabel))
+    case _ => throw new RuntimeException(s"Cannot set child label in derivation $this")
   }
 
   def bindingsForChild(childChoice: ChildIndex): Map[Label, Formula] = this match {

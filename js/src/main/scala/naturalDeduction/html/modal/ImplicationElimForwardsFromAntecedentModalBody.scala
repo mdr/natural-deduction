@@ -4,13 +4,15 @@ import japgolly.scalajs.react.vdom.VdomNode
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{Callback, ScalaComponent}
 import naturalDeduction.Derivation.ImplicationElimination
+import naturalDeduction.html.DerivationComponent
 import naturalDeduction.html.ReactUtils.getTargetValueThen
-import naturalDeduction.html.{DerivationComponent, DerivationProps}
 
 object ImplicationElimForwardsFromAntecedentModalBody {
 
   case class Props(modalState: ImplicationElimForwardsFromAntecedentModalState,
-                   onChangeModalFormula: String => Callback)
+                   onChangeModalFormula: String => Callback){
+    def make: VdomNode = component(this)
+  }
 
   //noinspection TypeAnnotation
   val component = ScalaComponent.builder[Props]
@@ -25,7 +27,7 @@ object ImplicationElimForwardsFromAntecedentModalBody {
     val derivation = ImplicationElimination(antecedent, consequent)
     <.div(
       <.div(^.`class` := "d-flex justify-content-center",
-        DerivationComponent.component(DerivationProps(derivation))
+        DerivationComponent.Props(derivation).make
       ),
       <.br(),
       <.div(^.className := "form-row align-items-center",

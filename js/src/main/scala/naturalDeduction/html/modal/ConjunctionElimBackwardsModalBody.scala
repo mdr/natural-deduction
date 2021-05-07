@@ -3,9 +3,9 @@ package naturalDeduction.html.modal
 import japgolly.scalajs.react.vdom.VdomNode
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{Callback, ScalaComponent}
+import naturalDeduction.html.DerivationComponent
 import naturalDeduction.html.ReactUtils.getTargetValueThen
 import naturalDeduction.html.modal.ConjunctionElimBackwardsModalState.conjunctionEliminationDerivation
-import naturalDeduction.html.{DerivationComponent, DerivationProps}
 
 object ConjunctionElimBackwardsModalBody {
 
@@ -13,7 +13,9 @@ object ConjunctionElimBackwardsModalBody {
                     modalState: ConjunctionElimBackwardsModalState,
                     onChangeModalFormula: String => Callback,
                     onSwapConjuncts: Callback,
-                  )
+                  ) {
+    def make: VdomNode = component(this)
+  }
 
   //noinspection TypeAnnotation
   val component = ScalaComponent.builder[Props]
@@ -27,7 +29,7 @@ object ConjunctionElimBackwardsModalBody {
     val derivation = conjunctionEliminationDerivation(conclusion, modalState.formula, conjunctToPick)
     <.div(
       <.div(^.`class` := "d-flex justify-content-center",
-        DerivationComponent.component(DerivationProps(derivation))
+        DerivationComponent.Props(derivation).make
       ),
       <.br(),
       <.div(^.className := "form-row align-items-center",

@@ -5,26 +5,26 @@ import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{Callback, ScalaComponent}
 import naturalDeduction.html.TooltipUtils.activateTooltip
 
-case class CardButtonBarProps(
-                               onDuplicateDerivation: Callback,
-                               onDeleteDerivation: Callback,
-                             )
-
 object CardButtonBar {
 
+  case class Props(onDuplicateDerivation: Callback,
+                   onDeleteDerivation: Callback) {
+    def make: VdomNode = component(this)
+  }
+
   //noinspection TypeAnnotation
-  val component = ScalaComponent.builder[CardButtonBarProps]
+  val component = ScalaComponent.builder[Props]
     .render_P(render)
     .build
 
-  private def render(props: CardButtonBarProps): VdomTag =
+  private def render(props: Props): VdomTag =
     <.div(^.`class` := "btn-group float-right", ^.role := "group",
       DuplicateButton(props),
       DeleteButton(props),
     )
 
   private val DuplicateButton =
-    ScalaComponent.builder[CardButtonBarProps]("DuplicateButton")
+    ScalaComponent.builder[Props]("DuplicateButton")
       .render_P(props =>
         <.button(
           ^.`class` := "btn btn-outline-secondary",
@@ -38,7 +38,7 @@ object CardButtonBar {
       .build
 
   private val DeleteButton =
-    ScalaComponent.builder[CardButtonBarProps]("DeleteButton")
+    ScalaComponent.builder[Props]("DeleteButton")
       .render_P(props =>
         <.button(
           ^.`class` := "btn btn-outline-secondary",

@@ -4,7 +4,7 @@ import ljt.LJTTheoremProver
 import naturalDeduction.Derivation.{Axiom, RichFormula}
 import naturalDeduction.html.modal._
 import naturalDeduction.parser.FormulaParser
-import naturalDeduction.{Derivation, DerivationPath, EquivalenceDirection, Formula}
+import naturalDeduction.{ChildIndex, Derivation, DerivationPath, EquivalenceDirection, Formula}
 
 case class State(
                   newFormulaText: String = "",
@@ -68,8 +68,7 @@ case class State(
   }
 
   private def acceptNewDerivation(derivation: Derivation): State =
-    withUndo(
-      copy(derivations = derivations :+ derivation, newFormulaText = ""))
+    withUndo(copy(derivations = derivations :+ derivation, newFormulaText = ""))
 
   // Manipulate derivation
 
@@ -84,21 +83,32 @@ case class State(
   def conjunctionIntroBackwards(derivationIndex: DerivationIndex, path: DerivationPath): State =
     transformDerivation(derivationIndex, _.transform(path, _.conjunctionIntroBackwards))
 
-  def equivalenceIntroBackwards(derivationIndex: DerivationIndex, path: DerivationPath): State =
-    transformDerivation(derivationIndex, _.transform(path, _.equivalenceIntroBackwards))
-
-  def equivalenceElimBackwards(derivationIndex: DerivationIndex, path: DerivationPath, direction: EquivalenceDirection): State =
-    transformDerivation(derivationIndex, _.transform(path, _.equivalenceElimBackwards(direction)))
-
   def implicationIntroBackwards(derivationIndex: DerivationIndex, path: DerivationPath): State =
     transformDerivation(derivationIndex, implicationIntroBackwards(path))
 
   private def implicationIntroBackwards(path: DerivationPath)(derivation: Derivation): Derivation =
     derivation.transform(path, _.implicationIntroBackwards(derivation.nextFreshLabel))
 
+  def equivalenceIntroBackwards(derivationIndex: DerivationIndex, path: DerivationPath): State =
+    transformDerivation(derivationIndex, _.transform(path, _.equivalenceIntroBackwards))
+
+  def equivalenceElimBackwards(derivationIndex: DerivationIndex, path: DerivationPath, direction: EquivalenceDirection): State =
+    transformDerivation(derivationIndex, _.transform(path, _.equivalenceElimBackwards(direction)))
+
+  def conjunctionElimForwards(derivationIndex: DerivationIndex, child: ChildIndex): State =
+    transformDerivation(derivationIndex, _.conjunctionElimForwards(child))
+
+  def implicationElimForwardsFromImplication(derivationIndex: DerivationIndex): State =
+    transformDerivation(derivationIndex, _.implicationElimForwardsFromImplication)
+
+  def inlineDerivation(derivationIndex: DerivationIndex, path: DerivationPath, derivationIndexToInline: DerivationIndex): State =
+    transformDerivation(derivationIndex, _.set(path, derivations(derivationIndexToInline)))
+
   // Modal
 
-  def closeModal: State = copy(modalState = None)
+  def confirmModal: State = modalState.map(_.complete(this)).getOrElse(this).closeModal
+
+  private def closeModal: State = copy(modalState = None)
 
   def updateModalState(f: ModalState => ModalState): State = copy(modalState = modalState map f)
 
@@ -107,31 +117,35 @@ case class State(
   def withModalFormula(newValue: String): State = updateModalState(_.withModalFormula(newValue))
 
   def showConjunctionElimBackwardsModal(derivationIndex: DerivationIndex, path: DerivationPath): State = {
-    val conclusion = derivationFormula(derivationIndex, path)
+    val conclusion = getDerivationConclusion(derivationIndex, path)
     copy(modalState = Some(ConjunctionElimBackwardsModalState(derivationIndex, path, conclusion)))
   }
 
   def showConjunctionIntroForwardsModal(derivationIndex: DerivationIndex): State = {
-    val conclusion = derivationFormula(derivationIndex)
+    val conclusion = getDerivationConclusion(derivationIndex)
     copy(modalState = Some(ConjunctionIntroForwardsModalState(derivationIndex, conclusion)))
   }
 
+  def showNegationElimBackwardsModal(derivationIndex: DerivationIndex, path: DerivationPath): State = {
+    copy(modalState = Some(NegationElimBackwardsModalState(derivationIndex, path)))
+  }
+
   def showImplicationElimBackwardsModal(derivationIndex: DerivationIndex, path: DerivationPath): State = {
-    val consequent = derivationFormula(derivationIndex, path)
+    val consequent = getDerivationConclusion(derivationIndex, path)
     copy(modalState = Some(ImplicationElimBackwardsModalState(derivationIndex, path, consequent)))
   }
 
   def showImplicationIntroForwardsModal(derivationIndex: DerivationIndex): State = {
-    val conclusion = derivationFormula(derivationIndex)
+    val conclusion = getDerivationConclusion(derivationIndex)
     copy(modalState = Some(ImplicationIntroForwardsModalState(derivationIndex, conclusion)))
   }
 
   def showImplicationElimForwardsFromAntecedentModal(derivationIndex: DerivationIndex): State = {
-    val antecedent = derivationFormula(derivationIndex)
+    val antecedent = getDerivationConclusion(derivationIndex)
     copy(modalState = Some(ImplicationElimForwardsFromAntecedentModalState(derivationIndex, antecedent)))
   }
 
-  private def derivationFormula(derivationIndex: DerivationIndex, path: DerivationPath = DerivationPath.empty): Formula =
+  private def getDerivationConclusion(derivationIndex: DerivationIndex, path: DerivationPath = DerivationPath.empty): Formula =
     getDerivation(derivationIndex).get(path).conclusion
 
 }
