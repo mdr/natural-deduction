@@ -3,35 +3,29 @@ package naturalDeduction.html.modal
 import naturalDeduction.Derivation._
 import naturalDeduction.Formula._
 import naturalDeduction._
-import naturalDeduction.html.{DerivationIndex, State}
-import naturalDeduction.html.modal.ConjunctionElimBackwardsModalState.conjunctionEliminationDerivation
 import naturalDeduction.html.modal.ConjunctionIntroForwardsModalState.conjunctionIntroductionDerivation
+import naturalDeduction.html.{DerivationIndex, State}
 import naturalDeduction.parser.FormulaParser
 
 sealed trait ModalState {
   val formulaText: String
 
-  def withModalFormula(newValue: String): ModalState
+  def withFormulaText(newValue: String): ModalState
 
   val formula: Formula =
-    FormulaParser.tryParseFormula(formulaText).toOption.getOrElse(PropositionalVariable("?"))
+    FormulaParser.tryParseFormula(formulaText).toOption getOrElse PropositionalVariable("?")
 
   def title: String
 
   def swapConjuncts: ModalState = this
 
-  def canComplete: Boolean
+  def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
 
   def complete(state: State): State
 }
 
 object ConjunctionElimBackwardsModalState {
 
-  def conjunctionEliminationDerivation(conjunct1: Formula, conjunct2: Formula, conjunctToPick: Int): Derivation =
-    conjunctToPick match {
-      case 0 => LeftConjunctionElimination(Axiom(Conjunction(conjunct1, conjunct2)))
-      case 1 => RightConjunctionElimination(Axiom(Conjunction(conjunct2, conjunct1)))
-    }
 
 }
 
@@ -42,19 +36,50 @@ case class ConjunctionElimBackwardsModalState(derivationIndex: DerivationIndex,
                                               formulaText: String = "") extends ModalState {
   def title: String = "∧-Elimination Backwards"
 
-  def withModalFormula(newText: String): ModalState = copy(formulaText = newText)
+  def withFormulaText(newText: String): ModalState = copy(formulaText = newText)
 
   override def swapConjuncts: ModalState = copy(conjunctToPick = if (conjunctToPick == 0) 1 else 0)
 
-  override def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
-
-  override def complete(state: State): State = {
-    val newFormula = FormulaParser.parseFormula(formulaText)
-    val newDerivation: Derivation = conjunctionEliminationDerivation(conclusion, newFormula, conjunctToPick)
+  override def complete(state: State): State =
     state.transformDerivation(derivationIndex, _.set(path, newDerivation))
-  }
+
+  def newDerivation: Derivation = conjunctionEliminationDerivation(conclusion, formula, conjunctToPick)
+
+  private def conjunctionEliminationDerivation(conjunct1: Formula, conjunct2: Formula, conjunctToPick: Int): Derivation =
+    conjunctToPick match {
+      case 0 => LeftConjunctionElimination(Axiom(Conjunction(conjunct1, conjunct2)))
+      case 1 => RightConjunctionElimination(Axiom(Conjunction(conjunct2, conjunct1)))
+    }
 }
 
+case class ImplicationElimBackwardsModalState(derivationIndex: DerivationIndex,
+                                              path: DerivationPath,
+                                              consequent: Formula,
+                                              formulaText: String = "") extends ModalState {
+  def title: String = "→-Elimination Backwards"
+
+  def withFormulaText(newText: String): ModalState = copy(formulaText = newText)
+
+  override def swapConjuncts: ModalState = this
+
+  override def complete(state: State): State =
+    state.transformDerivation(derivationIndex, _.set(path, newDerivation))
+
+  def newDerivation: ImplicationElimination = ImplicationElimination(formula, consequent)
+}
+
+case class NegationElimBackwardsModalState(derivationIndex: DerivationIndex,
+                                           path: DerivationPath,
+                                           formulaText: String = "") extends ModalState {
+  def title: String = "¬-Elimination Backwards"
+
+  def withFormulaText(newText: String): ModalState = copy(formulaText = newText)
+
+  override def complete(state: State): State =
+    state.transformDerivation(derivationIndex, _.set(path, newDerivation))
+
+  def newDerivation: NegationElimination = NegationElimination(formula.axiom, formula.not.axiom)
+}
 
 object ConjunctionIntroForwardsModalState {
 
@@ -72,71 +97,15 @@ case class ConjunctionIntroForwardsModalState(derivationIndex: DerivationIndex,
                                               formulaText: String = "") extends ModalState {
   def title: String = "∧-Introduction Forwards"
 
-  def withModalFormula(newText: String): ModalState = copy(formulaText = newText)
+  def withFormulaText(newText: String): ModalState = copy(formulaText = newText)
 
   override def swapConjuncts: ModalState = copy(conjunctToPick = if (conjunctToPick == 0) 1 else 0)
 
-  override def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
-
-  override def complete(state: State): State =
-    state.transformDerivation(derivationIndex, existingConjunctDerivation => {
-      val newConjunct = FormulaParser.parseFormula(formulaText)
-      conjunctionIntroductionDerivation(existingConjunctDerivation, newConjunct, conjunctToPick)
-    })
-}
-
-case class ImplicationElimBackwardsModalState(derivationIndex: DerivationIndex,
-                                              path: DerivationPath,
-                                              consequent: Formula,
-                                              formulaText: String = "") extends ModalState {
-  def title: String = "→-Elimination Backwards"
-
-  def withModalFormula(newText: String): ModalState = copy(formulaText = newText)
-
-  override def swapConjuncts: ModalState = this
-
-  override def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
-
   override def complete(state: State): State = {
-    val newFormula = FormulaParser.parseFormula(formulaText)
-    val newDerivation = ImplicationElimination(newFormula, consequent)
-    state.transformDerivation(derivationIndex, _.set(path, newDerivation))
+    val newConjunct = FormulaParser.parseFormula(formulaText)
+    state.transformDerivation(derivationIndex, existingConjunctDerivation =>
+      conjunctionIntroductionDerivation(existingConjunctDerivation, newConjunct, conjunctToPick))
   }
-}
-
-
-case class ImplicationElimForwardsFromAntecedentModalState(derivationIndex: DerivationIndex,
-                                                           antecedent: Formula,
-                                                           formulaText: String = "") extends ModalState {
-  def title: String = "→-Elimination Forwards"
-
-  def withModalFormula(newText: String): ModalState = copy(formulaText = newText)
-
-  override def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
-
-  override def complete(state: State): State =
-    state.transformDerivation(derivationIndex, antecedentDerivation => {
-      val consequent = FormulaParser.parseFormula(formulaText)
-      ImplicationElimination(antecedentDerivation, (antecedent → consequent).axiom)
-    })
-
-}
-
-case class NegationElimBackwardsModalState(derivationIndex: DerivationIndex,
-                                           path: DerivationPath,
-                                           formulaText: String = "") extends ModalState {
-  def title: String = "¬-Elimination Backwards"
-
-  def withModalFormula(newText: String): ModalState = copy(formulaText = newText)
-
-  override def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
-
-  override def complete(state: State): State =
-    state.transformDerivation(derivationIndex, _.set(path, {
-      val formula = FormulaParser.parseFormula(formulaText)
-      NegationElimination(formula.axiom, formula.not.axiom)
-    }))
-
 }
 
 case class ImplicationIntroForwardsModalState(derivationIndex: DerivationIndex,
@@ -144,14 +113,27 @@ case class ImplicationIntroForwardsModalState(derivationIndex: DerivationIndex,
                                               formulaText: String = "") extends ModalState {
   def title: String = "→-Introduction Forwards"
 
-  def withModalFormula(newText: String): ModalState = copy(formulaText = newText)
+  def withFormulaText(newText: String): ModalState = copy(formulaText = newText)
 
-  override def canComplete: Boolean = FormulaParser.tryParseFormula(formulaText).isRight
+  override def complete(state: State): State = {
+    val antecedent = FormulaParser.parseFormula(formulaText)
+    state.transformDerivation(derivationIndex, consequentDerivation =>
+      ImplicationIntroduction(antecedent, Some(consequentDerivation.nextFreshLabel), consequentDerivation))
+  }
 
-  override def complete(state: State): State =
-    state.transformDerivation(derivationIndex, consequentDerivation => {
-      val antecedent = FormulaParser.parseFormula(formulaText)
-      ImplicationIntroduction(antecedent, Some(consequentDerivation.nextFreshLabel), consequentDerivation)
-    })
+}
+
+case class ImplicationElimForwardsFromAntecedentModalState(derivationIndex: DerivationIndex,
+                                                           antecedent: Formula,
+                                                           formulaText: String = "") extends ModalState {
+  def title: String = "→-Elimination Forwards"
+
+  def withFormulaText(newText: String): ModalState = copy(formulaText = newText)
+
+  override def complete(state: State): State = {
+    val consequent = FormulaParser.parseFormula(formulaText)
+    state.transformDerivation(derivationIndex, antecedentDerivation =>
+      ImplicationElimination(antecedentDerivation, (antecedent → consequent).axiom))
+  }
 
 }

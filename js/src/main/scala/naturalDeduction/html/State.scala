@@ -114,7 +114,7 @@ case class State(
 
   def swapConjuncts: State = updateModalState(_.swapConjuncts)
 
-  def withModalFormula(newValue: String): State = updateModalState(_.withModalFormula(newValue))
+  def withModalFormula(newValue: String): State = updateModalState(_.withFormulaText(newValue))
 
   def showConjunctionElimBackwardsModal(derivationIndex: DerivationIndex, path: DerivationPath): State = {
     val conclusion = getDerivationConclusion(derivationIndex, path)

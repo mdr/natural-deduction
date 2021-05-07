@@ -12,7 +12,7 @@ object ImplicationIntroForwardsModalBody {
   case class Props(
                     modalState: ImplicationIntroForwardsModalState,
                     onChangeModalFormula: String => Callback,
-                  ){
+                  ) {
     def make: VdomNode = component(this)
   }
 
