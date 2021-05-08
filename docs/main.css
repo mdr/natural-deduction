@@ -111,6 +111,7 @@ a.dropdown {
 
 .rule-bottom-main {
     border-top: 1px black solid;
+    border-bottom: 2px green solid;
     flex-grow: 1;
 
     /* To center: */
