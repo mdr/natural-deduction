@@ -3,7 +3,9 @@ package ljt
 import naturalDeduction.Sequent
 import naturalDeduction.Sequent._
 import naturalDeduction.TestConstants._
+import naturalDeduction.parser.FormulaParser
 import naturalDeduction.parser.FormulaParser.parseSequent
+import naturalDeduction.pretty.DerivationSerialiser
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -87,6 +89,10 @@ class LJTTheoremProverSpec extends AnyFlatSpec with Matchers {
   private def checkCanProve(sequent: Sequent): Unit = {
     val Some(derivation) = LJTTheoremProver.prove(sequent)
     derivation.proves(sequent) shouldBe true
+
+    // Bonus serialisation test because I'm lazy:
+    val derivationAgain = FormulaParser.parseDerivation(DerivationSerialiser.serialise(derivation))
+    derivationAgain shouldBe derivation
   }
 
 }
