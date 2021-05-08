@@ -22,7 +22,7 @@ object App {
             ),
           ),
         ),
-        Modal.Props(state.modalState, onChangeModalFormula, onSwapConjuncts, onConfirmModal).make,
+        Modal.Props(state.modalState, onChangeModalFormula, onSwapConjuncts, onSwapDisjuncts, onConfirmModal).make,
         <.div(^.`class` := "container",
           <.p(),
           MainButtonBar.Props(state.undoRedo, onUndo, onRedo).make,
@@ -79,8 +79,7 @@ object App {
     private def onChangeModalFormula(newFormula: String): Callback =
       modState(_.withModalFormula(newFormula))
 
-    private def onConfirmModal: Callback =
-      hideModal >> modState(_.confirmModal)
+    private def onConfirmModal: Callback = hideModal >> modState(_.confirmModal)
 
     private val showModal: Callback = Callback {
       global.$(s"#${Modal.Id}").modal()
@@ -91,6 +90,8 @@ object App {
     }
 
     private def onSwapConjuncts: Callback = modState(_.swapConjuncts)
+
+    private def onSwapDisjuncts: Callback = modState(_.swapDisjuncts)
 
     // Undo/redo
 
@@ -137,8 +138,17 @@ object App {
     private def onEquivalenceElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath, direction: EquivalenceDirection): Callback =
       modState(_.equivalenceElimBackwards(derivationIndex, path, direction))
 
+    private def onNegationIntroBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
+      modState(_.negationIntroBackwards(derivationIndex, path))
+
     private def onNegationElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.showNegationElimBackwardsModal(derivationIndex, path)) >> showModal
+
+    private def onReductioBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
+      modState(_.reductioBackwards(derivationIndex, path))
+
+    private def onDisjunctionIntroBackwards(derivationIndex: DerivationIndex)(path: DerivationPath, childIndex: ChildIndex): Callback =
+      modState(_.disjunctionIntroBackwards(derivationIndex, path, childIndex))
 
     private def onConjunctionIntroForwards(derivationIndex: DerivationIndex): Callback =
       modState(_.showConjunctionIntroForwardsModal(derivationIndex)) >> showModal
@@ -161,6 +171,24 @@ object App {
     private def onEquivalenceElimForwards(derivationIndex: DerivationIndex)(direction: EquivalenceDirection): Callback =
       modState(_.transformDerivation(derivationIndex, _.equivalenceElimForwards(direction)))
 
+    private def onNegationIntroForwards(derivationIndex: DerivationIndex): Callback =
+      modState(_.showNegationIntroForwardsModal(derivationIndex)) >> showModal
+
+    private def onNegationElimForwardsFromPositive(derivationIndex: DerivationIndex): Callback =
+      modState(_.transformDerivation(derivationIndex, _.negationElimForwardsFromPositive))
+
+    private def onNegationElimForwardsFromNegative(derivationIndex: DerivationIndex): Callback =
+      modState(_.transformDerivation(derivationIndex, _.negationElimForwardsFromNegative))
+
+    private def onReductioForwards(derivationIndex: DerivationIndex): Callback =
+      modState(_.showReductioForwardsModal(derivationIndex)) >> showModal
+
+    private def onDisjunctionIntroForwards(derivationIndex: DerivationIndex): Callback =
+      modState(_.showDisjunctionIntroForwardsModal(derivationIndex)) >> showModal
+
+    private def onDisjunctionElimForwardsFromDisjunction(derivationIndex: DerivationIndex): Callback =
+      modState(_.showDisjunctionElimForwardsFromDisjunctionModal(derivationIndex)) >> showModal
+
     private def onInlineDerivation(derivationIndex: DerivationIndex)(path: DerivationPath, derivationIndexToInline: DerivationIndex): Callback =
       modState(_.inlineDerivation(derivationIndex, path, derivationIndexToInline))
 
@@ -177,7 +205,7 @@ object App {
       modState(_.transformDerivation(derivationIndex, _.transform(path, _.undischargeAxiom)))
 
     private def manipulationInfo(derivationIndex: DerivationIndex,
-                                 formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]]): ManipulationInfo = {
+                                 formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]]): ManipulationInfo =
       ManipulationInfo(
         onConjunctionIntroBackwards(derivationIndex),
         onConjunctionElimBackwards(derivationIndex),
@@ -185,7 +213,10 @@ object App {
         onImplicationElimBackwards(derivationIndex),
         onEquivalenceIntroBackwards(derivationIndex),
         onEquivalenceElimBackwards(derivationIndex),
+        onNegationIntroBackwards(derivationIndex),
         onNegationElimBackwards(derivationIndex),
+        onReductioBackwards(derivationIndex),
+        onDisjunctionIntroBackwards(derivationIndex),
         onConjunctionIntroForwards(derivationIndex),
         onConjunctionElimForwards(derivationIndex),
         onImplicationIntroForwards(derivationIndex),
@@ -193,6 +224,12 @@ object App {
         onImplicationElimForwardsFromImplication(derivationIndex),
         onEquivalenceIntroForwards(derivationIndex),
         onEquivalenceElimForwards(derivationIndex),
+        onNegationIntroForwards(derivationIndex),
+        onNegationElimForwardsFromPositive(derivationIndex),
+        onNegationElimForwardsFromNegative(derivationIndex),
+        onReductioForwards(derivationIndex),
+        onDisjunctionIntroForwards(derivationIndex),
+        onDisjunctionElimForwardsFromDisjunction(derivationIndex),
         onRemoveDerivation(derivationIndex),
         onInlineDerivation(derivationIndex),
         onDischargeAssumption(derivationIndex),
@@ -201,7 +238,6 @@ object App {
         onExtractSubderivation(derivationIndex),
         derivationIndex,
         formulaToDerivationIndices)
-    }
 
     def componentDidMount: Callback = Callback {
       Mousetrap.bind(Seq("command+z", "ctrl+z").toJSArray, _ => onUndo.runNow())

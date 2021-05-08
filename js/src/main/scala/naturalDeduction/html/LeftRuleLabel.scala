@@ -12,7 +12,7 @@ object LeftRuleLabel {
     def make: VdomNode = component(this)
   }
 
-  //noinspection TypeAnnotation
+  //noinspection TypeAnnotationmain
   val component =
     ScalaComponent.builder[Props]("LeftRuleLabel")
       .render_P(render)
@@ -21,11 +21,11 @@ object LeftRuleLabel {
       })
       .build
 
-  def render(props: Props): VdomTag =
+  private def render(props: Props): VdomTag =
     <.div(
-      ^.`class` := "rule-bottom-left-label",
+      ^.className := s"rule-bottom-left-label ${if (props.labelToFormula.size > 1) "wide-label" else "narrow-label"}",
       ^.title := tooltipContents(props),
-      props.labelToFormula.keys.mkString(""))
+      props.labelToFormula.keys.toSeq.sorted.mkString)
 
   private def tooltipContents(props: Props): String =
     props.labelToFormula

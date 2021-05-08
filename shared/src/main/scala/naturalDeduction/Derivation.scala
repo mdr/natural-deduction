@@ -41,6 +41,14 @@ sealed trait Derivation {
       case 1 => RightConjunctionElimination(this)
     }
 
+  def disjunctionIntroBackwards(child: ChildIndex): Derivation = {
+    val Disjunction(disjunct1, disjunct2) = conclusion
+    child match {
+      case 0 => LeftDisjunctionIntroduction(disjunct1.axiom, disjunct2)
+      case 1 => RightDisjunctionIntroduction(disjunct1, disjunct2.axiom)
+    }
+  }
+
   def implicationElimForwardsFromImplication: ImplicationElimination = {
     val Implication(antecedent, _) = conclusion
     ImplicationElimination(Axiom(antecedent), this)
@@ -59,6 +67,22 @@ sealed trait Derivation {
       case EquivalenceDirection.Forwards => ForwardsEquivalenceElimination(this)
       case EquivalenceDirection.Backwards => BackwardsEquivalenceElimination(this)
     }
+
+  def negationElimForwardsFromPositive: NegationElimination =
+    NegationElimination(this, conclusion.not.axiom)
+
+  def negationElimForwardsFromNegative: NegationElimination = {
+    val Negation(formula) = conclusion
+    NegationElimination(formula.axiom, this)
+  }
+
+  def negationIntroBackwards(label: Label): NegationIntroduction = {
+    val Negation(formula) = conclusion
+    NegationIntroduction(formula, label, ⊥.axiom)
+  }
+
+  def reductioBackwards(label: Label): ReductioAdAbsurdum =
+    ReductioAdAbsurdum(conclusion, label, ⊥.axiom)
 
   def everywhere(pf: PartialFunction[Derivation, Derivation]): Derivation = {
     def f(derivation: Derivation): Derivation = pf.lift(derivation).getOrElse(derivation)

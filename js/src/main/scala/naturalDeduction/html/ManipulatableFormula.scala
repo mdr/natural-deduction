@@ -3,8 +3,10 @@ package naturalDeduction.html
 import japgolly.scalajs.react.ScalaComponent
 import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation.Axiom
-import naturalDeduction.Formula.{Conjunction, Equivalence, Implication, ⊥}
+import naturalDeduction.Formula.{Conjunction, Disjunction, Equivalence, Implication, Negation, ⊥}
 import naturalDeduction.{Derivation, DerivationPath, EquivalenceDirection, Formula, Label}
+
+import scala.PartialFunction.cond
 
 object ManipulatableFormula {
 
@@ -18,7 +20,7 @@ object ManipulatableFormula {
                    manipulationInfo: ManipulationInfo,
                    label: Option[Label] = None,
                    isDischarged: Boolean = false,
-                   bindings: Map[Label, Formula] = Map.empty){
+                   bindings: Map[Label, Formula] = Map.empty) {
     def make: VdomNode = component(this)
   }
 
@@ -77,8 +79,16 @@ object ManipulatableFormula {
           .when(canEquivalenceElimBackwards(derivation)),
         <.div(^.className := "dropdown-item", ^.href := "#", "↔-Elimination (pick backwards)", ^.onClick --> onEquivalenceElimBackwards(path, EquivalenceDirection.Backwards))
           .when(canEquivalenceElimBackwards(derivation)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "¬-Introduction", ^.onClick --> onNegationIntroBackwards(path))
+          .when(canNegationIntroBackwards(derivation)),
         <.div(^.className := "dropdown-item", ^.href := "#", "¬-Elimination...", ^.onClick --> onNegationElimBackwards(path))
           .when(canNegationElimBackwards(derivation)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "Reductio ad absurdum", ^.onClick --> onReductioBackwards(path))
+          .when(derivation.isAxiom),
+        <.div(^.className := "dropdown-item", ^.href := "#", "∨-Introduction (pick left)", ^.onClick --> onDisjunctionIntroBackwards(path, 0))
+          .when(canDisjunctionIntroBackwards(derivation)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "∨-Introduction (pick right)", ^.onClick --> onDisjunctionIntroBackwards(path, 1))
+          .when(canDisjunctionIntroBackwards(derivation)),
 
         <.div(^.`class` := "dropdown-divider")
           .when(backwardsRulesPossible && forwardsRulesPossible),
@@ -96,7 +106,7 @@ object ManipulatableFormula {
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as antecedent)...", ^.onClick --> onImplicationElimForwardsFromAntecedent)
           .when(path.isRoot),
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as implication)", ^.onClick --> onImplicationElimForwardsFromImplication)
-          .when(path.isRoot && derivation.conclusion.isInstanceOf[Implication]),
+          .when(canImplicationElimForwardsFromImplication(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "↔-Introduction (as forward implication)", ^.onClick --> onEquivalenceIntroForwards(EquivalenceDirection.Forwards))
           .when(canEquivalenceIntroForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "↔-Introduction (as backwards implication)", ^.onClick --> onEquivalenceIntroForwards(EquivalenceDirection.Backwards))
@@ -105,7 +115,18 @@ object ManipulatableFormula {
           .when(canEquivalenceElimForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "↔-Elimination (pick backwards)", ^.onClick --> onEquivalenceElimForwards(EquivalenceDirection.Backwards))
           .when(canEquivalenceElimForwards(derivation, path)),
-
+        <.div(^.className := "dropdown-item", ^.href := "#", "¬Introduction...", ^.onClick --> onNegationIntroForwards)
+          .when(canNegationIntroForwards(derivation, path)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "¬Elimination (as positive)", ^.onClick --> onNegationElimForwardsFromPositive)
+          .when(path.isRoot),
+        <.div(^.className := "dropdown-item", ^.href := "#", "¬Elimination (as negative)", ^.onClick --> onNegationElimForwardsFromNegative)
+          .when(canNegationElimForwardsFromNegative(derivation, path)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "Reductio ad absurdum...", ^.onClick --> onReductioForwards)
+          .when(canReductioForwards(derivation, path)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "∨-Introduction...", ^.onClick --> onDisjunctionIntroForwards)
+          .when(path.isRoot),
+        <.div(^.className := "dropdown-item", ^.href := "#", "∨-Elimination (as disjunction)...", ^.onClick --> onDisjunctionElimForwardsFromDisjunction)
+          .when(canDisjunctionElimForwardsFromDisjunction(derivation, path)),
         <.div(^.`class` := "dropdown-divider")
           .when(otherActionsPossible && (forwardsRulesPossible || backwardsRulesPossible)),
 
@@ -128,7 +149,7 @@ object ManipulatableFormula {
     )
   }
 
-  private def canUndischargeAxiom(derivation: Derivation): Boolean = PartialFunction.cond(derivation) {
+  private def canUndischargeAxiom(derivation: Derivation): Boolean = cond(derivation) {
     case Axiom(_, Some(_)) => true
   }
 
@@ -144,16 +165,37 @@ object ManipulatableFormula {
   private def canImplicationIntroBackwards(derivation: Derivation): Boolean =
     derivation.isAxiom && derivation.conclusion.isInstanceOf[Implication]
 
+  private def canNegationIntroBackwards(derivation: Derivation): Boolean =
+    derivation.isAxiom && derivation.conclusion.isInstanceOf[Negation]
+
   private def canNegationElimBackwards(derivation: Derivation): Boolean =
     derivation.isAxiom && derivation.conclusion == ⊥
 
+  private def canDisjunctionIntroBackwards(derivation: Derivation): Boolean =
+    derivation.isAxiom && derivation.conclusion.isInstanceOf[Disjunction]
+
   private def canConjunctionElimForwards(derivation: Derivation, path: DerivationPath): Boolean =
     path.isRoot && derivation.conclusion.isInstanceOf[Conjunction]
+
+  private def canImplicationElimForwardsFromImplication(derivation: Derivation, path: DerivationPath): Boolean =
+    path.isRoot && derivation.conclusion.isInstanceOf[Implication]
 
   private def canEquivalenceIntroForwards(derivation: Derivation, path: DerivationPath): Boolean =
     path.isRoot && derivation.conclusion.isInstanceOf[Implication]
 
   private def canEquivalenceElimForwards(derivation: Derivation, path: DerivationPath): Boolean =
     path.isRoot && derivation.conclusion.isInstanceOf[Equivalence]
+
+  private def canNegationElimForwardsFromNegative(derivation: Derivation, path: DerivationPath): Boolean =
+    path.isRoot && derivation.conclusion.isInstanceOf[Negation]
+
+  private def canNegationIntroForwards(derivation: Derivation, path: DerivationPath): Boolean =
+    path.isRoot && derivation.conclusion == ⊥
+
+  private def canReductioForwards(derivation: Derivation, path: DerivationPath): Boolean =
+    path.isRoot && derivation.conclusion == ⊥
+
+  private def canDisjunctionElimForwardsFromDisjunction(derivation: Derivation, path: DerivationPath): Boolean =
+    path.isRoot && derivation.conclusion.isInstanceOf[Disjunction]
 
 }

@@ -10,6 +10,7 @@ object Modal {
                          modalState: Option[ModalState],
                          onChangeModalFormula: String => Callback,
                          onSwapConjuncts: Callback,
+                         onSwapDisjuncts: Callback,
                          onConfirmModal: Callback,
                        ){
     def make: VdomNode = component(this)
@@ -57,6 +58,8 @@ object Modal {
         ConjunctionElimBackwardsModalBody.Props(state, onChangeModalFormula, onSwapConjuncts).make
       case state: ConjunctionIntroForwardsModalState =>
         ConjunctionIntroForwardsModalBody.Props(state, onChangeModalFormula, onSwapConjuncts).make
+      case state: DisjunctionIntroForwardsModalState =>
+        DisjunctionIntroForwardsModalBody.Props(state, onChangeModalFormula, onSwapDisjuncts).make
       case state: ImplicationElimBackwardsModalState =>
         ImplicationElimBackwardsModalBody.Props(state, onChangeModalFormula).make
       case state: ImplicationElimForwardsFromAntecedentModalState =>
@@ -65,6 +68,12 @@ object Modal {
         ImplicationIntroForwardsModalBody.Props(state, onChangeModalFormula).make
       case state: NegationElimBackwardsModalState =>
         NegationElimBackwardsModalBody.Props(state, onChangeModalFormula).make
+      case state: NegationIntroForwardsModalState =>
+        NegationIntroForwardsModalBody.Props(state, onChangeModalFormula).make
+      case state: ReductioForwardsModalState =>
+        ReductioForwardsModalBody.Props(state, onChangeModalFormula).make
+      case state: DisjunctionElimForwardsFromDisjunctionModalState =>
+        DisjunctionElimForwardsFromDisjunctionModalBody.Props(state, onChangeModalFormula).make
     })
   }
 

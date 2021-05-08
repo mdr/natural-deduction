@@ -75,7 +75,7 @@ a.dropdown {
 
 .rule-top-main-spacer {
     flex-grow: 1;
-    width: 8px;
+    width: 12px;
 }
 
 .rule-top-left-label {
@@ -83,7 +83,7 @@ a.dropdown {
 }
 
 .rule-top-right-label {
-    width: 23px;
+    width: 32px;
 }
 
 .rule-bottom {
@@ -93,16 +93,20 @@ a.dropdown {
 }
 
 .rule-bottom-left-label {
-    width: 23px;
     position: relative;
-    top: -9px;
-    /*padding-right: 4px;*/
     font-size: 85%;
 
     /* To center: */
     display: flex;
     justify-content: center;
     white-space: nowrap;
+    width: 23px;
+    top: -9px;
+}
+
+.rule-bottom-left-label.wide-label {
+    padding-right: 14px;
+
 }
 
 .rule-bottom-main {
@@ -119,7 +123,7 @@ a.dropdown {
     top: -9px;
     padding-left: 4px;
     font-size: 70%;
-    width: 23px;
+    width: 32px;
     white-space: nowrap;
 }
 

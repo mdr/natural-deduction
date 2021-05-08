@@ -2,6 +2,7 @@ package naturalDeduction.html
 
 import ljt.LJTTheoremProver
 import naturalDeduction.Derivation.{Axiom, RichFormula}
+import naturalDeduction.Formula.Disjunction
 import naturalDeduction.html.modal._
 import naturalDeduction.parser.FormulaParser
 import naturalDeduction.{ChildIndex, Derivation, DerivationPath, EquivalenceDirection, Formula}
@@ -95,6 +96,21 @@ case class State(
   def equivalenceElimBackwards(derivationIndex: DerivationIndex, path: DerivationPath, direction: EquivalenceDirection): State =
     transformDerivation(derivationIndex, _.transform(path, _.equivalenceElimBackwards(direction)))
 
+  def negationIntroBackwards(derivationIndex: DerivationIndex, path: DerivationPath): State =
+    transformDerivation(derivationIndex, negationIntroBackwards(path))
+
+  private def negationIntroBackwards(path: DerivationPath)(derivation: Derivation): Derivation =
+    derivation.transform(path, _.negationIntroBackwards(derivation.nextFreshLabel))
+
+  def reductioBackwards(derivationIndex: DerivationIndex, path: DerivationPath): State =
+    transformDerivation(derivationIndex, reductioBackwards(path))
+
+  private def reductioBackwards(path: DerivationPath)(derivation: Derivation): Derivation =
+    derivation.transform(path, _.reductioBackwards(derivation.nextFreshLabel))
+
+  def disjunctionIntroBackwards(derivationIndex: DerivationIndex, path: DerivationPath, childIndex: ChildIndex): State =
+    transformDerivation(derivationIndex, _.transform(path, _.disjunctionIntroBackwards(childIndex)))
+
   def conjunctionElimForwards(derivationIndex: DerivationIndex, child: ChildIndex): State =
     transformDerivation(derivationIndex, _.conjunctionElimForwards(child))
 
@@ -113,6 +129,8 @@ case class State(
   def updateModalState(f: ModalState => ModalState): State = copy(modalState = modalState map f)
 
   def swapConjuncts: State = updateModalState(_.swapConjuncts)
+
+  def swapDisjuncts: State = updateModalState(_.swapDisjuncts)
 
   def withModalFormula(newValue: String): State = updateModalState(_.withFormulaText(newValue))
 
@@ -143,6 +161,22 @@ case class State(
   def showImplicationElimForwardsFromAntecedentModal(derivationIndex: DerivationIndex): State = {
     val antecedent = getDerivationConclusion(derivationIndex)
     copy(modalState = Some(ImplicationElimForwardsFromAntecedentModalState(derivationIndex, antecedent)))
+  }
+
+  def showNegationIntroForwardsModal(derivationIndex: DerivationIndex): State =
+    copy(modalState = Some(NegationIntroForwardsModalState(derivationIndex)))
+
+  def showReductioForwardsModal(derivationIndex: DerivationIndex): State =
+    copy(modalState = Some(ReductioForwardsModalState(derivationIndex)))
+
+  def showDisjunctionIntroForwardsModal(derivationIndex: DerivationIndex): State = {
+    val existingDisjunct = getDerivationConclusion(derivationIndex)
+    copy(modalState = Some(DisjunctionIntroForwardsModalState(derivationIndex, existingDisjunct)))
+  }
+
+  def showDisjunctionElimForwardsFromDisjunctionModal(derivationIndex: DerivationIndex): State = {
+    val disjunction = getDerivationConclusion(derivationIndex).asInstanceOf[Disjunction]
+    copy(modalState = Some(DisjunctionElimForwardsFromDisjunctionModalState(derivationIndex, disjunction)))
   }
 
   private def getDerivationConclusion(derivationIndex: DerivationIndex, path: DerivationPath = DerivationPath.empty): Formula =
