@@ -4,7 +4,7 @@ import naturalDeduction.Derivation._
 import naturalDeduction.Formula._
 import naturalDeduction.Labels.freshLabel
 import naturalDeduction.pretty.DerivationRenderer
-import upickle.default.{macroRW, ReadWriter => RW}
+//import upickle.default.{macroRW, ReadWriter => RW}
 import util.Utils.unicodeStrikeThrough
 
 import scala.PartialFunction.{cond, condOpt}
@@ -289,30 +289,30 @@ sealed trait Derivation {
 
 object Derivation {
 
-  implicit val rw: RW[Derivation] =
-    RW.merge(
-      Axiom.rw,
-      ConjunctionIntroduction.rw,
-      LeftConjunctionElimination.rw,
-      RightConjunctionElimination.rw,
-      ImplicationIntroduction.rw,
-      ImplicationElimination.rw,
-      EquivalenceIntroduction.rw,
-      ForwardsEquivalenceElimination.rw,
-      BackwardsEquivalenceElimination.rw,
-      NegationIntroduction.rw,
-      NegationElimination.rw,
-      ReductioAdAbsurdum.rw,
-      LeftDisjunctionIntroduction.rw,
-      RightDisjunctionIntroduction.rw,
-      DisjunctionElimination.rw)
+  //implicit val rw: RW[Derivation] =
+  //    RW.merge(
+  //      Axiom.rw,
+  //      ConjunctionIntroduction.rw,
+  //      LeftConjunctionElimination.rw,
+  //      RightConjunctionElimination.rw,
+  //      ImplicationIntroduction.rw,
+  //      ImplicationElimination.rw,
+  //      EquivalenceIntroduction.rw,
+  //      ForwardsEquivalenceElimination.rw,
+  //      BackwardsEquivalenceElimination.rw,
+  //      NegationIntroduction.rw,
+  //      NegationElimination.rw,
+  //      ReductioAdAbsurdum.rw,
+  //      LeftDisjunctionIntroduction.rw,
+  //      RightDisjunctionIntroduction.rw,
+  //      DisjunctionElimination.rw)
 
   implicit class RichFormula(formula: Formula) {
     def axiom: Axiom = Axiom(formula)
   }
 
   object Axiom {
-    implicit val rw: RW[Axiom] = macroRW
+    //implicit val rw: RW[Axiom] = macroRW
 
     def apply(formula: Formula, label: Label): Axiom = Axiom(formula, Some(label))
   }
@@ -333,7 +333,7 @@ object Derivation {
   }
 
   object ConjunctionIntroduction {
-    implicit val rw: RW[ConjunctionIntroduction] = macroRW
+    //implicit val rw: RW[ConjunctionIntroduction] = macroRW
   }
 
   case class ConjunctionIntroduction(leftDerivation: Derivation, rightDerivation: Derivation) extends Derivation {
@@ -353,7 +353,7 @@ object Derivation {
   }
 
   object LeftConjunctionElimination {
-    implicit val rw: RW[LeftConjunctionElimination] = macroRW
+    //implicit val rw: RW[LeftConjunctionElimination] = macroRW
   }
 
   case class LeftConjunctionElimination(conjunctionDerivation: Derivation) extends Derivation {
@@ -373,7 +373,7 @@ object Derivation {
   }
 
   object RightConjunctionElimination {
-    implicit val rw: RW[RightConjunctionElimination] = macroRW
+    //implicit val rw: RW[RightConjunctionElimination] = macroRW
   }
 
   case class RightConjunctionElimination(conjunctionDerivation: Derivation) extends Derivation {
@@ -394,7 +394,7 @@ object Derivation {
   }
 
   object ImplicationIntroduction {
-    implicit val rw: RW[ImplicationIntroduction] = macroRW
+    //implicit val rw: RW[ImplicationIntroduction] = macroRW
 
     def apply(antecedent: Formula, consequent: Formula): ImplicationIntroduction =
       ImplicationIntroduction(antecedent, None, consequent.axiom)
@@ -432,7 +432,7 @@ object Derivation {
     def apply(antecedent: Formula, consequent: Formula): ImplicationElimination =
       ImplicationElimination(antecedent.axiom, (antecedent → consequent).axiom)
 
-    implicit val rw: RW[ImplicationElimination] = macroRW
+    //implicit val rw: RW[ImplicationElimination] = macroRW
   }
 
   case class ImplicationElimination(antecedentDerivation: Derivation, implicationDerivation: Derivation) extends Derivation {
@@ -456,7 +456,7 @@ object Derivation {
   }
 
   object EquivalenceIntroduction {
-    implicit val rw: RW[EquivalenceIntroduction] = macroRW
+    //implicit val rw: RW[EquivalenceIntroduction] = macroRW
   }
 
   case class EquivalenceIntroduction(forwardsDerivation: Derivation, backwardsDerivation: Derivation) extends Derivation {
@@ -482,7 +482,7 @@ object Derivation {
   }
 
   object ForwardsEquivalenceElimination {
-    implicit val rw: RW[ForwardsEquivalenceElimination] = macroRW
+    //implicit val rw: RW[ForwardsEquivalenceElimination] = macroRW
   }
 
   case class ForwardsEquivalenceElimination(equivalenceDerivation: Derivation) extends Derivation {
@@ -502,7 +502,7 @@ object Derivation {
   }
 
   object BackwardsEquivalenceElimination {
-    implicit val rw: RW[BackwardsEquivalenceElimination] = macroRW
+    //implicit val rw: RW[BackwardsEquivalenceElimination] = macroRW
   }
 
   case class BackwardsEquivalenceElimination(equivalenceDerivation: Derivation) extends Derivation {
@@ -522,7 +522,7 @@ object Derivation {
   }
 
   object NegationIntroduction {
-    implicit val rw: RW[NegationIntroduction] = macroRW
+    //implicit val rw: RW[NegationIntroduction] = macroRW
 
     def apply(statement: Formula, bottomDerivation: Derivation): NegationIntroduction =
       NegationIntroduction(statement, None, bottomDerivation)
@@ -552,7 +552,7 @@ object Derivation {
   }
 
   object NegationElimination {
-    implicit val rw: RW[NegationElimination] = macroRW
+    //implicit val rw: RW[NegationElimination] = macroRW
   }
 
   case class NegationElimination(positiveDerivation: Derivation, negativeDerivation: Derivation) extends Derivation {
@@ -574,7 +574,7 @@ object Derivation {
   }
 
   object ReductioAdAbsurdum {
-    implicit val rw: RW[ReductioAdAbsurdum] = macroRW
+    //implicit val rw: RW[ReductioAdAbsurdum] = macroRW
 
     def apply(conclusion: Formula, bottomDerivation: Derivation): ReductioAdAbsurdum =
       ReductioAdAbsurdum(conclusion, None, bottomDerivation)
@@ -604,7 +604,7 @@ object Derivation {
   }
 
   object LeftDisjunctionIntroduction {
-    implicit val rw: RW[LeftDisjunctionIntroduction] = macroRW
+    //implicit val rw: RW[LeftDisjunctionIntroduction] = macroRW
   }
 
   case class LeftDisjunctionIntroduction(leftDerivation: Derivation, right: Formula) extends Derivation {
@@ -622,7 +622,7 @@ object Derivation {
   }
 
   object RightDisjunctionIntroduction {
-    implicit val rw: RW[RightDisjunctionIntroduction] = macroRW
+    //implicit val rw: RW[RightDisjunctionIntroduction] = macroRW
   }
 
   case class RightDisjunctionIntroduction(left: Formula, rightDerivation: Derivation) extends Derivation {
@@ -640,7 +640,7 @@ object Derivation {
   }
 
   object DisjunctionElimination {
-    implicit val rw: RW[DisjunctionElimination] = macroRW
+    //implicit val rw: RW[DisjunctionElimination] = macroRW
   }
 
   case class DisjunctionElimination(disjunctionDerivation: Derivation,
