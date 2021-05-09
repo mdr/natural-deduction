@@ -48,12 +48,14 @@ class LJTTheoremProverSpec extends AnyFlatSpec with Matchers {
     checkCanProve((φ, φ ↔ ψ) ⊢ ψ)
     checkCanProve(Ø ⊢ (φ ↔ φ))
     checkCanProve((φ ↔ ψ, ψ ↔ χ) ⊢ (φ ↔ χ))
-    checkCanProve(Ø ⊢ (((φ ↔ ψ) ↔ χ) → (φ → (ψ ↔ χ)))) // 2.5.1.(d) (corrected)
+    checkCanProve("⊢ ((φ ↔ ψ) ↔ χ) ↔ (φ ↔ (ψ ↔ χ))") // Exercise 2.5.1.(d) (as printed)
+    checkCanProve(Ø ⊢ (((φ ↔ ψ) ↔ χ) → (φ → (ψ ↔ χ)))) // Exercise 2.5.1.(d) (corrected)
     checkCanProve(φ ↔ (ψ ↔ ψ) ⊢ φ) // 2.5.1.(e)
   }
 
   it should "be able to prove negation stuff" in {
     checkCanProve(Ø ⊢ (φ → φ.not.not))
+    checkCanProve("⊢ ((¬(¬φ)) → φ)") // Example 2.6.3
     checkCanProve("⊢ (¬(φ ∧ (¬φ)))")
     checkCanProve("⊢ ((¬(φ → ψ)) → (¬ψ))")
     checkCanProve("⊢ ((φ ∧ ψ) → (¬(φ → (¬ψ))))")
@@ -78,7 +80,6 @@ class LJTTheoremProverSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "be able to prove this one weird little theorem" in {
-    checkCanProve("⊢ ((¬(¬φ)) → φ)") // Example 2.6.3
   }
 
   // ❶ ❷ ❸ ❹ ❺ φ ψ χ Ø ⊢ ¬ ∨ ∧ → ↔ ⊥

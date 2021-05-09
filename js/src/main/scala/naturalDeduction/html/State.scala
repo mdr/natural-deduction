@@ -78,7 +78,6 @@ case class State(
     val newDerivation: DerivationSection =
       FormulaParser.tryParseSequent(newFormulaText) match {
         case Right(sequent) =>
-          LJTTheoremProver.prove(sequent) getOrElse sequent.conclusion.axiom
           DerivationSection(sequent.conclusion.axiom, Some(sequent))
         case Left(_) =>
           val formula = FormulaParser.parseFormula(newFormulaText)

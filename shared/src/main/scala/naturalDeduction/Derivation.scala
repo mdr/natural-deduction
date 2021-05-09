@@ -23,8 +23,8 @@ sealed trait Derivation {
   }
 
   def equivalenceIntroBackwards: EquivalenceIntroduction = {
-    val Equivalence(forwardsImplication, backwardsImplication) = conclusion
-    EquivalenceIntroduction(forwardsImplication.axiom, backwardsImplication.axiom)
+    val equivalence = conclusion.asInstanceOf[Equivalence]
+    EquivalenceIntroduction(equivalence.forwardsImplication.axiom, equivalence.backwardsImplication.axiom)
   }
 
   def equivalenceElimBackwards(direction: EquivalenceDirection): Derivation = {
@@ -461,9 +461,10 @@ object Derivation {
   }
 
   case class EquivalenceIntroduction(forwardsDerivation: Derivation, backwardsDerivation: Derivation) extends Derivation {
-
-    assert(forwardsDerivation.conclusion.isInstanceOf[Implication])
-    assert(backwardsDerivation.conclusion.isInstanceOf[Implication])
+    assert(forwardsDerivation.conclusion.isInstanceOf[Implication],
+      s"Forwards derivation should prove an implication, but was ${forwardsDerivation.conclusion}")
+    assert(backwardsDerivation.conclusion.isInstanceOf[Implication],
+      s"Backwards derivation should prove an implication, but was ${backwardsDerivation.conclusion}")
     val formula1: Formula = forwardsDerivation.conclusion.asInstanceOf[Implication].antecedent
     val formula2: Formula = forwardsDerivation.conclusion.asInstanceOf[Implication].consequent
     assert(backwardsDerivation.conclusion == (formula2 → formula1))
