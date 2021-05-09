@@ -439,7 +439,8 @@ object Derivation {
 
     assert(implicationDerivation.conclusion.isInstanceOf[Implication], s"Expected implicationDerivation to prove an Implication, but instead it proved ${implicationDerivation.conclusion}")
     val implication: Implication = implicationDerivation.conclusion.asInstanceOf[Implication]
-    assert(antecedentDerivation.conclusion == implication.antecedent, s"Mismatched antecedent formulae: ${antecedentDerivation.conclusion} vs ${implication.antecedent}")
+    assert(antecedentDerivation.conclusion == implication.antecedent,
+      s"Mismatched antecedent formulae: ${antecedentDerivation.conclusion} vs ${implication.antecedent}")
 
     override def conclusion: Formula = implication.consequent
 

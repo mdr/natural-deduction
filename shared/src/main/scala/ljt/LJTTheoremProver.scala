@@ -10,10 +10,18 @@ import scala.PartialFunction.condOpt
 
 object LJTTheoremProver {
 
+  var depth = 0
+
   def prove(sequent: Sequent): Option[Derivation] = proveViaLJT(sequent) orElse proveViaDoubleNegation(sequent)
 
+  //  private def proveViaLJT(sequent: Sequent): Option[Derivation] =
+  //    prove(LJTSequent(sequent)).map(_.naturalDeductionDerivation)
+
   private def proveViaLJT(sequent: Sequent): Option[Derivation] =
-    prove(LJTSequent(sequent)).map(_.naturalDeductionDerivation)
+    prove(LJTSequent(sequent)).map { d =>
+      //      println(s"Found proof: $d")
+      d.naturalDeductionDerivation
+    }
 
   def proveViaDoubleNegation(sequent: Sequent): Option[Derivation] =
     proveViaLJT(sequent.copy(conclusion = sequent.conclusion.not.not)).map(doubleNegationElim)
@@ -28,6 +36,8 @@ object LJTTheoremProver {
   }
 
   def prove(sequent: LJTSequent): Option[LJTDerivation] = {
+    //    println("  " * depth + s"prove($sequent)")
+    depth += 1
     val proof = proveAxiom(sequent) orElse
       proveBottomLeft(sequent) orElse
       proveConjunctionRight(sequent) orElse
@@ -44,8 +54,10 @@ object LJTTheoremProver {
       proveImplicationLeft2(sequent) orElse
       proveImplicationLeft2b(sequent) orElse
       proveImplicationLeft3(sequent) orElse
-      proveImplicationLeft4(sequent)
+      proveImplicationLeft4(sequent) orElse
+      proveImplicationLeft4a(sequent)
     proof.foreach(p => assert(p.sequent == sequent))
+    depth -= 1
     proof
   }
 
@@ -302,6 +314,34 @@ object LJTTheoremProver {
         childDerivation1 <- prove(childSequent1)
         childDerivation2 <- prove(childSequent2)
       } yield ImplicationLeft4(b, c, d, baseAssumptions, sequent.conclusion, childDerivation1, childDerivation2)
+    }
+
+    matchingAssumptions.flatMap(proveForAssumption).headOption
+  }
+
+
+  object ImplicationLeftAssumption4a {
+
+    def unapply(formula: Formula): Option[(Formula, Formula)] = condOpt(formula) {
+      case Implication(Negation(c), b) => (c, b)
+    }
+
+  }
+
+  private def proveImplicationLeft4a(sequent: LJTSequent): Option[LJTDerivation] = {
+    val matchingAssumptions =
+      sequent.assumptions
+        .keySet
+        .collect { case implication@ImplicationLeftAssumption4a(_, _) => implication }
+        .to(LazyList)
+
+    def proveForAssumption(assumption: Formula): Option[LJTDerivation] = {
+      val ImplicationLeftAssumption4a(c, b) = assumption
+      val baseAssumptions = sequent.assumptions - (c.not → b)
+      val childSequent = LJTSequent(baseAssumptions + ((c → ⊥) → b), sequent.conclusion)
+      for {
+        childDerivation <- prove(childSequent)
+      } yield ImplicationLeft4a(c, b, baseAssumptions, sequent.conclusion, childDerivation)
     }
 
     matchingAssumptions.flatMap(proveForAssumption).headOption
