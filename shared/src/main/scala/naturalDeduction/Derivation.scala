@@ -4,11 +4,11 @@ import naturalDeduction.Derivation._
 import naturalDeduction.Formula._
 import naturalDeduction.Labels.freshLabel
 import naturalDeduction.pretty.DerivationRenderer
-//import upickle.default.{macroRW, ReadWriter => RW}
 import util.Utils.unicodeStrikeThrough
 
 import scala.PartialFunction.{cond, condOpt}
 import scala.annotation.tailrec
+import scala.util.control.NonFatal
 
 sealed trait Derivation {
 
@@ -103,12 +103,18 @@ sealed trait Derivation {
   def isBetaRedex: Boolean = cond(this) { case BetaRedex(_, _, _) => true }
 
   def betaReduce: Option[Derivation] = condOpt(this) {
-    case BetaRedex(antecedentDerivation, label, consequentDerivation) =>
-      label match {
-        case Some(label) => consequentDerivation.substitute(label, antecedentDerivation)
-        case None => consequentDerivation
-      }
+    case BetaRedex(antecedentDerivation, Some(label), consequentDerivation) =>
+      consequentDerivation.substitute(label, antecedentDerivation)
+    case BetaRedex(_, None, consequentDerivation) =>
+      consequentDerivation
   }
+
+  def betaReduceAllTheThings: Derivation =
+    try {
+      everywhere { d => d.betaReduce getOrElse d }
+    } catch {
+      case NonFatal(_) => this
+    }
 
   /**
    * Replace any unbound axioms matching the given formula with replacement
@@ -463,11 +469,11 @@ object Derivation {
   case class EquivalenceIntroduction(forwardsDerivation: Derivation, backwardsDerivation: Derivation) extends Derivation {
     assert(forwardsDerivation.conclusion.isInstanceOf[Implication],
       s"Forwards derivation should prove an implication, but was ${forwardsDerivation.conclusion}")
-    assert(backwardsDerivation.conclusion.isInstanceOf[Implication],
-      s"Backwards derivation should prove an implication, but was ${backwardsDerivation.conclusion}")
-    val formula1: Formula = forwardsDerivation.conclusion.asInstanceOf[Implication].antecedent
-    val formula2: Formula = forwardsDerivation.conclusion.asInstanceOf[Implication].consequent
-    assert(backwardsDerivation.conclusion == (formula2 → formula1))
+    val forwardsImplication: Implication = forwardsDerivation.conclusion.asInstanceOf[Implication]
+    val formula1: Formula = forwardsImplication.antecedent
+    val formula2: Formula = forwardsImplication.consequent
+    assert(backwardsDerivation.conclusion == (formula2 → formula1),
+      s"Expected backwards derivation to be ${formula2 → formula1}, but was ${backwardsDerivation.conclusion}")
 
     override def conclusion: Formula = formula1 ↔ formula2
 

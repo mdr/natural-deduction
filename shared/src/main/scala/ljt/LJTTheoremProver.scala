@@ -12,7 +12,9 @@ object LJTTheoremProver {
 
   var depth = 0
 
-  def prove(sequent: Sequent): Option[Derivation] = proveViaLJT(sequent) orElse proveViaDoubleNegation(sequent)
+  def prove(sequent: Sequent): Option[Derivation] =
+    proveViaLJT(sequent) orElse
+      proveViaDoubleNegation(sequent) map (_.betaReduceAllTheThings)
 
   //  private def proveViaLJT(sequent: Sequent): Option[Derivation] =
   //    prove(LJTSequent(sequent)).map(_.naturalDeductionDerivation)
