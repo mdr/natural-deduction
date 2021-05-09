@@ -28,11 +28,11 @@ object App {
           MainButtonBar.Props(state.undoRedo, onUndo, onRedo).make,
           <.p(),
           Help.component(),
-          <.p().when(state.derivations.nonEmpty),
-          state.derivations
-            .zipWithIndex.map { case (derivation, index) => makeDerivationCard(state, derivation, index) }
+          <.p().when(state.derivationSections.nonEmpty),
+          state.derivationSections
+            .zipWithIndex.map { case (section, index) => makeDerivationCard(state, section, index) }
             .mkTagMod(<.br()),
-          <.br().when(state.derivations.nonEmpty),
+          <.br().when(state.derivationSections.nonEmpty),
           <.form(
             ^.`class` := "form-row align-items-center",
             ^.onSubmit ==> onStartNewDerivation,
@@ -57,13 +57,14 @@ object App {
         )
       )
 
-    private def makeDerivationCard(state: State, derivation: Derivation, index: DerivationIndex) =
+    private def makeDerivationCard(state: State, section: DerivationSection, index: DerivationIndex): VdomNode =
       DerivationCard.component(DerivationCard.Props(
-        derivation,
+        section,
         index,
         manipulationInfo(index, state.formulaToDerivationIndices),
-        onDuplicateDerivation = onDuplicateDerivation(index),
-        onDeleteDerivation = onDeleteDerivation(index)))
+        onAutoProve(index),
+        onDuplicateDerivation(index),
+        onDeleteDerivation(index)))
 
     /**
      * Modify state and handle URL hash sync
@@ -72,7 +73,7 @@ object App {
       $.modState(mod, syncUrlHash)
 
     private def syncUrlHash: Callback =
-      $.state.map(state => UrlHashSync.writeToHash(state.derivations))
+      $.state.map(state => UrlHashSync.writeToHash(state.derivationSections))
 
     // Modal handlers
 
@@ -109,14 +110,14 @@ object App {
 
     // Derivation card button handlers
 
+    private def onAutoProve(derivationIndex: DerivationIndex): Callback =
+      modState(_.autoProve(derivationIndex))
+
     private def onDeleteDerivation(derivationIndex: DerivationIndex): Callback =
       modState(_.deleteDerivation(derivationIndex))
 
     private def onDuplicateDerivation(derivationIndex: DerivationIndex): Callback =
       modState(_.duplicateDerivation(derivationIndex))
-
-    private def onExtractSubderivation(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
-      modState(_.extractSubderivation(derivationIndex, path))
 
     // Derivation menu handlers
 
@@ -204,6 +205,9 @@ object App {
     private def onUndischargeAssumption(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
       modState(_.transformDerivation(derivationIndex, _.transform(path, _.undischargeAxiom)))
 
+    private def onExtractSubderivation(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
+      modState(_.extractSubderivation(derivationIndex, path))
+
     private def manipulationInfo(derivationIndex: DerivationIndex,
                                  formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]]): ManipulationInfo =
       ManipulationInfo(
@@ -248,7 +252,7 @@ object App {
 
   //noinspection TypeAnnotation
   val app = ScalaComponent.builder[Unit]("App")
-    .initialState(State(derivations = UrlHashSync.readFromHash))
+    .initialState(State(derivationSections = UrlHashSync.readFromHash))
     .renderBackend[Backend]
     .componentDidMount(_.backend.componentDidMount)
     .build

@@ -2,7 +2,7 @@ package naturalDeduction.html
 
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{Callback, ScalaComponent}
-import naturalDeduction.Derivation
+import naturalDeduction.DerivationSection
 
 object DerivationCard {
 
@@ -11,21 +11,37 @@ object DerivationCard {
     .render_P(render)
     .build
 
-  case class Props(derivation: Derivation,
+  case class Props(derivationSection: DerivationSection,
                    derivationIndex: DerivationIndex,
                    manipulationInfo: ManipulationInfo,
+                   onAutoProve: Callback,
                    onDuplicateDerivation: Callback,
                    onDeleteDerivation: Callback)
 
   def render(props: Props): VdomNode = {
     import props._
-    <.div(^.`class` := "card", ^.key := derivationIndex,
-      <.div(^.`class` := "card-header",
-        s"${derivationIndex + 1}. ${derivation.sequent}",
-        CardButtonBar.Props(onDuplicateDerivation, onDeleteDerivation).make,
+
+    <.div(^.className := "card", ^.key := derivationIndex,
+      <.div(^.className := s"card-header${if (derivationSection.derivationProvesGoal) " proved-header" else if (derivationSection.goal.isDefined) " unproved-header" else ""}",
+        <.div(^.className := "container",
+          <.div(^.className := "row align-items-center",
+            <.span(^.className := "mr-auto",
+              s"${derivationIndex + 1}. ",
+              derivationSection.goal match {
+                case None => derivationSection.derivation.sequent.toString
+                case Some(sequent) if derivationSection.derivationProvesGoal => sequent.toString
+                case Some(sequent) => s"Goal: $sequent"
+              },
+              <.span(
+                " ",
+                <.i(^.className := "fas fa-check-circle")).when(derivationSection.derivationProvesGoal),
+            ),
+            CardButtonBar.Props(derivationSection.goal.isDefined, onAutoProve, onDuplicateDerivation, onDeleteDerivation).make,
+          ),
+        )
       ),
-      <.div(^.`class` := "card-body",
-        DerivationComponent.Props(derivation, Some(manipulationInfo)).make
+      <.div(^.className := "card-body",
+        DerivationComponent.Props(derivationSection.derivation, Some(manipulationInfo)).make
       )
     )
   }

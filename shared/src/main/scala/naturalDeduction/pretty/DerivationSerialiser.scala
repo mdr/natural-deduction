@@ -1,7 +1,7 @@
 package naturalDeduction.pretty
 
 import naturalDeduction.Derivation._
-import naturalDeduction.{Derivation, Label}
+import naturalDeduction.{Derivation, DerivationSection, Label, Sequent}
 
 object DerivationSerialiser {
 
@@ -12,7 +12,16 @@ object DerivationSerialiser {
     case None => ""
   }
 
-  def serialise(derivations: Seq[Derivation]): String = derivations.map(serialise).mkString(",")
+  def serialise(derivationSections: Seq[DerivationSection]): String = derivationSections.map(serialise).mkString(",")
+
+  def serialise(derivationSection: DerivationSection): String = {
+    val DerivationSection(derivation, goal) = derivationSection
+    val goalClause = goal match {
+      case Some(goal) => s",$goal"
+      case None => ""
+    }
+    s"Section(${serialise(derivation)}$goalClause)"
+  }
 
   def serialise(derivation: Derivation): String = derivation match {
     case Axiom(conclusion, label) =>

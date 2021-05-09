@@ -1,56 +1,71 @@
 package naturalDeduction.html
 
 import ljt.LJTTheoremProver
-import naturalDeduction.Derivation.{Axiom, RichFormula}
+import naturalDeduction.Derivation.RichFormula
 import naturalDeduction.Formula.Disjunction
 import naturalDeduction.html.modal._
 import naturalDeduction.parser.FormulaParser
-import naturalDeduction.{ChildIndex, Derivation, DerivationPath, EquivalenceDirection, Formula}
+import naturalDeduction._
 
 case class State(
                   newFormulaText: String = "",
-                  derivations: Seq[Derivation] = Seq.empty,
+                  derivationSections: Seq[DerivationSection] = Seq.empty,
                   modalState: Option[ModalState] = None,
-                  undoRedo: UndoRedo[Seq[Derivation]] = UndoRedo()
+                  undoRedo: UndoRedo[Seq[DerivationSection]] = UndoRedo()
                 ) {
 
   lazy val formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]] =
-    derivations.zipWithIndex.groupMap(_._1.conclusion)(_._2)
+    derivationSections.zipWithIndex.groupMap(_._1.conclusion)(_._2)
+
+  def autoProve(derivationIndex: DerivationIndex): State =
+    withUndo(
+      transformDerivationSection(derivationIndex, autoProve))
+
+  private def autoProve(section: DerivationSection): DerivationSection = {
+    val newDerivation =
+      for {
+        goal <- section.goal
+        derivation <- LJTTheoremProver.prove(goal)
+      } yield derivation
+    section.withDerivation(newDerivation getOrElse section.derivation)
+  }
 
   def deleteDerivation(derivationIndex: DerivationIndex): State =
     withUndo(
       copy(
-        derivations = derivations.patch(derivationIndex, Seq.empty, 1)))
+        derivationSections = derivationSections.patch(derivationIndex, Seq.empty, 1)))
 
   def duplicateDerivation(derivationIndex: DerivationIndex): State = {
-    val derivation = derivations(derivationIndex)
+    val section = derivationSections(derivationIndex)
     withUndo(
       copy(
-        derivations = derivations.patch(derivationIndex, Seq(derivation, derivation), 1)))
+        derivationSections = derivationSections.patch(derivationIndex, Seq(section, section), 1)))
   }
 
   def extractSubderivation(derivationIndex: DerivationIndex, path: DerivationPath): State = {
-    val derivation = derivations(derivationIndex)
+    val section = derivationSections(derivationIndex)
+    val derivation = section.derivation
     val subDerivation = derivation.get(path)
+    val newSection = DerivationSection(subDerivation)
     withUndo(
       copy(
-        derivations = derivations.patch(derivationIndex, Seq(derivation, subDerivation), 1)))
+        derivationSections = derivationSections.patch(derivationIndex, Seq(section, newSection), 1)))
   }
 
-  def withUndo(newState: State): State = newState.copy(undoRedo = undoRedo.push(derivations))
+  def withUndo(newState: State): State = newState.copy(undoRedo = undoRedo.push(derivationSections))
 
   def undo: State =
     if (undoRedo.canUndo) {
-      val (newDerivations, newUndoRedo) = undoRedo.undo(derivations)
-      copy(derivations = newDerivations, undoRedo = newUndoRedo)
+      val (newDerivationSections, newUndoRedo) = undoRedo.undo(derivationSections)
+      copy(derivationSections = newDerivationSections, undoRedo = newUndoRedo)
     } else {
       this
     }
 
   def redo: State =
     if (undoRedo.canRedo) {
-      val (newDerivations, newUndoRedo) = undoRedo.redo(derivations)
-      copy(derivations = newDerivations, undoRedo = newUndoRedo)
+      val (newDerivationSections, newUndoRedo) = undoRedo.redo(derivationSections)
+      copy(derivationSections = newDerivationSections, undoRedo = newUndoRedo)
     } else {
       this
     }
@@ -60,26 +75,39 @@ case class State(
       FormulaParser.tryParseSequent(newFormulaText).isRight
 
   def acceptNewFormulaAsNewDerivation: State = {
-    val newDerivation: Derivation =
+    val newDerivation: DerivationSection =
       FormulaParser.tryParseSequent(newFormulaText) match {
-        case Right(sequent) => LJTTheoremProver.prove(sequent) getOrElse sequent.conclusion.axiom
-        case Left(_) => Axiom(FormulaParser.parseFormula(newFormulaText))
+        case Right(sequent) =>
+          LJTTheoremProver.prove(sequent) getOrElse sequent.conclusion.axiom
+          DerivationSection(sequent.conclusion.axiom, Some(sequent))
+        case Left(_) =>
+          val formula = FormulaParser.parseFormula(newFormulaText)
+          val derivation = formula.axiom
+          DerivationSection(derivation)
       }
     acceptNewDerivation(newDerivation)
   }
 
-  private def acceptNewDerivation(derivation: Derivation): State =
-    withUndo(copy(derivations = derivations :+ derivation, newFormulaText = ""))
+  private def acceptNewDerivation(section: DerivationSection): State =
+    withUndo(addDerivationSection(section).copy(newFormulaText = ""))
 
   // Manipulate derivation
 
-  def getDerivation(i: DerivationIndex): Derivation = derivations(i)
+  def getDerivationSection(i: DerivationIndex): DerivationSection = derivationSections(i)
 
-  def setDerivation(i: DerivationIndex, derivation: Derivation): State =
-    copy(derivations = derivations.patch(i, Seq(derivation), 1))
+  def setDerivationSection(i: DerivationIndex, section: DerivationSection): State =
+    copy(derivationSections = derivationSections.patch(i, Seq(section), 1))
+
+  def transformDerivationSection(i: DerivationIndex, f: DerivationSection => DerivationSection): State =
+    withUndo(setDerivationSection(i, f(getDerivationSection(i))))
+
+  def addDerivationSection(section: DerivationSection): State =
+    copy(derivationSections = derivationSections :+ section)
+
+  def getDerivation(i: DerivationIndex): Derivation = derivationSections(i).derivation
 
   def transformDerivation(i: DerivationIndex, f: Derivation => Derivation): State =
-    withUndo(setDerivation(i, f(getDerivation(i))))
+    transformDerivationSection(i, _.transformDerivation(f))
 
   def conjunctionIntroBackwards(derivationIndex: DerivationIndex, path: DerivationPath): State =
     transformDerivation(derivationIndex, _.transform(path, _.conjunctionIntroBackwards))
@@ -118,7 +146,7 @@ case class State(
     transformDerivation(derivationIndex, _.implicationElimForwardsFromImplication)
 
   def inlineDerivation(derivationIndex: DerivationIndex, path: DerivationPath, derivationIndexToInline: DerivationIndex): State =
-    transformDerivation(derivationIndex, _.set(path, derivations(derivationIndexToInline)))
+    transformDerivation(derivationIndex, _.set(path, derivationSections(derivationIndexToInline).derivation))
 
   // Modal
 

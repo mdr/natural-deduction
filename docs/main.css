@@ -191,3 +191,11 @@ div[type='button'] {
 .rule-formula {
     white-space: nowrap;
 }
+
+.proved-header {
+    background-color: rgba(0, 200, 0, .16);
+}
+
+.unproved-header {
+    background-color: rgba(200, 120, 0, .16);
+}

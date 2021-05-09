@@ -1,7 +1,7 @@
 package naturalDeduction.parser
 
 import naturalDeduction.Derivation._
-import naturalDeduction.{Derivation, Formula, Label, Sequent}
+import naturalDeduction.{Derivation, DerivationSection, Formula, Label, Sequent}
 import naturalDeduction.Formula._
 
 import scala.util.parsing.combinator.RegexParsers
@@ -19,7 +19,7 @@ object FormulaParser extends RegexParsers {
 
   def parseDerivation(s: String): Derivation = get(tryParseDerivation(s))
 
-  def parseDerivations(s: String): Seq[Derivation] = get(tryParseDerivations(s))
+  def parseDerivationSections(s: String): Seq[DerivationSection] = get(tryParseDerivationSections(s))
 
   def tryParseFormula(s: String): Either[String, Formula] = toEither(parseAll(formula, s))
 
@@ -27,7 +27,7 @@ object FormulaParser extends RegexParsers {
 
   def tryParseDerivation(s: String): Either[String, Derivation] = toEither(parseAll(derivation, s))
 
-  def tryParseDerivations(s: String): Either[String, Seq[Derivation]] = toEither(parseAll(derivations, s))
+  def tryParseDerivationSections(s: String): Either[String, Seq[DerivationSection]] = toEither(parseAll(derivationSections, s))
 
   private lazy val sequent: Parser[Sequent] = opt(assumptions) ~ (("⊢" | "|-") ~> FormulaParser.formula) ^^ {
     case formulae ~ conclusion => Sequent(formulae getOrElse Set.empty, conclusion)
@@ -63,7 +63,12 @@ object FormulaParser extends RegexParsers {
   private lazy val label: Parser[Label] =
     ("\"" + """([^"\x00-\x1F\x7F\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*""" + "\"").r ^^ (s => s.substring(1, s.length - 1))
 
-  private lazy val derivations: Parser[Seq[Derivation]] = rep1sep(derivation, ",")
+  private lazy val derivationSections: Parser[Seq[DerivationSection]] = rep1sep(derivationSection, ",")
+
+  private lazy val derivationSection: Parser[DerivationSection] =
+    "Section(" ~> derivation ~ opt("," ~> sequent) <~ ")" ^^ {
+      case derivation ~ goal => DerivationSection(derivation, goal)
+    }
 
   private lazy val derivation: Parser[Derivation] =
     axiom | conjunctionIntro | leftConjunctionElim | rightConjunctionElim | implicationIntro |

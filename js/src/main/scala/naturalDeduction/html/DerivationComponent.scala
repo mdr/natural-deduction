@@ -112,15 +112,12 @@ class DerivationHtmlRenderer(props: DerivationComponent.Props) {
         leftLabel.whenDefined(label =>
           LeftRuleLabel.Props(label, getDischargableFormula(parent)).make),
         <.div(^.`class` := "rule-bottom-main",
-          <.div(^.`class` := "rule-conclusion",
-            CustomAttributes.dataDerivationPath := path.toString,
-            props.manipulationInfo match {
-              case None =>
-                <.span(parent.conclusion.toString)
-              case Some(manipulationInfo) =>
-                ManipulatableFormula.Props(parent, path, manipulationInfo).make
-            }
-          )
+          props.manipulationInfo match {
+            case None =>
+              <.span(parent.conclusion.toString)
+            case Some(manipulationInfo) =>
+              ManipulatableFormula.Props(parent, path, manipulationInfo).make
+          }
         ),
         <.div(^.`class` := "rule-bottom-right-label", s"($rightLabel)")
       )

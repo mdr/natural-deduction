@@ -7,7 +7,9 @@ import naturalDeduction.html.TooltipUtils.activateTooltip
 
 object CardButtonBar {
 
-  case class Props(onDuplicateDerivation: Callback,
+  case class Props(canAutoProve: Boolean,
+                   onAutoProve: Callback,
+                   onDuplicateDerivation: Callback,
                    onDeleteDerivation: Callback) {
     def make: VdomNode = component(this)
   }
@@ -18,10 +20,25 @@ object CardButtonBar {
     .build
 
   private def render(props: Props): VdomTag =
-    <.div(^.`class` := "btn-group float-right", ^.role := "group",
+    <.div(^.`class` := "btn-group", ^.role := "group",
+      AutoProveButtonButton(props).when(props.canAutoProve),
       DuplicateButton(props),
       DeleteButton(props),
     )
+
+  private val AutoProveButtonButton =
+    ScalaComponent.builder[Props]("AutoProveButton")
+      .render_P(props =>
+        <.button(
+          ^.`class` := "btn btn-outline-secondary",
+          ^.`type` := "button",
+          <.i(^.className := "fas fa-magic", ^.title := "Automatically prove"),
+          ^.onClick --> props.onAutoProve,
+          ^.title := "Automatically prove",
+        )
+      )
+      .componentDidMount(activateTooltip)
+      .build
 
   private val DuplicateButton =
     ScalaComponent.builder[Props]("DuplicateButton")
