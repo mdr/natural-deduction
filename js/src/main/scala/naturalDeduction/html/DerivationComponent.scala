@@ -31,13 +31,14 @@ class DerivationHtmlRenderer(props: DerivationComponent.Props) {
                        path: DerivationPath = DerivationPath.empty): VdomNode = derivation match {
     case Axiom(formula, label) =>
       val isDischarged = bindings.keySet.intersect(label.toSet).nonEmpty
-      props.manipulationInfo match {
-        case None => formula.toString
-        case Some(manipulationInfo) =>
-          <.div(^.className := "rule-axiom", // without this, dropdown menu for derivations that are just axioms don't position correctly...
+      <.div(^.className := "rule-axiom", // without this, dropdown menu for derivations that are just axioms don't position correctly...
+        CustomAttributes.dataDerivationPath := path.toString,
+        props.manipulationInfo match {
+          case None => formula.toString
+          case Some(manipulationInfo) =>
             ManipulatableFormula.Props(derivation, path, manipulationInfo, label, isDischarged, bindings).make
-          )
-      }
+        }
+      )
     case ConjunctionIntroduction(leftDerivation, rightDerivation) =>
       val leftRendered = renderDerivation(leftDerivation, bindings, path.choose(0))
       val rightRendered = renderDerivation(rightDerivation, bindings, path.choose(1))
@@ -66,7 +67,7 @@ class DerivationHtmlRenderer(props: DerivationComponent.Props) {
       val equivalenceRendered = renderDerivation(equivalenceDerivation, bindings, path.choose(0))
       rule(derivation, Seq(equivalenceRendered), "↔E", None, path)
     case NegationIntroduction(_, label, bottomDerivation) =>
-      val bottomRendered = renderDerivation(bottomDerivation, bindings ++  derivation.bindingsForChild(0), path.choose(0))
+      val bottomRendered = renderDerivation(bottomDerivation, bindings ++ derivation.bindingsForChild(0), path.choose(0))
       rule(derivation, Seq(bottomRendered), "¬I", label, path)
     case NegationElimination(positiveDerivation, negativeDerivation) =>
       val positiveRendered = renderDerivation(positiveDerivation, bindings, path.choose(0))
@@ -83,8 +84,8 @@ class DerivationHtmlRenderer(props: DerivationComponent.Props) {
       rule(derivation, Seq(rightRendered), "∨I", None, path)
     case DisjunctionElimination(disjunctionDerivation, leftLabel, leftDerivation, rightLabel, rightDerivation) =>
       val disjunctionRendered = renderDerivation(disjunctionDerivation, bindings, path.choose(0))
-      val leftRendered = renderDerivation(leftDerivation,bindings ++  derivation.bindingsForChild(1), path.choose(1))
-      val rightRendered = renderDerivation(rightDerivation,bindings ++  derivation.bindingsForChild(2), path.choose(2))
+      val leftRendered = renderDerivation(leftDerivation, bindings ++ derivation.bindingsForChild(1), path.choose(1))
+      val rightRendered = renderDerivation(rightDerivation, bindings ++ derivation.bindingsForChild(2), path.choose(2))
       val compositeLabel = (leftLabel.toSeq ++ rightLabel).mkString(" ") match {
         case "" => None;
         case s => Some(s)
@@ -111,12 +112,15 @@ class DerivationHtmlRenderer(props: DerivationComponent.Props) {
         leftLabel.whenDefined(label =>
           LeftRuleLabel.Props(label, getDischargableFormula(parent)).make),
         <.div(^.`class` := "rule-bottom-main",
-          props.manipulationInfo match {
-            case None =>
-              <.span(parent.conclusion.toString)
-            case Some(manipulationInfo) =>
-              ManipulatableFormula.Props(parent, path, manipulationInfo).make
-          }
+          <.div(^.`class` := "rule-conclusion",
+            CustomAttributes.dataDerivationPath := path.toString,
+            props.manipulationInfo match {
+              case None =>
+                <.span(parent.conclusion.toString)
+              case Some(manipulationInfo) =>
+                ManipulatableFormula.Props(parent, path, manipulationInfo).make
+            }
+          )
         ),
         <.div(^.`class` := "rule-bottom-right-label", s"($rightLabel)")
       )
