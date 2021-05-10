@@ -48,6 +48,7 @@ class LJTTheoremProverSpec extends AnyFlatSpec with Matchers {
     checkCanProve((φ, φ ↔ ψ) ⊢ ψ)
     checkCanProve(Ø ⊢ (φ ↔ φ))
     checkCanProve((φ ↔ ψ, ψ ↔ χ) ⊢ (φ ↔ χ))
+    checkCanProve("⊢ ((φ ↔ ψ) ↔ χ) ↔ (φ ↔ (ψ ↔ χ))") // Exercise 2.5.1.(d) (as printed)
     checkCanProve(Ø ⊢ (((φ ↔ ψ) ↔ χ) → (φ → (ψ ↔ χ)))) // Exercise 2.5.1.(d) (corrected)
     checkCanProve(φ ↔ (ψ ↔ ψ) ⊢ φ) // 2.5.1.(e)
   }
@@ -79,8 +80,6 @@ class LJTTheoremProverSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "be able to prove this one weird little theorem" in {
-    // Still blows up in betaReduceEverywhere
-    checkCanProve("⊢ ((φ ↔ ψ) ↔ χ) ↔ (φ ↔ (ψ ↔ χ))") // Exercise 2.5.1.(d) (as printed)
   }
 
   // ❶ ❷ ❸ ❹ ❺ φ ψ χ Ø ⊢ ¬ ∨ ∧ → ↔ ⊥

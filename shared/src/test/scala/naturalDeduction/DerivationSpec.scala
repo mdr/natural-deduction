@@ -6,6 +6,7 @@ import Derivation._
 import Derivation.RichFormula
 import TestConstants.{φ, _}
 import Sequent._
+import naturalDeduction.parser.FormulaParser
 
 class DerivationSpec extends AnyFlatSpec with Matchers {
 
@@ -238,5 +239,9 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
     ConjunctionIntroduction(Axiom(φ), Axiom(φ)).substitute(φ, Axiom(φ, "❶")) shouldEqual ConjunctionIntroduction(Axiom(φ, "❶"), Axiom(φ, "❶"))
   }
 
+  "Beta reduction" should "work" in {
+    val derivation = FormulaParser.parseDerivation("""→E(↔I(Ax(φ → ψ,"③"),Ax(ψ → φ,"④")),→I(φ ↔ ψ,"⑦",¬E(↔I(→I((φ ↔ ψ) ↔ χ,"⑥",↔I(Ax(φ → (ψ ↔ χ)),→I(ψ ↔ χ,"④",→E(→E(→E(↔I(→I(φ,"③",RAA(ψ,¬E(↔I(Ax(((φ ↔ ψ) ↔ χ) → (φ ↔ (ψ ↔ χ))),→I(φ ↔ (ψ ↔ χ),"②",↔I(→I(φ ↔ ψ,"①",→E(→E(Ax(φ,"③"),Ax(φ → ψ)),↔E1(Ax(ψ ↔ χ,"④")))),↔E2(Ax((φ ↔ ψ) ↔ χ,"⑥"))))),Ax(¬(((φ ↔ ψ) ↔ χ) ↔ (φ ↔ (ψ ↔ χ))))))),Ax(ψ → φ)),Ax((φ ↔ ψ) → χ)),Ax(χ → ψ)),Ax(ψ → φ))))),Ax((φ ↔ (ψ ↔ χ)) → ((φ ↔ ψ) ↔ χ))),Ax(¬(((φ ↔ ψ) ↔ χ) ↔ (φ ↔ (ψ ↔ χ)))))))""")
+    derivation.betaReduce
+  }
   // ❶ ❷ ❸ ❹ ❺ φ ψ χ Ø ⊢ ¬ ∨ ∧ → ↔ ⊥
 }
