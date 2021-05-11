@@ -4,7 +4,6 @@ import japgolly.scalajs.react.vdom.VdomNode
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{Callback, ScalaComponent}
 import naturalDeduction.html.DerivationComponent
-import naturalDeduction.html.ReactUtils.getTargetValueThen
 
 object ImplicationElimBackwardsModalBody {
 

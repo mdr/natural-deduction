@@ -21,7 +21,7 @@ object FormulaFormRow {
       <.div(^.className := "col-12",
         <.label(^.className := "sr-only", ^.`for` := "inlineFormInput", "Name"),
         <.input(
-          ^.`class` := "form-control mb-2",
+          ^.`class` := "form-control mb-2 focus-on-modal-shown",
           ^.`type` := "text",
           ^.placeholder := s"${props.placeholder}...",
           ^.onChange ==> getTargetValueThen(props.onChangeFormulaText),
