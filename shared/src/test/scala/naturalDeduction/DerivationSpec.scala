@@ -226,9 +226,9 @@ class DerivationSpec extends AnyFlatSpec with Matchers {
   }
 
   "Substitution" should "work" in {
-    Axiom(φ, "❶").substitute("❶", χ.axiom) shouldEqual χ.axiom
+    Axiom(φ, "❶").substitute("❶", ImplicationElimination(φ.axiom, (φ → φ).axiom)) shouldEqual ImplicationElimination(φ.axiom, (φ → φ).axiom)
 
-    ImplicationIntroduction(φ, "❶", Axiom(φ, "❶")).substitute("❶", χ.axiom) shouldEqual ImplicationIntroduction(φ, "❶", Axiom(φ, "❶"))
+    ImplicationIntroduction(φ, "❶", Axiom(φ, "❶")).substitute("❶", ImplicationElimination(φ.axiom, (φ → φ).axiom)) shouldEqual ImplicationIntroduction(φ, "❶", Axiom(φ, "❶"))
 
     ImplicationIntroduction(φ, "①", Axiom(φ, "②")).substitute("②", Axiom(φ, "①")) shouldEqual ImplicationIntroduction(φ, "③", Axiom(φ, "①"))
   }

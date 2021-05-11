@@ -33,14 +33,14 @@ class LJTTheoremProverSpec extends AnyFlatSpec with Matchers {
     checkCanProve(φ ⊢ (φ → (ψ → φ)))
     checkCanProve((φ ∧ ψ) ⊢ (ψ → (ψ ∧ φ)))
     checkCanProve(Ø ⊢ (φ → φ))
-    checkCanProve(Ø ⊢ (φ → (ψ → ψ))) // Exercise 2.4.4(a)
-    checkCanProve(Ø ⊢ ((φ → φ) ∧ (ψ → ψ))) // Exercise 2.4.4(b)
-    checkCanProve(Ø ⊢ ((φ → (θ → ψ)) → (θ → (φ → ψ)))) // Exercise 2.4.4(c)
-    checkCanProve((φ → ψ, φ → χ) ⊢ (φ → (ψ ∧ χ))) // Exercise 2.4.4(d)
-    checkCanProve((φ → ψ, (φ ∧ ψ) → χ) ⊢ (φ → χ)) // Exercise 2.4.4(e)
-    checkCanProve(φ → (ψ → χ) ⊢ ((φ ∧ ψ) → χ)) // Exercise 2.4.4(f)
-    checkCanProve(Ø ⊢ ((φ → ψ) → ((ψ → θ) → (φ → θ)))) // Exercise 2.4.4(g)
-    checkCanProve(Ø ⊢ ((φ → (ψ ∧ θ)) → ((φ → θ) ∧ (φ → ψ)))) // Exercise 2.4.4(h)
+    checkCanProve("⊢ (φ → (ψ → ψ))") // Exercise 2.4.4(a)
+    checkCanProve("⊢ ((φ → φ) ∧ (ψ → ψ))") // Exercise 2.4.4(b)
+    checkCanProve("⊢ ((φ → (θ → ψ)) → (θ → (φ → ψ)))") // Exercise 2.4.4(c)
+    checkCanProve("{φ → ψ, φ → χ} ⊢ (φ → (ψ ∧ χ))") // Exercise 2.4.4(d)
+    checkCanProve("{φ → ψ, (φ ∧ ψ) → χ} ⊢ (φ → χ)") // Exercise 2.4.4(e)
+    checkCanProve("{φ → (ψ → χ)} ⊢ ((φ ∧ ψ) → χ)") // Exercise 2.4.4(f)
+    checkCanProve("⊢ ((φ → ψ) → ((ψ → θ) → (φ → θ)))") // Exercise 2.4.4(g)
+    checkCanProve("⊢ ((φ → (ψ ∧ θ)) → ((φ → θ) ∧ (φ → ψ)))") // Exercise 2.4.4(h)
   }
 
   it should "be able to prove even more stuff" in {
