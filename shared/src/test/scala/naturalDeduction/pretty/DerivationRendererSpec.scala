@@ -8,6 +8,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class DerivationRendererSpec extends AnyFlatSpec with Matchers {
+  FormulaPrettyPrinter.includeAllParens = false
 
   Axiom(χ) shouldRenderAs "χ"
 

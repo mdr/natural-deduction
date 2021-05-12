@@ -45,23 +45,23 @@ class LJTTheoremProverSpec extends AnyFlatSpec with Matchers {
 
   it should "be able to prove even more stuff" in {
     checkCanProve((φ ↔ ψ) ⊢ (ψ ↔ φ))
-    checkCanProve((φ, φ ↔ ψ) ⊢ ψ)
-    checkCanProve(Ø ⊢ (φ ↔ φ))
-    checkCanProve((φ ↔ ψ, ψ ↔ χ) ⊢ (φ ↔ χ))
-    checkCanProve("⊢ ((φ ↔ ψ) ↔ χ) ↔ (φ ↔ (ψ ↔ χ))") // Exercise 2.5.1.(d) (as printed)
-    checkCanProve(Ø ⊢ (((φ ↔ ψ) ↔ χ) → (φ → (ψ ↔ χ)))) // Exercise 2.5.1.(d) (corrected)
-    checkCanProve(φ ↔ (ψ ↔ ψ) ⊢ φ) // 2.5.1.(e)
+    checkCanProve("{φ, φ ↔ ψ} ⊢ ψ") // Exercise 2.5.1(a)
+    checkCanProve("⊢ (φ ↔ φ)") // Exercise 2.5.1(b)
+    checkCanProve("{φ ↔ ψ, ψ ↔ χ} ⊢ (φ ↔ χ)") // Exercise 2.5.1(c)
+    checkCanProve("⊢ ((φ ↔ ψ) ↔ χ) ↔ (φ ↔ (ψ ↔ χ))") // Exercise 2.5.1(d) (as printed)
+    checkCanProve("⊢ ((φ ↔ ψ) ↔ χ) → φ → (ψ ↔ χ)") // Exercise 2.5.1(d) (corrected)
+    checkCanProve("{φ ↔ (ψ ↔ ψ)} ⊢ φ") // 2.5.1.(e)
   }
 
   it should "be able to prove negation stuff" in {
     checkCanProve(Ø ⊢ (φ → φ.not.not))
     checkCanProve("⊢ ((¬(¬φ)) → φ)") // Example 2.6.3
-    checkCanProve("⊢ (¬(φ ∧ (¬φ)))")
-    checkCanProve("⊢ ((¬(φ → ψ)) → (¬ψ))")
-    checkCanProve("⊢ ((φ ∧ ψ) → (¬(φ → (¬ψ))))")
-    checkCanProve("{((¬(φ ∧ ψ)) ∧ φ)} ⊢ (¬ψ)")
-    checkCanProve("{(φ → ψ)} ⊢ ((¬ψ) → (¬φ))")
-    checkCanProve("{(φ → ψ)} ⊢ (¬(φ ∧ (¬ψ)))")
+    checkCanProve("⊢ (¬(φ ∧ (¬φ)))") // Exercise 2.6.1(a)
+    checkCanProve("⊢ ((¬(φ → ψ)) → (¬ψ))") // Exercise 2.6.1(b)
+    checkCanProve("⊢ ((φ ∧ ψ) → (¬(φ → (¬ψ))))") // Exercise 2.6.1(c)
+    checkCanProve("{((¬(φ ∧ ψ)) ∧ φ)} ⊢ (¬ψ)") // Exercise 2.6.1(d)
+    checkCanProve("{(φ → ψ)} ⊢ ((¬ψ) → (¬φ))") // Exercise 2.6.1(e)
+    checkCanProve("{(φ → ψ)} ⊢ (¬(φ ∧ (¬ψ)))") // Exercise 2.6.1(f)
 
     checkCanProve("{((¬ψ) → (¬φ))} ⊢ (φ → ψ)") // Exercise 2.6.2(a)
     checkCanProve("⊢ ((¬(φ → ψ)) → φ)")

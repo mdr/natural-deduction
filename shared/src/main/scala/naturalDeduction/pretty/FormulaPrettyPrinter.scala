@@ -7,7 +7,27 @@ import scala.PartialFunction.cond
 
 object FormulaPrettyPrinter {
 
-  def prettyPrint(formula: Formula): String = formula match {
+  var includeAllParens: Boolean = true
+
+  def toggleIncludeAllParens(): Unit = includeAllParens = !includeAllParens
+
+  def prettyPrint(formula: Formula): String =
+    if (includeAllParens)
+      prettyPrintWithAllParens(formula)
+    else
+      prettyPrintWithMinimalParens(formula)
+
+  private def prettyPrintWithAllParens(formula: Formula): String = formula match {
+    case Bottom => "⊥"
+    case PropositionalVariable(name) => name
+    case Negation(formula) => s"(¬${prettyPrintWithAllParens(formula)})"
+    case Conjunction(conjunct1, conjunct2) => s"(${prettyPrintWithAllParens(conjunct1)} ∧ ${prettyPrintWithAllParens(conjunct2)})"
+    case Disjunction(disjunct1, disjunct2) =>  s"(${prettyPrintWithAllParens(disjunct1)} ∨ ${prettyPrintWithAllParens(disjunct2)})"
+    case Implication(antecedent, consequent) => s"(${prettyPrintWithAllParens(antecedent)} → ${prettyPrintWithAllParens(consequent)})"
+    case Equivalence(formula1, formula2) => s"(${prettyPrintWithAllParens(formula1)} ↔ ${prettyPrintWithAllParens(formula2)})"
+  }
+
+  private def prettyPrintWithMinimalParens(formula: Formula): String = formula match {
     case Bottom => "⊥"
     case PropositionalVariable(name) => name
     case Negation(subformula) =>
@@ -47,10 +67,9 @@ object FormulaPrettyPrinter {
         case _: Implication | _: Equivalence => true
       }
       s"${prettyPrintWithParen(formula1, needsParen1)} ↔ ${prettyPrintWithParen(formula2, needsParen2)}"
-
   }
 
-  private def prettyPrintWithParen(formula: Formula, needsParen: Boolean): String = maybeParen(prettyPrint(formula), needsParen)
+  private def prettyPrintWithParen(formula: Formula, needsParen: Boolean): String = maybeParen(prettyPrintWithMinimalParens(formula), needsParen)
 
   private def maybeParen(s: String, needsParen: Boolean): String = if (needsParen) s"($s)" else s
 

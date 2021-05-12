@@ -5,6 +5,7 @@ import japgolly.scalajs.react.vdom.TagMod
 import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation._
 import naturalDeduction._
+import naturalDeduction.pretty.FormulaPrettyPrinter
 
 object DerivationComponent {
 
@@ -32,9 +33,8 @@ class DerivationHtmlRenderer(props: DerivationComponent.Props) {
     case Axiom(formula, label) =>
       val isDischarged = bindings.keySet.intersect(label.toSet).nonEmpty
       <.div(^.className := "rule-axiom", // without this, dropdown menu for derivations that are just axioms don't position correctly...
-        CustomAttributes.dataDerivationPath := path.toString,
         props.manipulationInfo match {
-          case None => formula.toString
+          case None => FormulaPrettyPrinter.prettyPrint(formula)
           case Some(manipulationInfo) =>
             ManipulatableFormula.Props(derivation, path, manipulationInfo, label, isDischarged, bindings).make
         }
@@ -114,7 +114,7 @@ class DerivationHtmlRenderer(props: DerivationComponent.Props) {
         <.div(^.`class` := "rule-bottom-main",
           props.manipulationInfo match {
             case None =>
-              <.span(parent.conclusion.toString)
+              <.span(FormulaPrettyPrinter.prettyPrint(parent.conclusion))
             case Some(manipulationInfo) =>
               ManipulatableFormula.Props(parent, path, manipulationInfo).make
           }

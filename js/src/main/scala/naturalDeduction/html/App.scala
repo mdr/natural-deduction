@@ -4,6 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction._
 import naturalDeduction.html.modal.Modal
+import naturalDeduction.pretty.FormulaPrettyPrinter
 import signatures.Mousetrap
 
 import scala.scalajs.js.Dynamic.global
@@ -25,7 +26,7 @@ object App {
         Modal.Props(state.modalState, onChangeModalFormula, onSwapConjuncts, onSwapDisjuncts, onConfirmModal).make,
         <.div(^.`class` := "container",
           <.p(),
-          MainButtonBar.Props(state.undoRedo, onUndo, onRedo).make,
+          MainButtonBar.Props(state.undoRedo, onUndo, onRedo, onToggleParens).make,
           <.p(),
           Help.component(),
           <.p().when(state.derivationSections.nonEmpty),
@@ -246,7 +247,13 @@ object App {
     def componentDidMount: Callback = Callback {
       Mousetrap.bind(Seq("command+z", "ctrl+z").toJSArray, _ => onUndo.runNow())
       Mousetrap.bind(Seq("command+shift+z", "ctrl+y").toJSArray, _ => onRedo.runNow())
+      Mousetrap.bind(Seq("command+b", "ctrl+b").toJSArray, _ => onToggleParens.runNow())
     }
+
+    private def onToggleParens: Callback =
+      Callback {
+        FormulaPrettyPrinter.toggleIncludeAllParens()
+      } >> $.forceUpdate
 
   }
 

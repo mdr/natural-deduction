@@ -10,7 +10,9 @@ object MainButtonBar {
 
   case class Props(undoRedo: UndoRedo[_],
                    onUndoClicked: Callback,
-                   onRedoClicked: Callback) {
+                   onRedoClicked: Callback,
+                   onParensClicked: Callback,
+                  ) {
     def make: VdomNode = component(this)
   }
 
@@ -23,6 +25,7 @@ object MainButtonBar {
     <.div(^.`class` := "btn-group", ^.role := "group",
       UndoButton(props),
       RedoButton(props),
+      ParensButton(props),
       HelpButton(),
     )
 
@@ -51,6 +54,19 @@ object MainButtonBar {
           ^.onClick --> props.onRedoClicked,
           ^.disabled := !props.undoRedo.canRedo,
           ^.title := "Redo",
+        ))
+      .componentDidMount(activateTooltip)
+      .build
+
+  private val ParensButton =
+    ScalaComponent.builder[Props]("ParensButton")
+      .render_P(props =>
+        <.button(
+          ^.`class` := "btn btn-outline-secondary",
+          ^.`type` := "button",
+          "()",
+          ^.onClick --> props.onParensClicked,
+          ^.title := "Omit parens where possible",
         ))
       .componentDidMount(activateTooltip)
       .build

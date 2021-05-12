@@ -4,6 +4,7 @@ import japgolly.scalajs.react.ScalaComponent
 import japgolly.scalajs.react.vdom.html_<^._
 import naturalDeduction.Derivation.Axiom
 import naturalDeduction.Formula.{Conjunction, Disjunction, Equivalence, Implication, Negation, ⊥}
+import naturalDeduction.pretty.FormulaPrettyPrinter
 import naturalDeduction.{Derivation, DerivationPath, EquivalenceDirection, Formula, Label}
 
 import scala.PartialFunction.cond
@@ -31,9 +32,9 @@ object ManipulatableFormula {
       formulaToDerivationIndices
         .getOrElse(derivation.conclusion, Seq.empty)
         .filter(_ => derivation.isAxiom)
-        .filter(i => i != derivationIndex)
+        .filter(_ != derivationIndex)
         .sorted
-    val dischargeableLabels: Seq[String] =
+    val dischargeableLabels: Seq[Label] =
       bindings
         .groupMap(_._2)(_._1)
         .getOrElse(derivation.conclusion, Seq.empty)
@@ -56,7 +57,7 @@ object ManipulatableFormula {
         <.span(
           <.span(
             (^.cls := "discharged-axiom").when(isDischarged),
-            derivation.conclusion.toString
+            FormulaPrettyPrinter.prettyPrint(derivation.conclusion),
           ),
           label.toTagMod(l => <.sup(l))
         ),
