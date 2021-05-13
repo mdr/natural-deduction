@@ -3,7 +3,8 @@ package naturalDeduction.html
 import japgolly.scalajs.react._
 import naturalDeduction._
 
-case class ManipulationInfo(onConjunctionIntroBackwards: DerivationPath => Callback,
+case class ManipulationInfo(/* Backwards rules */
+                            onConjunctionIntroBackwards: DerivationPath => Callback,
                             onConjunctionElimBackwards: DerivationPath => Callback,
                             onImplicationIntroBackwards: DerivationPath => Callback,
                             onImplicationElimBackwards: DerivationPath => Callback,
@@ -13,7 +14,9 @@ case class ManipulationInfo(onConjunctionIntroBackwards: DerivationPath => Callb
                             onNegationElimBackwards: DerivationPath => Callback,
                             onReductioBackwards: DerivationPath => Callback,
                             onDisjunctionIntroBackwards: (DerivationPath, ChildIndex) => Callback,
+                            onDisjunctionElimBackwards: DerivationPath => Callback,
 
+                            /* Forwards rules */
                             onConjunctionIntroForwards: Callback,
                             onConjunctionElimForwards: ChildIndex => Callback,
                             onImplicationIntroForwards: Callback,
@@ -28,6 +31,7 @@ case class ManipulationInfo(onConjunctionIntroBackwards: DerivationPath => Callb
                             onDisjunctionIntroForwards: Callback,
                             onDisjunctionElimForwardsFromDisjunction: Callback,
 
+                            /* Other actions */
                             onRemoveDerivation: DerivationPath => Callback,
                             onInlineDerivation: (DerivationPath, DerivationIndex) => Callback,
                             onDischargeAssumption: (DerivationPath, Label) => Callback,

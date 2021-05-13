@@ -90,6 +90,8 @@ object ManipulatableFormula {
           .when(canDisjunctionIntroBackwards(derivation)),
         <.div(^.className := "dropdown-item", ^.href := "#", "∨-Introduction (pick right)", ^.onClick --> onDisjunctionIntroBackwards(path, 1))
           .when(canDisjunctionIntroBackwards(derivation)),
+        <.div(^.className := "dropdown-item", ^.href := "#", "∨-Elimination...", ^.onClick --> onDisjunctionElimBackwards(path))
+          .when(derivation.isAxiom),
 
         <.div(^.`class` := "dropdown-divider")
           .when(backwardsRulesPossible && forwardsRulesPossible),

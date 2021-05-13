@@ -7,7 +7,10 @@ import naturalDeduction.html.ReactUtils.getTargetValueThen
 
 object FormulaFormRow {
 
-  case class Props(formulaText: String, onChangeFormulaText: String => Callback, placeholder: String = "Formula") {
+  case class Props(formulaText: String,
+                   onChangeFormulaText: String => Callback,
+                   placeholder: String = "Formula",
+                   autofocus: Boolean = true) {
     def make: VdomNode = component(this)
   }
 
@@ -21,7 +24,7 @@ object FormulaFormRow {
       <.div(^.className := "col-12",
         <.label(^.className := "sr-only", ^.`for` := "inlineFormInput", "Name"),
         <.input(
-          ^.`class` := "form-control mb-2 focus-on-modal-shown",
+          ^.`class` := s"form-control mb-2${if (props.autofocus) " focus-on-modal-shown" else ""}",
           ^.`type` := "text",
           ^.placeholder := s"${props.placeholder}...",
           ^.onChange ==> getTargetValueThen(props.onChangeFormulaText),

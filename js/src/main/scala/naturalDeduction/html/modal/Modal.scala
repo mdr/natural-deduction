@@ -12,6 +12,7 @@ object Modal {
   case class Props(
                     modalState: Option[ModalState],
                     onChangeModalFormula: String => Callback,
+                    onChangeModalFormula2: String => Callback,
                     onSwapConjuncts: Callback,
                     onSwapDisjuncts: Callback,
                     onConfirmModal: Callback,
@@ -92,6 +93,8 @@ object Modal {
           ReductioForwardsModalBody.Props(state, onChangeModalFormula).make
         case state: DisjunctionElimForwardsFromDisjunctionModalState =>
           DisjunctionElimForwardsFromDisjunctionModalBody.Props(state, onChangeModalFormula).make
+        case state: DisjunctionElimBackwardsModalState =>
+          DisjunctionElimBackwardsModalBody.Props(state, onChangeModalFormula, onChangeModalFormula2).make
       })
   }
 

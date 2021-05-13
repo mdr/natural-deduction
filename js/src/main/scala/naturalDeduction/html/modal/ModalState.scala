@@ -15,6 +15,8 @@ sealed trait ModalState {
 
   def withFormulaText(newValue: String): ModalState
 
+  def withFormulaText2(newValue: String): ModalState = this
+
   val formula: Formula =
     FormulaParser.tryParseFormula(formulaText).toOption getOrElse PropositionalVariable("?")
 
@@ -221,6 +223,42 @@ case class DisjunctionElimForwardsFromDisjunctionModalState(derivationIndex: Der
     state.transformDerivation(derivationIndex, disjunctionDerivation =>
       disjunctionElimDerivation(conclusion, disjunctionDerivation)
     )
+  }
+
+}
+
+object DisjunctionElimBackwardsModalState {
+
+  def disjunctionElimination(disjunct1: Formula, disjunct2: Formula, conclusion: Formula): DisjunctionElimination = {
+    val (label1, label2) = twoFreshLabels(Set.empty)
+    DisjunctionElimination((disjunct1 ∨ disjunct2).axiom, Some(label1), conclusion.axiom, Some(label2), conclusion.axiom)
+  }
+
+}
+
+case class DisjunctionElimBackwardsModalState(derivationIndex: DerivationIndex,
+                                              path: DerivationPath,
+                                              conclusion: Formula,
+                                              formulaText: String = "",
+                                              formulaText2: String = "",
+                                             ) extends ModalState {
+  val formula2: Formula =
+    FormulaParser.tryParseFormula(formulaText2).toOption getOrElse PropositionalVariable("?")
+
+  import DisjunctionElimBackwardsModalState._
+
+  override def canComplete: Boolean = super.canComplete && FormulaParser.tryParseFormula(formulaText2).isRight
+
+  def title: String = "∨-Elimination Backwards"
+
+  def withFormulaText(newText: String): ModalState = copy(formulaText = newText)
+
+  override def withFormulaText2(newText: String): ModalState = copy(formulaText2 = newText)
+
+  override def complete(state: State): State = {
+    val disjunct1 = FormulaParser.parseFormula(formulaText)
+    val disjunct2 = FormulaParser.parseFormula(formulaText2)
+    state.transformDerivation(derivationIndex, _.set(path, disjunctionElimination(disjunct1, disjunct2, conclusion)))
   }
 
 }

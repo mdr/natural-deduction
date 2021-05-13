@@ -23,7 +23,7 @@ object App {
             ),
           ),
         ),
-        Modal.Props(state.modalState, onChangeModalFormula, onSwapConjuncts, onSwapDisjuncts, onConfirmModal).make,
+        Modal.Props(state.modalState, onChangeModalFormula, onChangeModalFormula2, onSwapConjuncts, onSwapDisjuncts, onConfirmModal).make,
         <.div(^.`class` := "container",
           <.p(),
           MainButtonBar.Props(state.undoRedo, onUndo, onRedo, onToggleParens).make,
@@ -80,6 +80,9 @@ object App {
 
     private def onChangeModalFormula(newFormula: String): Callback =
       modState(_.withModalFormula(newFormula))
+
+    private def onChangeModalFormula2(newFormula: String): Callback =
+      modState(_.withModalFormula2(newFormula))
 
     private def onConfirmModal: Callback = hideModal >> modState(_.confirmModal)
 
@@ -152,6 +155,9 @@ object App {
     private def onDisjunctionIntroBackwards(derivationIndex: DerivationIndex)(path: DerivationPath, childIndex: ChildIndex): Callback =
       modState(_.disjunctionIntroBackwards(derivationIndex, path, childIndex))
 
+    private def onDisjunctionElimBackwards(derivationIndex: DerivationIndex)(path: DerivationPath): Callback =
+      modState(_.showDisjunctionElimBackwardsModal(derivationIndex, path)) >> showModal
+
     private def onConjunctionIntroForwards(derivationIndex: DerivationIndex): Callback =
       modState(_.showConjunctionIntroForwardsModal(derivationIndex)) >> showModal
 
@@ -222,6 +228,7 @@ object App {
         onNegationElimBackwards(derivationIndex),
         onReductioBackwards(derivationIndex),
         onDisjunctionIntroBackwards(derivationIndex),
+        onDisjunctionElimBackwards(derivationIndex),
         onConjunctionIntroForwards(derivationIndex),
         onConjunctionElimForwards(derivationIndex),
         onImplicationIntroForwards(derivationIndex),
