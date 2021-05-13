@@ -229,8 +229,8 @@ case class DisjunctionElimForwardsFromDisjunctionModalState(derivationIndex: Der
 
 object DisjunctionElimBackwardsModalState {
 
-  def disjunctionElimination(disjunct1: Formula, disjunct2: Formula, conclusion: Formula): DisjunctionElimination = {
-    val (label1, label2) = twoFreshLabels(Set.empty)
+  def disjunctionElimination(disjunct1: Formula, disjunct2: Formula, conclusion: Formula, wholeDerivation: Derivation): DisjunctionElimination = {
+    val (label1, label2) = twoFreshLabels(wholeDerivation.labels)
     DisjunctionElimination((disjunct1 ∨ disjunct2).axiom, Some(label1), conclusion.axiom, Some(label2), conclusion.axiom)
   }
 
@@ -238,6 +238,7 @@ object DisjunctionElimBackwardsModalState {
 
 case class DisjunctionElimBackwardsModalState(derivationIndex: DerivationIndex,
                                               path: DerivationPath,
+                                              wholeDerivation: Derivation,
                                               conclusion: Formula,
                                               formulaText: String = "",
                                               formulaText2: String = "",
@@ -258,7 +259,7 @@ case class DisjunctionElimBackwardsModalState(derivationIndex: DerivationIndex,
   override def complete(state: State): State = {
     val disjunct1 = FormulaParser.parseFormula(formulaText)
     val disjunct2 = FormulaParser.parseFormula(formulaText2)
-    state.transformDerivation(derivationIndex, _.set(path, disjunctionElimination(disjunct1, disjunct2, conclusion)))
+    state.transformDerivation(derivationIndex, _.set(path, disjunctionElimination(disjunct1, disjunct2, conclusion, wholeDerivation)))
   }
 
 }

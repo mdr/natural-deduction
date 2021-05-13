@@ -4,6 +4,7 @@ import japgolly.scalajs.react.vdom.VdomNode
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{Callback, ScalaComponent}
 import naturalDeduction.html.DerivationComponent
+import naturalDeduction.html.modal.DisjunctionElimBackwardsModalState.disjunctionElimination
 
 object DisjunctionElimBackwardsModalBody {
 
@@ -22,15 +23,15 @@ object DisjunctionElimBackwardsModalBody {
 
   private def render(props: Props): VdomNode = {
     import props._
-    val DisjunctionElimBackwardsModalState(_, _, conclusion, _, _) = modalState
-    val derivation = DisjunctionElimBackwardsModalState.disjunctionElimination(modalState.formula, modalState.formula2, conclusion)
+    val DisjunctionElimBackwardsModalState(_, _, wholeDerivation, conclusion, formulaText, formulaText2) = modalState
+    val derivation = disjunctionElimination(modalState.formula, modalState.formula2, conclusion, wholeDerivation)
     <.div(
       <.div(^.`class` := "d-flex justify-content-center",
         DerivationComponent.Props(derivation).make
       ),
       <.br(),
-      FormulaFormRow.Props(modalState.formulaText, onChangeModalFormula, "Left disjunct").make,
-      FormulaFormRow.Props(modalState.formulaText2, onChangeModalFormula2, "Right disjunct", autofocus = false).make,
+      FormulaFormRow.Props(formulaText, onChangeModalFormula, "Left disjunct").make,
+      FormulaFormRow.Props(formulaText2, onChangeModalFormula2, "Right disjunct", autofocus = false).make,
     )
   }
 

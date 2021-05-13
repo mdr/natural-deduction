@@ -209,7 +209,7 @@ case class State(
 
   def showDisjunctionElimBackwardsModal(derivationIndex: DerivationIndex, path: DerivationPath): State = {
     val conclusion = getDerivationConclusion(derivationIndex, path)
-    copy(modalState = Some(DisjunctionElimBackwardsModalState(derivationIndex, path, conclusion)))
+    copy(modalState = Some(DisjunctionElimBackwardsModalState(derivationIndex, path, getDerivation(derivationIndex), conclusion)))
   }
 
   private def getDerivationConclusion(derivationIndex: DerivationIndex, path: DerivationPath = DerivationPath.empty): Formula =
