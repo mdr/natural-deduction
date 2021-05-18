@@ -62,7 +62,7 @@ object App {
       DerivationCard.component(DerivationCard.Props(
         section,
         index,
-        manipulationInfo(index, state.formulaToDerivationIndices),
+        manipulationInfo(index, state.formulaToDerivationIndices, section.hasGoal),
         onAutoProve(index),
         onDuplicateDerivation(index),
         onDeleteDerivation(index)))
@@ -216,7 +216,8 @@ object App {
       modState(_.extractSubderivation(derivationIndex, path))
 
     private def manipulationInfo(derivationIndex: DerivationIndex,
-                                 formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]]): ManipulationInfo =
+                                 formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]],
+                                 hasGoal: Boolean): ManipulationInfo =
       ManipulationInfo(
         onConjunctionIntroBackwards(derivationIndex),
         onConjunctionElimBackwards(derivationIndex),
@@ -249,7 +250,9 @@ object App {
         onBetaReduce(derivationIndex),
         onExtractSubderivation(derivationIndex),
         derivationIndex,
-        formulaToDerivationIndices)
+        formulaToDerivationIndices,
+        hasGoal,
+      )
 
     def componentDidMount: Callback = Callback {
       Mousetrap.bind(Seq("command+z", "ctrl+z").toJSArray, _ => onUndo.runNow())

@@ -42,7 +42,7 @@ object ManipulatableFormula {
         .toSeq
         .sorted
     val canBetaReduce = derivation.isBetaRedex
-    val forwardsRulesPossible = path.isRoot
+    val forwardsRulesPossible = path.isRoot && !manipulationInfo.hasGoal
     val backwardsRulesPossible = derivation.isAxiom
     val otherActionsPossible = !derivation.isAxiom || inlineableDerivationIndices.nonEmpty ||
       dischargeableLabels.nonEmpty || canUndischargeAxiom(derivation) || canBetaReduce || !path.isRoot
@@ -99,37 +99,37 @@ object ManipulatableFormula {
         <.h6(^.className := "dropdown-header", "↓ Apply rule forwards")
           .when(forwardsRulesPossible),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Introduction...", ^.onClick --> onConjunctionIntroForwards)
-          .when(path.isRoot),
+          .when(forwardsRulesPossible),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick left)", ^.onClick --> onConjunctionElimForwards(0))
-          .when(canConjunctionElimForwards(derivation, path)),
+          .when(forwardsRulesPossible && canConjunctionElimForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "∧-Elimination (pick right)", ^.onClick --> onConjunctionElimForwards(1))
-          .when(canConjunctionElimForwards(derivation, path)),
+          .when(forwardsRulesPossible && canConjunctionElimForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Introduction...", ^.onClick --> onImplicationIntroForwards)
-          .when(path.isRoot),
+          .when(forwardsRulesPossible),
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as antecedent)...", ^.onClick --> onImplicationElimForwardsFromAntecedent)
-          .when(path.isRoot),
+          .when(forwardsRulesPossible),
         <.div(^.className := "dropdown-item", ^.href := "#", "→-Elimination (as implication)", ^.onClick --> onImplicationElimForwardsFromImplication)
-          .when(canImplicationElimForwardsFromImplication(derivation, path)),
+          .when(forwardsRulesPossible && canImplicationElimForwardsFromImplication(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "↔-Introduction (as forward implication)", ^.onClick --> onEquivalenceIntroForwards(EquivalenceDirection.Forwards))
-          .when(canEquivalenceIntroForwards(derivation, path)),
+          .when(forwardsRulesPossible && canEquivalenceIntroForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "↔-Introduction (as backwards implication)", ^.onClick --> onEquivalenceIntroForwards(EquivalenceDirection.Backwards))
-          .when(canEquivalenceIntroForwards(derivation, path)),
+          .when(forwardsRulesPossible && canEquivalenceIntroForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "↔-Elimination (pick forwards)", ^.onClick --> onEquivalenceElimForwards(EquivalenceDirection.Forwards))
-          .when(canEquivalenceElimForwards(derivation, path)),
+          .when(forwardsRulesPossible && canEquivalenceElimForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "↔-Elimination (pick backwards)", ^.onClick --> onEquivalenceElimForwards(EquivalenceDirection.Backwards))
-          .when(canEquivalenceElimForwards(derivation, path)),
+          .when(forwardsRulesPossible && canEquivalenceElimForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "¬Introduction...", ^.onClick --> onNegationIntroForwards)
-          .when(canNegationIntroForwards(derivation, path)),
+          .when(forwardsRulesPossible && canNegationIntroForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "¬Elimination (as positive)", ^.onClick --> onNegationElimForwardsFromPositive)
-          .when(path.isRoot),
+          .when(forwardsRulesPossible),
         <.div(^.className := "dropdown-item", ^.href := "#", "¬Elimination (as negative)", ^.onClick --> onNegationElimForwardsFromNegative)
-          .when(canNegationElimForwardsFromNegative(derivation, path)),
+          .when(forwardsRulesPossible && canNegationElimForwardsFromNegative(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "Reductio ad absurdum...", ^.onClick --> onReductioForwards)
-          .when(canReductioForwards(derivation, path)),
+          .when(forwardsRulesPossible && canReductioForwards(derivation, path)),
         <.div(^.className := "dropdown-item", ^.href := "#", "∨-Introduction...", ^.onClick --> onDisjunctionIntroForwards)
-          .when(path.isRoot),
+          .when(forwardsRulesPossible),
         <.div(^.className := "dropdown-item", ^.href := "#", "∨-Elimination (as disjunction)...", ^.onClick --> onDisjunctionElimForwardsFromDisjunction)
-          .when(canDisjunctionElimForwardsFromDisjunction(derivation, path)),
+          .when(forwardsRulesPossible && canDisjunctionElimForwardsFromDisjunction(derivation, path)),
         <.div(^.`class` := "dropdown-divider")
           .when(otherActionsPossible && (forwardsRulesPossible || backwardsRulesPossible)),
 

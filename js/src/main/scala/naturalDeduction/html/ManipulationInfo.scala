@@ -40,4 +40,5 @@ case class ManipulationInfo(/* Backwards rules */
                             onExtractSubderivation: DerivationPath => Callback,
 
                             derivationIndex: DerivationIndex,
-                            formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]])
+                            formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]],
+                            hasGoal: Boolean)
