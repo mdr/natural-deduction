@@ -8,8 +8,8 @@ object DerivationRenderer {
   def renderDerivation(derivation: Derivation, labels: Set[String] = Set.empty): RaggedTextRegion = derivation match {
     case Axiom(formula, label) =>
       val isDischarged = labels.intersect(label.toSet).nonEmpty
-      val labelPrefix = label.map(_ + " ").getOrElse("")
-      val renderedFormula = labelPrefix + (if (isDischarged) "[" + formula.toString + "]" else formula.toString)
+      val labelSuffix = label.map(" " + _).getOrElse("")
+      val renderedFormula = (if (isDischarged) "[" + formula.toString + "]" else formula.toString) + labelSuffix
       RaggedTextRegion(Seq(LineAndOffset(renderedFormula)))
     case ConjunctionIntroduction(leftDerivation, rightDerivation) =>
       renderTwoChildren(derivation, renderDerivation(leftDerivation, labels), renderDerivation(rightDerivation, labels), "∧I")
@@ -50,7 +50,7 @@ object DerivationRenderer {
   private def renderSingleChild(parent: Derivation, childRegion: RaggedTextRegion, ruleName: String, label: Option[Label] = None): RaggedTextRegion = {
     val formulaString = parent.conclusion.toString
     val firstChildLine = childRegion.lines.head
-    val firstChildLineOffset = firstChildLine.offset // beta
+    val firstChildLineOffset = firstChildLine.offset
     val ruleLineWidth = formulaString.length max firstChildLine.text.length
     val (parentFormulaOffset, _) = calculateLeftRightPaddingForCentering(formulaString, ruleLineWidth)
     val labelPrefix = label.map(_ + " ").getOrElse("")
@@ -59,7 +59,7 @@ object DerivationRenderer {
         LineAndOffset(formulaString, parentFormulaOffset + labelPrefix.length),
         LineAndOffset(labelPrefix + "─" * ruleLineWidth + " " + ruleName),
       ))
-    val (childFormulaOffset, _) = calculateLeftRightPaddingForCentering(firstChildLine.text, ruleLineWidth) // alpha
+    val (childFormulaOffset, _) = calculateLeftRightPaddingForCentering(firstChildLine.text, ruleLineWidth)
     childRegion.shiftHorizontal(0.max((childFormulaOffset + labelPrefix.length) - firstChildLineOffset)) pasteVertical
       parentRegion.shiftHorizontal(0.max(firstChildLineOffset - (childFormulaOffset + labelPrefix.length)))
   }

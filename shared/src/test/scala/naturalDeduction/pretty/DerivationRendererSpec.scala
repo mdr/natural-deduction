@@ -50,7 +50,7 @@ class DerivationRendererSpec extends AnyFlatSpec with Matchers {
     ConjunctionIntroduction(
       Axiom(φ, label = Some("2")),
       Axiom(ψ, label = Some("1")))) shouldRenderAs
-    """ 2 φ   1 [ψ]
+    """ φ 2   [ψ] 1
       | ─────────── ∧I
       |    φ ∧ ψ
       |1 ───────── →I
@@ -61,7 +61,7 @@ class DerivationRendererSpec extends AnyFlatSpec with Matchers {
       ConjunctionIntroduction(
         Axiom(φ, label = Some("2")),
         Axiom(ψ, label = Some("1"))))) shouldRenderAs
-    """  2 [φ]   1 [ψ]
+    """  [φ] 2   [ψ] 1
       |  ───────────── ∧I
       |      φ ∧ ψ
       |  1 ───────── →I
@@ -83,7 +83,7 @@ class DerivationRendererSpec extends AnyFlatSpec with Matchers {
         Axiom(φ → ψ)),
       Axiom(ψ → χ))
   ) shouldRenderAs
-    """1 [φ]   φ → ψ
+    """[φ] 1   φ → ψ
       |───────────── →E
       |      ψ   ψ → χ
       |      ───────── →E
@@ -98,7 +98,7 @@ class DerivationRendererSpec extends AnyFlatSpec with Matchers {
     RightDisjunctionIntroduction(ψ, Axiom(φ, "❶")),
     Some("❷"),
     LeftDisjunctionIntroduction(Axiom(ψ, "❷"), φ)) shouldRenderAs
-    """            ❶ [φ]      ❷ [ψ]
+    """            [φ] ❶      [ψ] ❷
       |            ───── ∨I   ───── ∨I
       |    φ ∨ ψ   ψ ∨ φ      ψ ∨ φ
       |❶ ❷ ──────────────────────── ∨E
@@ -107,7 +107,7 @@ class DerivationRendererSpec extends AnyFlatSpec with Matchers {
   implicit class RichDerivation(derivation: Derivation) {
     def shouldRenderAs(expectedRaw: String): Unit = {
       val expected = expectedRaw.stripMargin
-      s"Rendering $expected" should "work" in {
+      s"Rendering\n$expected" should "work" in {
         val actual = derivation.toString
         val passed = actual == expected
         if (!passed) {
