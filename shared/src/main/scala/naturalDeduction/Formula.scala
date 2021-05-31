@@ -8,6 +8,16 @@ sealed trait Formula {
 
   import Formula._
 
+  def variables: Set[String] = this match {
+    case Bottom => Set.empty
+    case PropositionalVariable(name) =>Set(name)
+    case Negation(formula) =>formula.variables
+    case Conjunction(conjunct1, conjunct2) => conjunct1.variables ++ conjunct2.variables
+    case Disjunction(disjunct1, disjunct2) => disjunct1.variables ++ disjunct2.variables
+    case Implication(antecedent, consequent) => antecedent.variables ++ consequent.variables
+    case Equivalence(formula1, formula2) => formula1.variables ++ formula2.variables
+  }
+
   def replaceEquivalences: Formula = this match {
     case Bottom | PropositionalVariable(_) => this
     case Equivalence(formula1, formula2) =>
