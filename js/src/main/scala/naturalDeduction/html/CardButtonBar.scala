@@ -10,7 +10,9 @@ object CardButtonBar {
   case class Props(canAutoProve: Boolean,
                    onAutoProve: Callback,
                    onDuplicateDerivation: Callback,
-                   onDeleteDerivation: Callback) {
+                   onDeleteDerivation: Callback,
+                   onShowKotlin: Callback,
+                  ) {
     def make: VdomNode = component(this)
   }
 
@@ -24,6 +26,7 @@ object CardButtonBar {
       AutoProveButtonButton(props).when(props.canAutoProve),
       DuplicateButton(props),
       DeleteButton(props),
+      MenuButton(props)
     )
 
   private val AutoProveButtonButton =
@@ -63,6 +66,20 @@ object CardButtonBar {
           <.i(^.className := "fas fa-trash", ^.title := "Delete"),
           ^.onClick --> props.onDeleteDerivation,
           ^.title := "Delete",
+        )
+      )
+      .componentDidMount(activateTooltip)
+      .build
+
+  private val MenuButton =
+    ScalaComponent.builder[Props]("MenuButton")
+      .render_P(props =>
+        <.div(^.className := "btn-group", ^.role := "group",
+          <.button(^.id := "btnGroupDrop1", ^.`type` := "button", ^.className := "btn btn-outline-secondary", VdomAttr("data-toggle") := "dropdown", VdomAttr("aria-haspopup") := "true", VdomAttr("aria-expanded") := "false",
+            <.i(^.className := "fas fa-ellipsis-v", ^.title := "Menu")),
+          <.div(^.className := "dropdown-menu", VdomAttr("aria-labelledby") := "btnGroupDrop1",
+            <.div(^.className := "dropdown-item", ^.href := "#", "Extract Kotlin...", ^.onClick --> props.onShowKotlin),
+          )
         )
       )
       .componentDidMount(activateTooltip)

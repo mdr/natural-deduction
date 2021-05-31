@@ -199,3 +199,7 @@ div[type='button'] {
 .unproved-header {
     background-color: rgba(200, 120, 0, .16);
 }
+
+.modal-lg {
+    max-width: 80%;
+}

@@ -17,11 +17,22 @@ object Main extends App {
 
 object KotlinTranslator {
 
-  val ALL_LABELS: Seq[Label] =
+  val Preamble: String =
+    """sealed class Either<out A, out B> {
+      |  inline fun <C> fold(ifLeft: (A) -> C, ifRight: (B) -> C): C = when (this) {
+      |    is Right -> ifRight(value)
+      |    is Left -> ifLeft(value)
+      |  }
+      |}
+      |data class Left<out A> constructor(val value: A) : Either<A, Nothing>()
+      |data class Right<out B> constructor(val value: B) : Either<Nothing, B>()
+      |typealias Not<A> = (A) -> Nothing""".stripMargin
+
+  val AllLabels: Seq[Label] =
     "abcdefghijklmnopqrstuvwxyz".map(_.toString)
 
   def freshLabel(existingLabels: Set[Label]): Label =
-    (ALL_LABELS diff existingLabels.toSeq).headOption.getOrElse("Out of labels!")
+    (AllLabels diff existingLabels.toSeq).headOption.getOrElse("Out of labels!")
 
   def toKotlin(derivation: Derivation): String = {
     val Assumptions(anonymousAssumptions, labelledAssumptions) = derivation.undischargedAssumptions
@@ -38,7 +49,7 @@ object KotlinTranslator {
     val argumentsSection = undischargedAssumptions.map { case (label, formula) =>
       s"${escapeIfNeeded(label)}: ${toKotlinType(formula)}"
     }.mkString(", ")
-    s"fun $genericsSection`${derivation.sequent}`($argumentsSection): ${toKotlinType(derivation.conclusion)} =\n  ${Context(undischargedAssumptions).toKotlin(derivation)}"
+    s"$Preamble\n\nfun $genericsSection`${derivation.sequent}`($argumentsSection): ${toKotlinType(derivation.conclusion)} =\n  ${Context(undischargedAssumptions).toKotlin(derivation)}"
   }
 
   private case class Context(undischargedAssumptions: Map[Label, Formula]) {

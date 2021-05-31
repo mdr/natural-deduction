@@ -11,7 +11,8 @@ case class State(
                   newFormulaText: String = "",
                   derivationSections: Seq[DerivationSection] = Seq.empty,
                   modalState: Option[ModalState] = None,
-                  undoRedo: UndoRedo[Seq[DerivationSection]] = UndoRedo()
+                  undoRedo: UndoRedo[Seq[DerivationSection]] = UndoRedo(),
+                  kotlinModalDerivation: Option[Derivation] = None,
                 ) {
 
   lazy val formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]] =
