@@ -18,6 +18,7 @@ object DerivationCard {
                    onDuplicateDerivation: Callback,
                    onDeleteDerivation: Callback,
                    onShowKotlin: Callback,
+                   onShowLatex: Callback,
                   )
 
   def render(props: Props): VdomNode = {
@@ -38,7 +39,7 @@ object DerivationCard {
                 " ",
                 <.i(^.className := "fas fa-check-circle")).when(derivationSection.derivationProvesGoal),
             ),
-            CardButtonBar.Props(derivationSection.goal.isDefined, onAutoProve, onDuplicateDerivation, onDeleteDerivation, onShowKotlin).make,
+            CardButtonBar.Props(derivationSection.goal.isDefined, onAutoProve, onDuplicateDerivation, onDeleteDerivation, onShowKotlin, onShowLatex).make,
           ),
         )
       ),

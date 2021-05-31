@@ -12,6 +12,7 @@ object CardButtonBar {
                    onDuplicateDerivation: Callback,
                    onDeleteDerivation: Callback,
                    onShowKotlin: Callback,
+                   onShowLatex: Callback,
                   ) {
     def make: VdomNode = component(this)
   }
@@ -79,6 +80,7 @@ object CardButtonBar {
             <.i(^.className := "fas fa-ellipsis-v", ^.title := "Menu")),
           <.div(^.className := "dropdown-menu", VdomAttr("aria-labelledby") := "btnGroupDrop1",
             <.div(^.className := "dropdown-item", ^.href := "#", "Extract Kotlin...", ^.onClick --> props.onShowKotlin),
+            <.div(^.className := "dropdown-item", ^.href := "#", "Extract Latex...", ^.onClick --> props.onShowLatex),
           )
         )
       )

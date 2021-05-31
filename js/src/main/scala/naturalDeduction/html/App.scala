@@ -24,6 +24,7 @@ object App {
           ),
         ),
         KotlinModal.Props(state.kotlinModalDerivation).make,
+        LatexModal.Props(state.latexModalDerivation).make,
         Modal.Props(state.modalState, onChangeModalFormula, onChangeModalFormula2, onSwapConjuncts, onSwapDisjuncts, onConfirmModal).make,
         <.div(^.`class` := "container",
           <.p(),
@@ -67,7 +68,9 @@ object App {
         onAutoProve(index),
         onDuplicateDerivation(index),
         onDeleteDerivation(index),
-        onShowKotlin(index)))
+        onShowKotlin(index),
+        onShowLatex(index),
+      ))
 
     /**
      * Modify state and handle URL hash sync
@@ -98,6 +101,10 @@ object App {
 
     private val showKotlinModal: Callback = Callback {
       global.$(s"#${KotlinModal.Id}").modal()
+    }
+
+    private val showLatexModal: Callback = Callback {
+      global.$(s"#${LatexModal.Id}").modal()
     }
 
     private def onSwapConjuncts: Callback = modState(_.swapConjuncts)
@@ -132,6 +139,10 @@ object App {
     private def onShowKotlin(derivationIndex: DerivationIndex): Callback =
       modState(state => state.copy(kotlinModalDerivation = Some(state.getDerivation(derivationIndex)))) >>
         showKotlinModal
+
+    private def onShowLatex(derivationIndex: DerivationIndex): Callback =
+      modState(state => state.copy(latexModalDerivation = Some(state.getDerivation(derivationIndex)))) >>
+        showLatexModal
 
     // Derivation menu handlers
 

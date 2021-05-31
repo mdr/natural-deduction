@@ -13,6 +13,7 @@ case class State(
                   modalState: Option[ModalState] = None,
                   undoRedo: UndoRedo[Seq[DerivationSection]] = UndoRedo(),
                   kotlinModalDerivation: Option[Derivation] = None,
+                  latexModalDerivation: Option[Derivation] = None,
                 ) {
 
   lazy val formulaToDerivationIndices: Map[Formula, Seq[DerivationIndex]] =
