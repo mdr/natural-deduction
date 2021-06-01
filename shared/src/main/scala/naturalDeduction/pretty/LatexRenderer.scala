@@ -53,8 +53,9 @@ object LatexRenderer {
          |\\infer1[\\scriptsize{($$\\land$$E)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.ImplicationIntroduction(_, label, consequentDerivation) =>
+      val leftLabel = label.fold("")(label => s"""[left label=\\textcircled{\\scriptsize ${renderLabel(label)}}]""")
       s"""${render_(consequentDerivation)}
-         |\\infer[left label=\\textcircled{\\scriptsize ${renderLabel(label.getOrElse(""))}}]1[\\scriptsize{($$\\rightarrow$$I)}]{${render(derivation.conclusion)}}""".stripMargin
+         |\\infer${leftLabel}1[\\scriptsize{($$\\rightarrow$$I)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.ImplicationElimination(antecedentDerivation, implicationDerivation) =>
       s"""${render_(antecedentDerivation)}
@@ -75,8 +76,9 @@ object LatexRenderer {
          |\\infer1[\\scriptsize{($$\\leftrightarrow$$E)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.NegationIntroduction(_, label, bottomDerivation) =>
+      val leftLabel = label.fold("")(label => s"""[left label=\\textcircled{\\scriptsize ${renderLabel(label)}}]""")
       s"""${render_(bottomDerivation)}
-         |\\infer[left label=\\textcircled{\\scriptsize ${renderLabel(label.getOrElse(""))}}]1[\\scriptsize{($$\\neg$$I)}]{${render(derivation.conclusion)}}""".stripMargin
+         |\\infer${leftLabel}1[\\scriptsize{($$\\neg$$I)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.NegationElimination(positiveDerivation, negativeDerivation) =>
       s"""${render_(positiveDerivation)}
@@ -84,8 +86,9 @@ object LatexRenderer {
          |\\infer2[\\scriptsize{($$\\neg$$E)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.ReductioAdAbsurdum(_, label, bottomDerivation) =>
+      val leftLabel = label.fold("")(label => s"""[left label=\\textcircled{\\scriptsize ${renderLabel(label)}}]""")
       s"""${render_(bottomDerivation)}
-         |\\infer[left label=\\textcircled{\\scriptsize ${renderLabel(label.getOrElse(""))}}]1[\\scriptsize{(RAA)}]{${render(derivation.conclusion)}}""".stripMargin
+         |\\infer${leftLabel}1[\\scriptsize{(RAA)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.LeftDisjunctionIntroduction(leftDerivation, _) =>
       s"""${render_(leftDerivation)}
