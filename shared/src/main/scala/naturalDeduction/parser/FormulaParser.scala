@@ -36,9 +36,9 @@ object FormulaParser extends RegexParsers {
   private lazy val assumptions: Parser[Set[Formula]] =
     "{" ~> repsep[Formula](FormulaParser.formula, ",") <~ "}" ^^ (_.toSet)
 
-  private lazy val formula: Parser[Formula] = rep1sep(formula1, "↔" | "<->" | "<=>" | "⇔" | "≡") ^^ (_.reduceRight[Formula](Equivalence))
+  private lazy val formula: Parser[Formula] = rep1sep(formula1, "↔" | "⇿" | "<->" | "<=>" | "⇔" | "≡") ^^ (_.reduceRight[Formula](Equivalence))
 
-  private lazy val formula1: Parser[Formula] = rep1sep(formula2, "→" | "->" | "⇒" | "=>" | "⊃") ^^ (_.reduceRight[Formula](Implication))
+  private lazy val formula1: Parser[Formula] = rep1sep(formula2, "→" | "->" | "⇒" | "=>" | "⊃" | "⇾") ^^ (_.reduceRight[Formula](Implication))
 
   private lazy val formula2: Parser[Formula] = rep1sep(formula3, "∨" | "\\/" | "||" | "|" | "or") ^^ (_.reduceLeft[Formula](Disjunction))
 
