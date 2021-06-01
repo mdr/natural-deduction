@@ -14,7 +14,7 @@ object LJTTheoremProver {
 
   def prove(sequent: Sequent): Option[Derivation] =
     proveViaLJT(sequent) orElse
-      proveViaDoubleNegation(sequent) map (_.betaReduceAllTheThings)
+      proveViaDoubleNegation(sequent) map (_.betaReduceAllTheThings) map Relabeller.relabel
 
   //  private def proveViaLJT(sequent: Sequent): Option[Derivation] =
   //    prove(LJTSequent(sequent)).map(_.naturalDeductionDerivation)

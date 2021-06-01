@@ -3,7 +3,7 @@ package naturalDeduction
 object Labels {
 
   val AllLabels: Seq[Label] =
-    "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖㉗㉘㉙㉚㉛㉜㉝㉞㉟㊱㊲㊳㊴㊵㊶㊷㊸㊹㊺㊻㊼㊽㊾㊿".map(_.toString)
+    "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖㉗㉘㉙㉚㉛㉜㉝㉞㉟㊱㊲㊳㊴㊵㊶㊷㊸㊹㊺㊻㊼㊽㊾㊿abcdefghijklmnopqrstuvwxyzαβγδεζηθικλμνξοπρστυφχψω❶❷❸❹❺❻❼❽❾❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴".map(_.toString)
 
   def freshLabel(existingLabels: Set[Label]): Label =
     (AllLabels diff existingLabels.toSeq).headOption.getOrElse("Out of labels!")
