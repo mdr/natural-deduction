@@ -103,11 +103,10 @@ object LatexRenderer {
 
   }
 
-  def renderLabel(s: String): String = {
+  private def renderLabel(s: String): String =
     Labels.AllLabels.indexOf(s) match {
       case -1 => s
-      case n =>  (n + 1).toString
+      case n => (n + 1).toString
     }
-  }
 
 }
