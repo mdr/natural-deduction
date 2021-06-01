@@ -11,7 +11,7 @@ object LatexRenderer {
       .replace("ψ", """\psi""")
       .replace("χ", """\chi""")
       .replace("θ", """\theta""")
-      .replace("¬", """\neg""")
+      .replace("¬", """\neg """)
       .replace("∨", """\lor""")
       .replace("∧", """\land""")
       .replace("→", """\rightarrow""")
@@ -20,13 +20,10 @@ object LatexRenderer {
   def render(derivation: Derivation): String = {
     val contents = render_(derivation)
     s"""\\documentclass[preview,border=4]{standalone}
-       |\\usepackage{bussproofs}
+       |\\usepackage{ebproof}
        |\\usepackage{cancel}
        |\\begin{document}
        |\\begin{prooftree}
-       |\\def\\ScoreOverhang{1pt}
-       |\\def\\extraVskip{3pt}
-       |\\def\\defaultHypSeparation{\\hskip .1in}
        |$contents
        |\\end{prooftree}
        |\\end{document}
@@ -38,89 +35,71 @@ object LatexRenderer {
     case Derivation.Axiom(conclusion, label) =>
       label match {
         case Some(label) =>
-          s"""\\AxiomC{$${\\cancel{${render(conclusion)}}}^{\\,\\raisebox{\\depth}{\\textcircled{\\footnotesize ${renderLabel(label)}}}}$$}"""
+          s"""\\hypo{{\\cancel{${render(conclusion)}}}^{\\,\\raisebox{\\depth}{\\textcircled{\\scriptsize ${renderLabel(label)}}}}}"""
         case None =>
-          s"""\\AxiomC{$${${render(conclusion)}}$$}"""
+          s"""\\hypo{{${render(conclusion)}}}"""
       }
     case Derivation.ConjunctionIntroduction(leftDerivation, rightDerivation) =>
       s"""${render_(leftDerivation)}
          |${render_(rightDerivation)}
-         |\\RightLabel{\\small{($$\\land$$I)}}
-         |\\BinaryInfC{$$${render(derivation.conclusion)}$$}""".stripMargin
+         |\\infer2[\\scriptsize{($$\\land$$I)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.LeftConjunctionElimination(conjunctionDerivation) =>
       s"""${render_(conjunctionDerivation)}
-         |\\RightLabel{\\small{($$\\land$$E)}}
-         |\\UnaryInfC{$$${render(derivation.conclusion)}$$}""".stripMargin
+         |\\infer1[\\scriptsize{($$\\land$$E)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.RightConjunctionElimination(conjunctionDerivation) =>
       s"""${render_(conjunctionDerivation)}
-         |\\RightLabel{\\small{($$\\land$$E)}}
-         |\\UnaryInfC{$$${render(derivation.conclusion)}$$}""".stripMargin
+         |\\infer1[\\scriptsize{($$\\land$$E)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.ImplicationIntroduction(_, label, consequentDerivation) =>
       s"""${render_(consequentDerivation)}
-         |\\RightLabel{\\small{($$\\rightarrow$$I)}}
-         |\\LeftLabel{\\textcircled{\\scriptsize ${renderLabel(label.getOrElse(""))}}}
-         |\\UnaryInfC{$$${render(derivation.conclusion)}$$}""".stripMargin
+         |\\infer[left label=\\textcircled{\\scriptsize ${renderLabel(label.getOrElse(""))}}]1[\\scriptsize{($$\\rightarrow$$I)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.ImplicationElimination(antecedentDerivation, implicationDerivation) =>
       s"""${render_(antecedentDerivation)}
          |${render_(implicationDerivation)}
-         |\\RightLabel{\\small{($$\\rightarrow$$E)}}
-         |\\BinaryInfC{$$${render(derivation.conclusion)}$$}""".stripMargin
+         |\\infer2[\\scriptsize{($$\\rightarrow$$E)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.EquivalenceIntroduction(forwardsDerivation, backwardsDerivation) =>
       s"""${render_(forwardsDerivation)}
          |${render_(backwardsDerivation)}
-         |\\RightLabel{\\small{($$\\leftrightarrow$$I)}}
-         |\\BinaryInfC{$$${render(derivation.conclusion)}$$}""".stripMargin
+         |\\infer2[\\scriptsize{($$\\leftrightarrow$$I)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.ForwardsEquivalenceElimination(equivalenceDerivation) =>
       s"""${render_(equivalenceDerivation)}
-         |\\RightLabel{\\small{($$\\leftrightarrow$$E)}}
-         |\\UnaryInfC{$$${render(derivation.conclusion)}$$}""".stripMargin
+         |\\infer1[\\scriptsize{($$\\leftrightarrow$$E)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.BackwardsEquivalenceElimination(equivalenceDerivation) =>
       s"""${render_(equivalenceDerivation)}
-         |\\RightLabel{\\small{($$\\leftrightarrow$$E)}}
-         |\\UnaryInfC{$$${render(derivation.conclusion)}$$}""".stripMargin
+         |\\infer1[\\scriptsize{($$\\leftrightarrow$$E)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.NegationIntroduction(_, label, bottomDerivation) =>
       s"""${render_(bottomDerivation)}
-         |\\RightLabel{\\small{($$\\neg$$I)}}
-         |\\LeftLabel{\\textcircled{\\scriptsize ${renderLabel(label.getOrElse(""))}}}
-         |\\UnaryInfC{$$${render(derivation.conclusion)}$$}""".stripMargin
+         |\\infer[left label=\\textcircled{\\scriptsize ${renderLabel(label.getOrElse(""))}}]1[\\scriptsize{($$\\neg$$I)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.NegationElimination(positiveDerivation, negativeDerivation) =>
       s"""${render_(positiveDerivation)}
          |${render_(negativeDerivation)}
-         |\\RightLabel{\\small{($$\\neg$$E)}}
-         |\\BinaryInfC{$$${render(derivation.conclusion)}$$}""".stripMargin
+         |\\infer2[\\scriptsize{($$\\neg$$E)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.ReductioAdAbsurdum(_, label, bottomDerivation) =>
       s"""${render_(bottomDerivation)}
-         |\\RightLabel{\\small{(RAA)}}
-         |\\LeftLabel{\\textcircled{\\scriptsize ${renderLabel(label.getOrElse(""))}}}
-         |\\UnaryInfC{$$${render(derivation.conclusion)}$$}""".stripMargin
+         |\\infer[left label=\\textcircled{\\scriptsize ${renderLabel(label.getOrElse(""))}}]1[\\scriptsize{(RAA)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.LeftDisjunctionIntroduction(leftDerivation, _) =>
       s"""${render_(leftDerivation)}
-         |\\RightLabel{\\small{($$\\lor$$I)}}
-         |\\UnaryInfC{$$${render(derivation.conclusion)}$$}""".stripMargin
+         |\\infer1[\\scriptsize{($$\\lor$$I)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.RightDisjunctionIntroduction(_, rightDerivation) =>
       s"""${render_(rightDerivation)}
-         |\\RightLabel{\\small{($$\\lor$$I)}}
-         |\\UnaryInfC{$$${render(derivation.conclusion)}$$}""".stripMargin
+         |\\infer1[\\scriptsize{($$\\lor$$I)}]{${render(derivation.conclusion)}}""".stripMargin
 
     case Derivation.DisjunctionElimination(disjunctionDerivation, leftLabel, leftDerivation, rightLabel, rightDerivation) =>
       s"""${render_(disjunctionDerivation)}
          |${render_(leftDerivation)}
          |${render_(rightDerivation)}
-         |\\LeftLabel{\\textcircled{\\scriptsize ${renderLabel(leftLabel.getOrElse(""))}}\\textcircled{\\scriptsize ${renderLabel(rightLabel.getOrElse(""))}}}
-         |\\RightLabel{\\small{($$\\lor$$E)}}
-         |\\TrinaryInfC{$$${render(derivation.conclusion)}$$}""".stripMargin
+         |\\infer[left label=\\textcircled{\\scriptsize ${renderLabel(leftLabel.getOrElse(""))}}\\textcircled{\\scriptsize ${renderLabel(rightLabel.getOrElse(""))}}]3[\\scriptsize{($$\\lor$$E)}]{${render(derivation.conclusion)}}""".stripMargin
 
   }
 
