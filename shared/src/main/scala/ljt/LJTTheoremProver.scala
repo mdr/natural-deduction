@@ -8,6 +8,8 @@ import naturalDeduction.{Derivation, Formula, Sequent}
 
 import scala.PartialFunction.condOpt
 
+// See Roy Dyckhoff, "Contraction-free sequent calculi for intuitionistic logic"
+// https://www.cs.cmu.edu/~fp/courses/atp/cmuonly/D92.pdf
 object LJTTheoremProver {
 
   var depth = 0
